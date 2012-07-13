@@ -34,7 +34,8 @@ optimizing compiler developed by Facebook,
 as of heads/vm-0-ga4fbb08028493df0f5e44f2bf7c042e859e245ab (note that you need
 to check out the ``vm`` branch to get the newest version).
 The run was performed on a 64-bit Linux running on Xeon W3580 with 8M of
-L2 cache, which was otherwise unoccupied.
+L2 cache, which was otherwise unoccupied. Hippy version is marked in the
+repository as ``release-0.1``.
 
 Unfortunately, I was not able to run it on the jitted version of HHVM, the new effort by Facebook,
 but people involved with the project told me it's usually slower or comparable with the compiled HipHop.

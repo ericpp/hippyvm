@@ -158,7 +158,7 @@ How do I run it?
 ----------------
 
 Get a `pypy checkout`_, apply the `diff`_ if you want to squeeze last
-bits of performance and run ``pypy-checkout/bin/rpython targethippy.py`` to
+bits of performance and run ``pypy-checkout/bin/rpython -Ojit targethippy.py`` to
 get an executable that resembles a php interpreter. You can also run directly
 ``python targethippy.py file.php``, but this will be about 2000x slower.
 

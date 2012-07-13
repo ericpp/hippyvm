@@ -146,7 +146,7 @@ was used for compilation.
 
 
 So, how fast will my website run if this is completed?
------------------------------------------------------
+------------------------------------------------------
 
 The truth is that I lack the benchmarks to be able to answer that right now. The core
 of the PHP language is implemented up to the point where I'm confident

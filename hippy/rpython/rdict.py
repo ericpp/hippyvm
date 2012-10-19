@@ -75,6 +75,9 @@ class SomeRDict(annmodel.SomeObject):
         instance_repr = rtyper.makerepr(annmodel.SomeInstance(self.clsdef))
         return RDictRepr(rtyper, instance_repr)
 
+    def rtyper_makekey(self):
+        return (self.__class__, self.clsdef)
+
     def method_copy(self):
         return SomeRDict(self.clsdef)
 
@@ -97,6 +100,9 @@ class SomeRDictIter(annmodel.SomeObject):
 
     def rtyper_makerepr(self, rtyper):
         return RDictIterRepr(rtyper, rtyper.makerepr(self.rdict))
+
+    def rtyper_makekey(self):
+        return (self.__class__, self.rdict.rtyper_makekey())
 
 class __extend__(pairtype(SomeRDict, annmodel.SomeString)):
     def getitem((self, s_item)):

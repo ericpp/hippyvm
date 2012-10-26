@@ -212,6 +212,26 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[3]) == '2'
         assert self.space.str_w(output[4]) == "3"
 
+    def test_array_combine(self):
+        # TODO: check how hash maps works
+        output = self.run('''
+        $a = array('god', 'save', 'the', 'queen');
+        $b = array(1, 2, 3, 4);
+        $c = array_combine($a, $b);
+        echo $c['god'];
+        echo $c['the'];
+        $a = array(1, 2, 3, 4);
+        $b = array('god', 'save', 'the', 'queen');
+        $c = array_combine($a, $b);
+        echo $c['1'];
+        echo $c['4'];
+
+        ''')
+        assert self.space.str_w(output[0]) == "1"
+        assert self.space.str_w(output[1]) == "3"
+        assert self.space.str_w(output[2]) == "god"
+        assert self.space.str_w(output[3]) == "queen"
+
     def test_str_repeat(self):
         output = self.run('''
         $a = str_repeat("xyz", 2);

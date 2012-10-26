@@ -326,6 +326,27 @@ def array_change_key_case(space, w_arr, str_case):
     return space.new_array_from_pairs(pairs)
 
 
+# @wrap(['space', W_Root, bool])
+# def array_chunk(space, w_arr, keep_keys):
+
+@wrap(['space', W_Root, W_Root])
+def array_combine(space, w_arr_a, w_arr_b):
+    if w_arr_a.tp != space.w_array:
+        return space.w_False
+    if w_arr_b.tp != space.w_array:
+        return space.w_False
+    if space.arraylen(w_arr_a) != space.arraylen(w_arr_b):
+        return space.w_False
+    if space.arraylen(w_arr_a) == 0 or space.arraylen(w_arr_b) == 0:
+        return space.w_False
+    pairs = []
+    with space.iter(w_arr_a) as a_iter:
+        with space.iter(w_arr_b) as b_iter:
+            while not a_iter.done():
+                _, a_w_value = a_iter.next_item(space)
+                _, b_w_value = b_iter.next_item(space)
+                pairs.append((a_w_value, b_w_value))
+    return space.new_array_from_pairs(pairs)
 
 @wrap(['space', str])
 def defined(space, name):

@@ -7,7 +7,7 @@ class TestFile(BaseTestInterpreter):
     def setup_class(cls):
         tmpdir = py.path.local.make_numbered_dir('hippy')
         cls.tmpdir = tmpdir
-    
+
     def test_get_file_contents(self):
         fname = self.tmpdir.join('get_file_contents')
         fname.write('xyyz')
@@ -53,7 +53,7 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.int_w(output[1]) == 5
         assert self.space.float_w(output[2]) == 1.1
         assert self.space.int_w(output[3]) == 3
-        
+
     def test_unset(self):
         output = self.run("""
         $a = 3;
@@ -192,6 +192,26 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert self.space.int_w(output[0]) == 1
         assert self.space.str_w(output[1]) == "a"
+
+    def test_array_change_key_case(self):
+        output = self.run('''
+        $a = array("a" => 1, 1 => 2, "c" =>3);
+        $a = array_change_key_case($a, 1);
+        echo $a['A'];
+        echo $a[1];
+        $a = array("A" => 1, 1 => 2, "c" =>3);
+        $a = array_change_key_case($a, 0);
+        echo $a['a'];
+        echo $a[1];
+        echo $a['c'];
+
+        ''')
+        assert self.space.str_w(output[0]) == "1"
+        assert self.space.str_w(output[1]) == '2'
+        assert self.space.str_w(output[2]) == "1"
+        assert self.space.str_w(output[3]) == '2'
+        assert self.space.str_w(output[4]) == "3"
+
 
     def test_str_repeat(self):
         output = self.run('''

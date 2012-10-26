@@ -30,7 +30,7 @@ def create_function(signature, functocall):
             inpi += 1
         elif tp is str:
             lines.append('    arg%d = space.str_w(args_w[%d])' % (i, inpi))
-            inpi += 1            
+            inpi += 1
         elif tp == 'space':
             lines.append('    arg%d = space' % i)
         elif tp is W_Root:
@@ -38,7 +38,7 @@ def create_function(signature, functocall):
             inpi += 1
         elif tp == 'unwrapped':
             lines.append('    arg%s = args_w[%s]' % (i, inpi))
-            inpi += 1            
+            inpi += 1
         else:
             raise Exception("Uknown signature %s" % tp)
     lines.append('    return orig_func(%s)' % ', '.join(['arg%d' % i
@@ -64,13 +64,13 @@ class AbstractFunction(object):
 
 class BuiltinFunction(AbstractFunction):
     _immutable_fields_ = ['run']
-    
+
     def __init__(self, signature, functocall):
         self.run = create_function(signature, functocall)
-    
+
     def call(self, space, frame, args_w):
         return self.run(space, frame, args_w)
-    
+
 BUILTIN_FUNCTIONS = []
 
 def wrap(signature, name=None, aliases=()):
@@ -305,6 +305,24 @@ def array_diff_key(space, args_w):
             keys.append(w_key)
     w_iter.mark_invalid()
     return space.new_array_from_list(keys)
+
+@wrap(['space', W_Root, int])
+def array_change_key_case(space, w_arr, str_case):
+    pairs = []
+    w_iter = w_arr.create_iter(space)
+    while not w_iter.done():
+        w_key, w_value = w_iter.next_item(space)
+        if w_key.tp == space.w_str:
+            k_str = w_key.str_w(space)
+            if str_case == 1:
+                k_str = k_str.upper()
+            else:
+                k_str = k_str.lower()
+            pairs.append((space.newstrconst(k_str), w_value))
+        else:
+            pairs.append((w_key, w_value))
+    return space.new_array_from_pairs(pairs)
+
 
 @wrap(['space', str])
 def defined(space, name):

@@ -212,7 +212,6 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[3]) == '2'
         assert self.space.str_w(output[4]) == "3"
 
-
     def test_str_repeat(self):
         output = self.run('''
         $a = str_repeat("xyz", 2);

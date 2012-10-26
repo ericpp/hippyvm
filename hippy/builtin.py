@@ -233,13 +233,13 @@ fill_keys_driver = jit.JitDriver(greens = [],
 @wrap(['space', W_Root, W_Root])
 def array_fill_keys(space, w_arr, w_value):
     w_res = space.new_array_from_pairs([])
-    w_arrayiter = w_arr.create_iter(space)
-    while not w_arrayiter.done():
-        fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
-                                         w_arrayiter=w_arrayiter)
-        w_item = w_arrayiter.next(space)
-        space.setitem(w_res, w_item, w_value)
-    w_arrayiter.mark_invalid()
+    with space.iter(w_arr) as w_arrayiter:
+        while not w_arrayiter.done():
+            fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
+                                             w_arrayiter=w_arrayiter)
+            w_item = w_arrayiter.next(space)
+            space.setitem(w_res, w_item, w_value)
+
     return w_res
 
 @wrap(['space', W_Root])
@@ -262,16 +262,15 @@ def array_merge(space, args_w):
     is_hash = False
     for w_arg in args_w:
         w_arg = space.as_array(w_arg)
-        w_iter = w_arg.create_iter(space)
-        while not w_iter.done():
-            w_key, w_value = w_iter.next_item(space)
+        with space.iter(w_arg) as w_iter:
+            while not w_iter.done():
+                w_key, w_value = w_iter.next_item(space)
             # XXX a fair bit inefficient
-            if w_key.tp == space.w_int or is_int(space.str_w(w_key)):
-                lst.append((None, w_value))
-            else:
-                lst.append((w_key, w_value))
-                is_hash = True
-        w_iter.mark_invalid()
+                if w_key.tp == space.w_int or is_int(space.str_w(w_key)):
+                    lst.append((None, w_value))
+                else:
+                    lst.append((w_key, w_value))
+                    is_hash = True
     if not is_hash:
         return space.new_array_from_list([i for _, i in lst])
     else:
@@ -295,37 +294,37 @@ def array_diff_key(space, args_w):
     w_arr = space.as_array(args_w[0])
     args_w = [space.as_array(w_arg) for w_arg in args_w[1:]]
     keys = []
-    w_iter = w_arr.create_iter(space)
-    while not w_iter.done():
-        w_key, _ = w_iter.next_item(space)
-        for w_arg in args_w:
-            if w_arg.isset_index(space, w_key):
-                break
-        else:
-            keys.append(w_key)
-    w_iter.mark_invalid()
+    with space.iter(w_arr) as w_iter:
+        while not w_iter.done():
+            w_key, _ = w_iter.next_item(space)
+            for w_arg in args_w:
+                if w_arg.isset_index(space, w_key):
+                    break
+            else:
+                keys.append(w_key)
     return space.new_array_from_list(keys)
 
 @wrap(['space', W_Root, int])
 def array_change_key_case(space, w_arr, str_case):
     pairs = []
+
     if w_arr.tp != space.w_array:
         return space.w_Null
-    w_iter = w_arr.create_iter(space)
-    while not w_iter.done():
-        w_key, w_value = w_iter.next_item(space)
-        if w_key.tp == space.w_str:
-            k_str = w_key.str_w(space)
-            if str_case == 1:
-                k_str = k_str.upper()
-            else:
-                k_str = k_str.lower()
-            pairs.append((space.newstrconst(k_str), w_value))
-        else:
-            pairs.append((w_key, w_value))
-    w_iter.mark_invalid()
-    return space.new_array_from_pairs(pairs)
 
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            w_key, w_value = itr.next_item(space)
+            if w_key.tp == space.w_str:
+                k_str = w_key.str_w(space)
+                if str_case == 1:
+                    k_str = k_str.upper()
+                else:
+                    k_str = k_str.lower()
+                pairs.append((space.newstrconst(k_str), w_value))
+            else:
+                pairs.append((w_key, w_value))
+    print pairs
+    return space.new_array_from_pairs(pairs)
 
 @wrap(['space', str])
 def defined(space, name):

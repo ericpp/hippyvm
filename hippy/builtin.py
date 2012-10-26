@@ -323,8 +323,9 @@ def array_change_key_case(space, w_arr, str_case):
                 pairs.append((space.newstrconst(k_str), w_value))
             else:
                 pairs.append((w_key, w_value))
-    print pairs
     return space.new_array_from_pairs(pairs)
+
+
 
 @wrap(['space', str])
 def defined(space, name):

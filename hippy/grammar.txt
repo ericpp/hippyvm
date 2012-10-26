@@ -38,7 +38,9 @@ primary: ARRAY "(" ")" | ARRAY "(" array_constr ","? ")" |
          function_call | atom INOP | "(" expr ")" | NAME |
          atom ("[" expr "]")+ | atom | INOP atom | ADD_OPER primary | "(" ARRAY ")" primary;
 atom: FLOAT | DECIMAL | STR | "$" atom | "$" "{" expr "}" | NAME | REFERENCE atom;
-array_constr: expr "=>" expr ("," expr "=>" expr)* | expr ("," expr)*;
+
+array_pair: expr | expr "=>" expr;
+array_constr: array_pair ("," array_pair)*;
 
 function_call: atom "(" arglist ")" | atom "(" ")";
 arglist: expr "," arglist | expr;

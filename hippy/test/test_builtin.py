@@ -213,7 +213,6 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[4]) == "3"
 
     def test_array_combine(self):
-        # TODO: check how hash maps works
         output = self.run('''
         $a = array('god', 'save', 'the', 'queen');
         $b = array(1, 2, 3, 4);
@@ -225,12 +224,35 @@ class TestBuiltin(BaseTestInterpreter):
         $c = array_combine($a, $b);
         echo $c['1'];
         echo $c['4'];
+        $a = array('a'=>1, 'b', 'c', 'd');
+        $b = array('q', 'w', 'e', 'r'=>5);
+        $c = array_combine($a, $b);
+        echo $c['1'];
+        echo $c['b'];
+        echo $c['d'];
 
         ''')
         assert self.space.str_w(output[0]) == "1"
         assert self.space.str_w(output[1]) == "3"
         assert self.space.str_w(output[2]) == "god"
         assert self.space.str_w(output[3]) == "queen"
+        assert self.space.str_w(output[4]) == "g"
+        assert self.space.str_w(output[5]) == "w"
+        assert self.space.str_w(output[6]) == "5"
+
+    def test_array_combine_mix(self):
+        output = self.run('''
+        $a = array('a'=>1, 'b', 'c', 'd');
+        $b = array('q', 'w', 'e', 'r'=>5);
+        $c = array_combine($a, $b);
+        echo $c['1'];
+        echo $c['b'];
+        echo $c['d'];
+
+        ''')
+        assert self.space.str_w(output[1]) == "g"
+        assert self.space.str_w(output[2]) == "w"
+        assert self.space.str_w(output[3]) == "5"
 
     def test_str_repeat(self):
         output = self.run('''

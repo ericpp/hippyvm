@@ -39,7 +39,7 @@ primary: ARRAY "(" ")" | ARRAY "(" array_constr ","? ")" |
          atom ("[" expr "]")+ | atom | INOP atom | ADD_OPER primary | "(" ARRAY ")" primary;
 atom: FLOAT | DECIMAL | STR | "$" atom | "$" "{" expr "}" | NAME | REFERENCE atom;
 
-array_pair: expr | expr "=>" expr;
+array_pair: expr ("=>" expr)?;
 array_constr: array_pair ("," array_pair)*;
 
 function_call: atom "(" arglist ")" | atom "(" ")";

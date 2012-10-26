@@ -114,4 +114,3 @@ ARG_ARGUMENT, ARG_REFERENCE, ARG_DEFAULT = range(3)
 if __name__ == '__main__':
     for i, (bc, _, _) in enumerate(BYTECODES):
         print i, bc
-

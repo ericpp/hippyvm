@@ -309,6 +309,8 @@ def array_diff_key(space, args_w):
 @wrap(['space', W_Root, int])
 def array_change_key_case(space, w_arr, str_case):
     pairs = []
+    if w_arr.tp != space.w_array:
+        return space.w_Null
     w_iter = w_arr.create_iter(space)
     while not w_iter.done():
         w_key, w_value = w_iter.next_item(space)
@@ -321,6 +323,7 @@ def array_change_key_case(space, w_arr, str_case):
             pairs.append((space.newstrconst(k_str), w_value))
         else:
             pairs.append((w_key, w_value))
+    w_iter.mark_invalid()
     return space.new_array_from_pairs(pairs)
 
 

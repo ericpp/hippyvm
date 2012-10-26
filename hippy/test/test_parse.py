@@ -65,7 +65,7 @@ class TestParser(object):
     def test_return(self):
         r = parse("return $y;")
         assert r == Block([Return(Variable(ConstantStr("y")))])
-    
+
     def test_if(self):
         r = parse("""
         if ($x)
@@ -87,7 +87,7 @@ class TestParser(object):
                              elseclause=Stmt(Variable(ConstantStr("z"))))])
 
         assert r == expected
-    
+
     def test_if_else_if(self):
         r = parse("""
         if ($x)
@@ -106,7 +106,7 @@ class TestParser(object):
                              lineno=1)])
 
         assert r == expected
-    
+
     def test_if_else_if_2(self):
         r = parse("""
         if ($x)
@@ -240,7 +240,7 @@ class TestParser(object):
         assert r == Block([Stmt(Array([ConstantInt(1), ConstantInt(2),
                                        BinOp("+", ConstantInt(3),
                                              ConstantInt(4))]))])
-        
+
     def test_array_append(self):
         r = parse("$a[] = 3;")
         expected = Block([Stmt(Append(Variable(ConstantStr("a")),
@@ -301,6 +301,14 @@ class TestParser(object):
         assert r == Block([Stmt(Hash([(ConstantStr("x"), ConstantStr("y")),
                                       (ConstantStr("b"), ConstantStr("a")),
                                       (ConstantStr("z"), ConstantInt(3))]))])
+
+    def test_array_mix_creation(self):
+        r = parse("array(1, 'a'=>2, 3, 'b'=>'c');")
+        assert r == Block([Stmt(Hash([(ConstantInt(0), ConstantInt(1)),
+                                      (ConstantStr("a"), ConstantInt(2)),
+                                      (ConstantInt(1), ConstantInt(3)),
+                                      (ConstantStr('b'), ConstantStr('c'))
+                                      ]))])
 
     def test_iterator(self):
         r = parse("foreach ($x as $y) {}")

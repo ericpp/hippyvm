@@ -20,6 +20,17 @@ class ExecutionContext(object):
     def __init__(self):
         self.interpreter = None
 
+class ObjSpaceWithIter:
+    def __init__(self, w_arr):
+        iter = w_arr.create_iter(w_arr)
+        self.iter = iter
+
+    def __enter__(self):
+        return self.iter
+
+    def __exit__(self, exception_type, exception_val, trace):
+        self.iter.mark_invalid()
+
 class ObjSpace(object):
     """ This implements all the operations on the object. Since this is
     prebuilt, it should not contain any state
@@ -155,20 +166,7 @@ class ObjSpace(object):
         return new_map_from_pairs(self, lst_w)
 
     def iter(self, w_arr):
-
-        class Iter:
-            def __init__(self, iter):
-                self.iter = iter
-
-            def __enter__(self):
-                return self.iter
-
-            def __exit__(self, exception_type, exception_val, trace):
-                self.iter.mark_invalid()
-
-        w_arr = w_arr.deref()
-        iter = w_arr.create_iter(self)
-        return Iter(iter)
+        return ObjSpaceWithIter(w_arr)
 
     def create_iter(self, w_arr):
         w_arr = w_arr.deref()

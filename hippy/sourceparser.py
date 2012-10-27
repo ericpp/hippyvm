@@ -15,7 +15,7 @@ class Node(object):
     __metaclass__ = extendabletype
 
     lineno = 0
-    
+
     _attrs_ = ()
 
     # those classes are extended with compile() methods in compiler.py
@@ -37,7 +37,7 @@ class Node(object):
         raise NotImplementedError("abstract base class")
 
     def compile(self, ctx):
-        raise NotImplementedError("abstract base class")        
+        raise NotImplementedError("abstract base class")
 
 class Block(Node):
     def __init__(self, stmts):
@@ -150,7 +150,7 @@ class Echo(Node):
     def __init__(self, exprlist, lineno=0):
         self.exprlist = exprlist
         self.lineno = lineno
-    
+
     def repr(self):
         return "Echo(%s)" % ", ".join([i.repr() for i in self.exprlist])
 
@@ -373,7 +373,7 @@ class Reference(Node):
 class Break(Node):
     def __init__(self, lineno=0):
         self.lineno = lineno
-    
+
     def repr(self):
         return "Break"
 
@@ -492,7 +492,7 @@ class Transformer(object):
             return InitializedVariable(varname, expr), rest
         return (UninitializedVariable(varname),
                 node.children[3])
-    
+
     def visit_static(self, node, lineno):
         vars = []
         while True:
@@ -546,7 +546,7 @@ class Transformer(object):
         if not node.children[5].children:
             # simple if
             return If(cond, body, lineno=lineno)
-                      
+
         if 'star' in node.children[5].symbol:
             if len(node.children) == 7 and node.children[6].children:
                 elseclause = self.visit_stmt(node.children[6].children[0].children[1])
@@ -583,6 +583,9 @@ class Transformer(object):
                    lineno)
 
     def visit_expr(self, node, is_func_arg=False):
+        if node.symbol == 'array_pair':
+            if len(node.children) == 1:
+                return self.visit_expr(node.children[0])
         if node.symbol == 'expr':
             if len(node.children) == 1:
                 node = node.children[0]
@@ -633,28 +636,60 @@ class Transformer(object):
         args.append(self.visit_expr(arglist.children[0], is_func_arg=True))
         return args
 
+    def visit_array_pair(self, node, p_iter=0, arr_args=None):
+        if arr_args == None:
+            arr_args = []
+        is_hash = False
+        if node.symbol == 'array_pair':
+            if len(node.children) == 2:
+                arr_args.append((
+                        self.visit_expr(node.children[0]),
+                        self.visit_expr(node.children[1].children[1])
+                        ))
+                is_hash = True
+            if len(node.children) == 1:
+                arr_args.append((
+                        ConstantInt(p_iter),
+                        self.visit_expr(node)
+                        ))
+                p_iter += 1
+        return (p_iter, is_hash)
+
     def visit_nonempty_array(self, node):
-        if len(node.children) < 3:
-            argnode = node
-            args = [self.visit_expr(argnode.children[0])]
-            if len(argnode.children) != 1:
-                argnode = argnode.children[1]
-                while len(argnode.children) == 3:
-                    args.append(self.visit_expr(argnode.children[1]))
-                    argnode = argnode.children[2]
-                args.append(self.visit_expr(argnode.children[1]))
-            return Array(args)
-        args = [(self.visit_expr(node.children[0]),
-                 self.visit_expr(node.children[2]))]
-        if len(node.children) == 4:
-            argnode = node.children[3]
-            while len(argnode.children) == 5:
-                args.append((self.visit_expr(argnode.children[1]),
-                             self.visit_expr(argnode.children[3])))
-                argnode = argnode.children[4]
-            args.append((self.visit_expr(argnode.children[1]),
-                         self.visit_expr(argnode.children[3])))
-        return Hash(args)
+        array_pairs = []
+        p_iter = 0
+        hash_mark = False
+        is_hash = False
+        if len(node.children) == 1:
+            (p_iter, is_hash) = self.visit_array_pair(
+                node.children[0], p_iter, array_pairs)
+            if is_hash:
+                hash_mark = True
+        else:
+            first_pair = node.children[0]
+            (p_iter, is_hash) = self.visit_array_pair(
+                first_pair, p_iter, array_pairs)
+            if is_hash:
+                hash_mark = True
+            rest = node.children[1]
+            while len(rest.children) == 3:
+                pair = rest.children[1]
+                (p_iter, is_hash) = self.visit_array_pair(
+                    pair, p_iter, array_pairs)
+                if is_hash:
+                    hash_mark = True
+                rest = rest.children[2]
+            (p_iter, is_hash) = self.visit_array_pair(
+                rest.children[1], p_iter, array_pairs)
+            if is_hash:
+                hash_mark = True
+        array_list = []
+        for x in array_pairs:
+            (key, val) = x
+            array_list.append(val)
+        if hash_mark:
+            return Hash(array_pairs)
+        return Array(array_list)
 
     def visit_primary(self, node, is_func_arg=False):
         if node.children[0].symbol == 'function_call':
@@ -747,7 +782,7 @@ class Transformer(object):
             getitem = self.parse_getitem(atom, node.children[2])
             if node.children[5].additional_info != '=':
                 raise ParserError
-            return Append(getitem, self.visit_expr(node.children[6]))            
+            return Append(getitem, self.visit_expr(node.children[6]))
         if node.children[2].additional_info == '=':
             return Assignment(Variable(self.visit_atom(node.children[1])),
                               self.visit_expr(node.children[3]))

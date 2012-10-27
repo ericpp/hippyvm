@@ -232,11 +232,11 @@ class TestBuiltin(BaseTestInterpreter):
         echo $c['d'];
 
         ''')
-        assert self.space.str_w(output[0]) == "1"
+        assert self.space.str_w(output[0]) == '1'
         assert self.space.str_w(output[1]) == "3"
         assert self.space.str_w(output[2]) == "god"
         assert self.space.str_w(output[3]) == "queen"
-        assert self.space.str_w(output[4]) == "g"
+        assert self.space.str_w(output[4]) == "q"
         assert self.space.str_w(output[5]) == "w"
         assert self.space.str_w(output[6]) == "5"
 
@@ -245,13 +245,15 @@ class TestBuiltin(BaseTestInterpreter):
         $a = array('a'=>1, 'b', 'c', 'd');
         $b = array('q', 'w', 'e', 'r'=>5);
         $c = array_combine($a, $b);
-        echo $c['1'];
+        echo $c[1];
         echo $c['b'];
+        echo $c['c'];
         echo $c['d'];
 
         ''')
-        assert self.space.str_w(output[1]) == "g"
-        assert self.space.str_w(output[2]) == "w"
+        assert self.space.str_w(output[0]) == "q"
+        assert self.space.str_w(output[1]) == "w"
+        assert self.space.str_w(output[2]) == "e"
         assert self.space.str_w(output[3]) == "5"
 
     def test_str_repeat(self):

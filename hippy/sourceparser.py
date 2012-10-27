@@ -583,9 +583,6 @@ class Transformer(object):
                    lineno)
 
     def visit_expr(self, node, is_func_arg=False):
-        if node.symbol == 'array_pair':
-            if len(node.children) == 1:
-                return self.visit_expr(node.children[0])
         if node.symbol == 'expr':
             if len(node.children) == 1:
                 node = node.children[0]
@@ -636,10 +633,9 @@ class Transformer(object):
         args.append(self.visit_expr(arglist.children[0], is_func_arg=True))
         return args
 
-    def visit_array_pair(self, node, p_iter=0, arr_args=None):
+    def visit_array_pair(self, node, p_iter=0, arr_args=None, is_hash=False):
         if arr_args == None:
             arr_args = []
-        is_hash = False
         if node.symbol == 'array_pair':
             if len(node.children) == 2:
                 arr_args.append((
@@ -650,7 +646,7 @@ class Transformer(object):
             if len(node.children) == 1:
                 arr_args.append((
                         ConstantInt(p_iter),
-                        self.visit_expr(node)
+                        self.visit_expr(node.children[0])
                         ))
                 p_iter += 1
         return (p_iter, is_hash)
@@ -658,38 +654,29 @@ class Transformer(object):
     def visit_nonempty_array(self, node):
         array_pairs = []
         p_iter = 0
-        hash_mark = False
         is_hash = False
         if len(node.children) == 1:
             (p_iter, is_hash) = self.visit_array_pair(
-                node.children[0], p_iter, array_pairs)
-            if is_hash:
-                hash_mark = True
+                node.children[0], p_iter,
+                array_pairs, is_hash)
         else:
             first_pair = node.children[0]
             (p_iter, is_hash) = self.visit_array_pair(
-                first_pair, p_iter, array_pairs)
-            if is_hash:
-                hash_mark = True
+                first_pair, p_iter,
+                array_pairs, is_hash)
             rest = node.children[1]
             while len(rest.children) == 3:
                 pair = rest.children[1]
                 (p_iter, is_hash) = self.visit_array_pair(
-                    pair, p_iter, array_pairs)
-                if is_hash:
-                    hash_mark = True
+                    pair, p_iter,
+                    array_pairs, is_hash)
                 rest = rest.children[2]
             (p_iter, is_hash) = self.visit_array_pair(
-                rest.children[1], p_iter, array_pairs)
-            if is_hash:
-                hash_mark = True
-        array_list = []
-        for x in array_pairs:
-            (key, val) = x
-            array_list.append(val)
-        if hash_mark:
+                rest.children[1], p_iter,
+                array_pairs, is_hash)
+        if is_hash:
             return Hash(array_pairs)
-        return Array(array_list)
+        return Array([val for _, val in array_pairs])
 
     def visit_primary(self, node, is_func_arg=False):
         if node.children[0].symbol == 'function_call':

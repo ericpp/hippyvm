@@ -18,7 +18,7 @@ class TestArrayDirect(object):
                     (space.newstrconst("b"), space.wrap(3)),
                     (space.newstrconst("c"), space.wrap(4))]),
                 int_arr.copy(space))
-    
+
     def test_value_iterators(self):
         space = ObjSpace()
         int_arr, float_arr, mix_arr, empty, hash, cp_arr = \
@@ -60,7 +60,7 @@ class TestArrayDirect(object):
                 else:
                     raise NotImplementedError
             return l
-        
+
         space = ObjSpace()
         int_arr, float_arr, mix_arr, empty, hash, cp_arr = \
                  self.create_array_strats(space)
@@ -70,7 +70,7 @@ class TestArrayDirect(object):
         assert w_iter.done()
         w_iter = float_arr.create_iter(space)
         assert unpack(w_iter.next_item(space)) == [0, 1.2]
-        assert unpack(w_iter.next_item(space)) == [1, 2.2] 
+        assert unpack(w_iter.next_item(space)) == [1, 2.2]
         assert w_iter.done()
         w_iter = mix_arr.create_iter(space)
         assert unpack(w_iter.next_item(space)) == [0, 1.2]
@@ -106,7 +106,7 @@ class TestArrayDirect(object):
         assert not cp_arr.isset_index(space, space.wrap(13))
 
     def test_hashes(self):
-        space = ObjSpace()        
+        space = ObjSpace()
         assert space.wrap(1).hash() == space.newstrconst("1").hash()
         assert space.wrap(123).hash() == space.newstrconst("123").hash()
 
@@ -159,7 +159,7 @@ class TestArrayDirect(object):
         assert unpack(w_iter.next_item(space)) == ["a", 0]
         assert unpack(w_iter.next_item(space)) == ["b", 12]
         assert w_iter.done()
-        
+
 class TestArray(BaseTestInterpreter):
     def test_array_constructor(self):
         output = self.run('''
@@ -178,6 +178,15 @@ class TestArray(BaseTestInterpreter):
         space = self.space
         assert space.int_w(space.getitem(output[0], space.wrap(0))) == 1
         assert space.str_w(space.getitem(output[0], space.wrap(1))) == "2"
+
+    def test_array_constructor_to_hash(self):
+        output = self.run('''
+        $a = array(1, "a" => 5, 3);
+        echo $a;
+        ''')
+        space = self.space
+        assert space.int_w(space.getitem(output[0], space.wrap(0))) == 1
+        assert space.str_w(space.getitem(output[0], space.wrap(1))) == "3"
 
     def test_array_empty_strat_append(self):
         output = self.run('''
@@ -244,7 +253,7 @@ class TestArray(BaseTestInterpreter):
         assert output[2].strategy.unerase(output[2].storage) == [3.0, 1.2]
         assert self.space.int_w(
             output[3].strategy.unerase(output[3].storage)[0]) == 1
-        
+
     def test_append_empty(self):
         output = self.run('''
         $a = array();
@@ -315,7 +324,7 @@ class TestArray(BaseTestInterpreter):
         assert self.space.int_w(output[1]) == 3
         assert self.space.str_w(output[2]) == "b"
         assert self.space.int_w(output[3]) == 4
-        
+
     def test_cast(self):
         output = self.run('''
         $a = (array)3;

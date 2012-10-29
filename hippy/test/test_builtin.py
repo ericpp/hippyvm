@@ -240,6 +240,75 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[5]) == "w"
         assert self.space.str_w(output[6]) == "5"
 
+    def test_array_slice(self):
+        output = self.run('''
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 2);
+        echo $a[0];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 1, 3);
+        echo $a[0];
+        echo $a[1];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 5, 6);
+        echo $a[0];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -2, 6);
+        echo $a[0];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -5, -2);
+        echo $a[0];
+        echo $a[1];
+        echo $a[2];
+
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 2, true);
+        echo $a[2];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 1, 3, true);
+        echo $a[1];
+        echo $a[2];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 5, 6, true);
+        echo $a[5];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -2, 6, true);
+        echo $a[8];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -5, -2, true);
+        echo $a[5];
+        echo $a[6];
+        echo $a[7];
+
+
+        ''')
+        assert self.space.str_w(output[0]) == '2'
+
+        assert self.space.str_w(output[1]) == '1'
+        assert self.space.str_w(output[2]) == '2'
+
+        assert self.space.str_w(output[3]) == '5'
+
+        assert self.space.str_w(output[4]) == '8'
+
+        assert self.space.str_w(output[5]) == '5'
+        assert self.space.str_w(output[6]) == '6'
+        assert self.space.str_w(output[7]) == '7'
+
+        assert self.space.str_w(output[8]) == '2'
+
+        assert self.space.str_w(output[9]) == '1'
+        assert self.space.str_w(output[10]) == '2'
+
+        assert self.space.str_w(output[11]) == '5'
+
+        assert self.space.str_w(output[12]) == '8'
+
+        assert self.space.str_w(output[13]) == '5'
+        assert self.space.str_w(output[14]) == '6'
+        assert self.space.str_w(output[15]) == '7'
+
+
     def test_array_combine_mix(self):
         output = self.run('''
         $a = array('a'=>1, 'b', 'c', 'd');

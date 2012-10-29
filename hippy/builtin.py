@@ -326,8 +326,47 @@ def array_change_key_case(space, w_arr, str_case):
     return space.new_array_from_pairs(pairs)
 
 
-# @wrap(['space', W_Root, bool])
-# def array_chunk(space, w_arr, keep_keys):
+@wrap(['space', 'args_w'])
+def array_slice(space, args_w):
+    start = space.newint(0)
+    end = space.newint(0)
+    keep_keys = space.newbool(False)
+    w_arr = []
+    if len(args_w) < 2:
+        raise InterpreterError("first argument must be array, second must be int")
+    else:
+        if args_w[0].tp == space.w_array and args_w[1].tp == space.w_int:
+            w_arr = args_w[0]
+            start = args_w[1]
+        else:
+            raise InterpreterError("first argument must be array, second must be int")
+    if len(args_w) == 2:
+        # w_arr, start
+        end = space.newint(space.arraylen(w_arr))
+    if len(args_w) == 3:
+        # w_arr, start, end
+        # w_arr, start, keep_keys
+        if args_w[2].tp == space.w_bool:
+            keep_keys = args_w[2]
+            end = space.newint(space.arraylen(w_arr))
+        elif args_w[2].tp == space.w_int:
+            end = args_w[2]
+        else:
+            raise InterpreterError("third arugment must be int or bool")
+
+    if len(args_w) == 4:
+        # w_arr, start, end, keep_keys
+        if args_w[2].tp == space.w_int and args_w[3].tp == space.w_bool:
+            end = args_w[2]
+            keep_keys = args_w[3]
+        else:
+            raise InterpreterError("third arugment must be int and fourth must be bool")
+    return space.slice(w_arr, start, end, keep_keys)
+
+
+# @wrap(['space', W_Root, int, bool])
+# def array_chunk(space, w_arr, chunk_size, keep_keys):
+#     return space.slice(w_arr, 0, 2)
 
 @wrap(['space', W_Root, W_Root])
 def array_combine(space, w_arr_a, w_arr_b):
@@ -347,6 +386,7 @@ def array_combine(space, w_arr_a, w_arr_b):
                 _, b_w_value = b_iter.next_item(space)
                 pairs.append((a_w_value, b_w_value))
     return space.new_array_from_pairs(pairs)
+
 
 @wrap(['space', str])
 def defined(space, name):

@@ -133,6 +133,34 @@ class ObjSpace(object):
     def arraylen(self, w_obj):
         return w_obj.deref().arraylen(self)
 
+    def slice(self, w_arr, start, end, keep_keys):
+        res_arr = []
+        start = self.int_w(start)
+        end = self.int_w(end)
+        idx = 0
+        if start < 0:
+            start = self.arraylen(w_arr) + start
+            if end > 0:
+                end = start + end
+        if end < 0:
+            end = start + (self.arraylen(w_arr) + end)
+        if self.arraylen(w_arr) == 0:
+            return self.new_array_from_list([])
+        if start > self.arraylen(w_arr):
+            return self.new_array_from_list([])
+        with self.iter(w_arr) as itr:
+            while not itr.done():
+                key, value = itr.next_item(self)
+                if start <= idx < end:
+                    if self.is_true(keep_keys):
+                        res_arr.append((key, value))
+                    else:
+                        res_arr.append((self.newint(idx), value))
+                idx += 1
+        if self.is_true(keep_keys):
+            return self.new_array_from_pairs(res_arr)
+        return self.new_array_from_list([v for _, v in res_arr])
+
     def append(self, w_arr, w_val):
         w_arr.deref().append(self, w_val.deref_for_store())
 

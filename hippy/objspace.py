@@ -20,10 +20,10 @@ class ExecutionContext(object):
     def __init__(self):
         self.interpreter = None
 
-class ObjSpaceWithIter:
-    def __init__(self, w_arr):
-        iter = w_arr.create_iter(w_arr)
-        self.iter = iter
+
+class ObjSpaceWithIter(object):
+    def __init__(self, space, w_arr):
+        self.iter = space.create_iter(w_arr)
 
     def __enter__(self):
         return self.iter
@@ -166,7 +166,7 @@ class ObjSpace(object):
         return new_map_from_pairs(self, lst_w)
 
     def iter(self, w_arr):
-        return ObjSpaceWithIter(w_arr)
+        return ObjSpaceWithIter(self, w_arr)
 
     def create_iter(self, w_arr):
         w_arr = w_arr.deref()

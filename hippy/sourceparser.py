@@ -633,48 +633,43 @@ class Transformer(object):
         args.append(self.visit_expr(arglist.children[0], is_func_arg=True))
         return args
 
-    def visit_array_pair(self, node, p_iter=0, arr_args=None, is_hash=False):
-        if arr_args == None:
-            arr_args = []
+    def visit_array_pair(self, node, arr_args, params):
         if node.symbol == 'array_pair':
             if len(node.children) == 2:
                 arr_args.append((
                         self.visit_expr(node.children[0]),
                         self.visit_expr(node.children[1].children[1])
                         ))
-                is_hash = True
+                params['is_hash'] = True
             if len(node.children) == 1:
                 arr_args.append((
-                        ConstantInt(p_iter),
+                        ConstantInt(params['p_iter']),
                         self.visit_expr(node.children[0])
                         ))
-                p_iter += 1
-        return (p_iter, is_hash)
+                params['p_iter'] += 1
 
     def visit_nonempty_array(self, node):
         array_pairs = []
-        p_iter = 0
-        is_hash = False
+        params = {'p_iter': 0,
+                  'is_hash': False}
         if len(node.children) == 1:
-            (p_iter, is_hash) = self.visit_array_pair(
-                node.children[0], p_iter,
-                array_pairs, is_hash)
+            self.visit_array_pair(
+                node.children[0],
+                array_pairs, params)
         else:
             first_pair = node.children[0]
-            (p_iter, is_hash) = self.visit_array_pair(
-                first_pair, p_iter,
-                array_pairs, is_hash)
+            self.visit_array_pair(
+                first_pair,
+                array_pairs, params)
             rest = node.children[1]
             while len(rest.children) == 3:
                 pair = rest.children[1]
-                (p_iter, is_hash) = self.visit_array_pair(
-                    pair, p_iter,
-                    array_pairs, is_hash)
+                self.visit_array_pair(pair, array_pairs,
+                                      params)
                 rest = rest.children[2]
-            (p_iter, is_hash) = self.visit_array_pair(
-                rest.children[1], p_iter,
-                array_pairs, is_hash)
-        if is_hash:
+            self.visit_array_pair(rest.children[1], array_pairs,
+                                  params)
+        if params['is_hash']:
             return Hash(array_pairs)
         return Array([val for _, val in array_pairs])
 

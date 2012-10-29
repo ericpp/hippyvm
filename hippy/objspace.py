@@ -20,10 +20,21 @@ class ExecutionContext(object):
     def __init__(self):
         self.interpreter = None
 
+
+class ObjSpaceWithIter(object):
+    def __init__(self, space, w_arr):
+        self.iter = space.create_iter(w_arr)
+
+    def __enter__(self):
+        return self.iter
+
+    def __exit__(self, exception_type, exception_val, trace):
+        self.iter.mark_invalid()
+
 class ObjSpace(object):
     """ This implements all the operations on the object. Since this is
     prebuilt, it should not contain any state
-    """    
+    """
     (w_int, w_float, w_str, w_array,
      w_cell, w_null, w_reference, w_bool) = range(8)
 
@@ -41,7 +52,7 @@ class ObjSpace(object):
         if tpleft == self.w_float or tpright == self.w_float:
             return self.w_float
         raise NotImplementedError
-    
+
     def int_w(self, w_obj):
         return w_obj.deref().int_w(self)
 
@@ -94,7 +105,7 @@ class ObjSpace(object):
 
     def uplusplus(self, w_v):
         return w_v.deref().uplusplus(self)
-    
+
     def uminusminus(self, w_v):
         return w_v.deref().uminusminus(self)
 
@@ -102,7 +113,7 @@ class ObjSpace(object):
         w_v = self.as_string(w_v)
         w_v.inplace_concat(self, w_value)
         return w_v
-    
+
     def getitem(self, w_obj, w_item):
         return w_obj.deref().getitem(self, w_item.deref())
 
@@ -153,6 +164,9 @@ class ObjSpace(object):
 
     def new_map_from_pairs(self, lst_w):
         return new_map_from_pairs(self, lst_w)
+
+    def iter(self, w_arr):
+        return ObjSpaceWithIter(self, w_arr)
 
     def create_iter(self, w_arr):
         w_arr = w_arr.deref()

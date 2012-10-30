@@ -308,6 +308,44 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[14]) == '6'
         assert self.space.str_w(output[15]) == '7'
 
+    def test_array_chunk(self):
+        output = self.run('''
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_chunk($a, 3);
+        echo $a[0][0];
+        echo $a[1][0];
+        echo $a[2][0];
+        echo count($a);
+        echo $a[3][0];
+        echo count($a[0]);
+        echo count($a[3]);
+
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_chunk($a, 3, true);
+        echo $a[0][0];
+        echo $a[1][3];
+        echo $a[2][6];
+        echo count($a);
+        echo $a[3][9];
+        echo count($a[0]);
+        echo count($a[3]);
+
+        ''')
+        assert self.space.str_w(output[0]) == "0"
+        assert self.space.str_w(output[1]) == "3"
+        assert self.space.str_w(output[2]) == "6"
+        assert self.space.str_w(output[3]) == "4"
+        assert self.space.str_w(output[4]) == "9"
+        assert self.space.str_w(output[5]) == "3"
+        assert self.space.str_w(output[6]) == "1"
+
+        assert self.space.str_w(output[7]) == "0"
+        assert self.space.str_w(output[8]) == "3"
+        assert self.space.str_w(output[9]) == "6"
+        assert self.space.str_w(output[10]) == "4"
+        assert self.space.str_w(output[11]) == "9"
+        assert self.space.str_w(output[12]) == "3"
+        assert self.space.str_w(output[13]) == "1"
 
     def test_array_combine_mix(self):
         output = self.run('''

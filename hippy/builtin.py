@@ -364,9 +364,27 @@ def array_slice(space, args_w):
     return space.slice(w_arr, start, end, keep_keys)
 
 
-# @wrap(['space', W_Root, int, bool])
-# def array_chunk(space, w_arr, chunk_size, keep_keys):
-#     return space.slice(w_arr, 0, 2)
+@wrap(['space', 'args_w'])
+def array_chunk(space, args_w):
+    res_arr = []
+    if len(args_w) < 2:
+        raise InterpreterError("function need at least two arguments array and int")
+    if args_w[0].tp != space.w_array and args_w[0].tp != space.w_int:
+        raise InterpreterError("function need at least two arguments array and int")
+    w_arr = args_w[0]
+    w_chunk_size = args_w[1]
+    chunk_size = w_chunk_size.intval
+    keep_keys = space.newbool(False)
+    last_idx = 0
+    if len(args_w) == 3:
+        keep_keys = args_w[2]
+    for i in range(chunk_size, space.arraylen(w_arr)+chunk_size, chunk_size):
+        res_arr.append(space.slice(w_arr,
+                                   space.newint(last_idx),
+                                   space.newint(last_idx + chunk_size),
+                                   keep_keys))
+        last_idx = i
+    return space.new_array_from_list(res_arr)
 
 @wrap(['space', W_Root, W_Root])
 def array_combine(space, w_arr_a, w_arr_b):

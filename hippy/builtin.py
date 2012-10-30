@@ -373,7 +373,7 @@ def array_chunk(space, args_w):
         raise InterpreterError("function need at least two arguments array and int")
     w_arr = args_w[0]
     w_chunk_size = args_w[1]
-    chunk_size = w_chunk_size.intval
+    chunk_size = space.int_w(w_chunk_size)
     keep_keys = space.newbool(False)
     last_idx = 0
     if len(args_w) == 3:

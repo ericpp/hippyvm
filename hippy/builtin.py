@@ -405,6 +405,24 @@ def array_combine(space, w_arr_a, w_arr_b):
                 pairs.append((a_w_value, b_w_value))
     return space.new_array_from_pairs(pairs)
 
+# @wrap(['space', W_Root])
+# def array_count_values(space, w_arr):
+#     pairs = []
+#     with space.iter(w_arr) as itr:
+#         while not itr.done():
+#             key, val = itr.next_item(space)
+#             pairs.append((space.newint(key), val))
+#     return space.new_array_from_pairs(pairs)
+
+@wrap(['space', W_Root])
+def array_flip(space, w_arr):
+    pairs = []
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            key, val = itr.next_item(space)
+            pairs.append((val, key))
+    return space.new_array_from_pairs(pairs)
+
 
 @wrap(['space', str])
 def defined(space, name):

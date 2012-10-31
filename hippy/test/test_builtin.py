@@ -347,6 +347,30 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[12]) == "3"
         assert self.space.str_w(output[13]) == "1"
 
+    # def test_array_count_values(self):
+    #     output = self.run('''
+    #     $a = array(1, "hello", 1, "world", "hello");
+    #     $a = array_count_values($a);
+    #     echo $a[1];
+    #     echo $a["hello"];
+    #     echo $a["world"];
+    #     ''')
+    #     assert self.space.str_w(output[0]) == '2'
+    #     assert self.space.str_w(output[1]) == '2'
+    #     assert self.space.str_w(output[2]) == '1'
+
+    def test_array_flip(self):
+        output = self.run('''
+        $a = array('a'=>0, 'b'=>2, 'c');
+        $a = array_flip($a);
+        echo $a[2];
+        echo $a['c'];
+        echo $a[0];
+        ''')
+        assert self.space.str_w(output[0]) == "b"
+        assert self.space.str_w(output[1]) == "0"
+        assert self.space.str_w(output[2]) == "a"
+
     def test_array_combine_mix(self):
         output = self.run('''
         $a = array('a'=>1, 'b', 'c', 'd');

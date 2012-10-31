@@ -371,6 +371,14 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[1]) == "0"
         assert self.space.str_w(output[2]) == "a"
 
+    def test_array_sum(self):
+        output = self.run('''
+        $a = array('a'=>0, 'b'=>2, 'c', 1, 2, 3, '5');
+        $a = array_sum($a);
+        echo $a;
+        ''')
+        assert self.space.str_w(output[0]) == "13"
+
     def test_array_combine_mix(self):
         output = self.run('''
         $a = array('a'=>1, 'b', 'c', 'd');

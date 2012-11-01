@@ -383,6 +383,18 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert self.space.str_w(output[0]) == "13"
 
+    def test_array_product(self):
+        output = self.run('''
+        echo array_product(array('a'=>1, 'b'=>2, 'c', 1, 2, 3, '5'));
+        echo array_product(array('a'=>1, 'b'=>2, 1, 1, 2, 3, '5'));
+        echo array_product(array(1=>1, 'b'=>2, 1, 1, 2, 3, 5));
+        echo array_product(array());
+        ''')
+        assert self.space.str_w(output[0]) == "0"
+        assert self.space.str_w(output[1]) == "60"
+        assert self.space.str_w(output[2]) == "60"
+        assert self.space.str_w(output[3]) == "1"
+
     # def test_array_reverse(self):
     #     output = self.run('''
     #     $a = array("php", 4.0, array ("green", "red"));

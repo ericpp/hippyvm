@@ -427,6 +427,15 @@ def array_sum(space, w_arr):
             res += space.int_w(space.as_number(val))
     return space.newint(res)
 
+@wrap(['space', W_Root])
+def array_product(space, w_arr):
+    res = 1
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            _, val = itr.next_item(space)
+            res *= space.int_w(space.as_number(val))
+    return space.newint(res)
+
 
 @wrap(['space', str])
 def defined(space, name):

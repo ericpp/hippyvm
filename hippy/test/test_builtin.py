@@ -366,10 +366,14 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a[2];
         echo $a['c'];
         echo $a[0];
+        $a =  array("a" => 1, "b" => 1, "c" => 2);
+        $a = array_flip($a);
+        echo $a[1];
         ''')
         assert self.space.str_w(output[0]) == "b"
         assert self.space.str_w(output[1]) == "0"
         assert self.space.str_w(output[2]) == "a"
+        assert self.space.str_w(output[3]) == "b"
 
     def test_array_sum(self):
         output = self.run('''
@@ -378,6 +382,16 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a;
         ''')
         assert self.space.str_w(output[0]) == "13"
+
+    # def test_array_reverse(self):
+    #     output = self.run('''
+    #     $a = array("php", 4.0, array ("green", "red"));
+    #     $a = array_reverse($a)
+    #     echo $a[2];
+    #     echo $a[0][0]
+    #     ''')
+    #     assert self.space.str_w(output[0]) == "php"
+    #     assert self.space.str_w(output[1]) == "green"
 
     def test_array_combine_mix(self):
         output = self.run('''

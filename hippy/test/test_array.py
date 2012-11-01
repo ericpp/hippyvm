@@ -393,6 +393,18 @@ class TestArray(BaseTestInterpreter):
         ''')
         assert self.space.str_w(output[0]) == "xyz"
 
+    def test_hashes_creation(self):
+        output = self.run('''
+        $a = array(123 => "xyz", "marry", 199=> "abc", "had");
+        echo $a["123"];
+        echo $a["124"];
+        echo $a["200"];
+
+        ''')
+        assert self.space.str_w(output[0]) == "xyz"
+        assert self.space.str_w(output[1]) == "marry"
+        assert self.space.str_w(output[2]) == "had"
+
     def test_iterator_cleans(self):
         output = self.run('''
         $a = array(1, 2, 3);

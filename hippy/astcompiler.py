@@ -6,10 +6,11 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Reference, ReferenceArgument, Break, InplaceSetItem, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
      UninitializedVariable, InitializedVariable, DefaultArgument,\
-     GetItemReference
+     GetItemReference, ConstantAppend
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StrInterpolation
+from hippy.objects.arrayobject import W_FakeIndex
 from hippy.objects.reference import W_Cell
 from hippy import consts
 from hippy.error import InterpreterError
@@ -249,7 +250,7 @@ class __extend__(Echo):
         for expr in self.exprlist:
             expr.compile(ctx)
         ctx.emit(consts.ECHO, len(self.exprlist))
-    
+
 class __extend__(Assignment):
     def compile(self, ctx):
         self.var.compile(ctx)
@@ -262,6 +263,11 @@ class __extend__(ConstantInt):
 
     def wrap(self, space):
         return space.wrap(self.intval)
+
+class __extend__(ConstantAppend):
+
+    def wrap(self, space):
+        return W_FakeIndex()
 
 class __extend__(ConstantFloat):
     def compile(self, ctx):
@@ -334,7 +340,7 @@ class __extend__(If):
                 ctx.emit(consts.JUMP_IF_FALSE, 0)
                 pos = ctx.get_pos()
                 elem.body.compile(ctx)
-        
+
         if self.elseclause is not None:
             ctx.emit(consts.JUMP_FORWARD, 0)
             elsepos = ctx.get_pos()

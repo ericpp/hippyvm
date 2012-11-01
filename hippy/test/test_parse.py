@@ -5,7 +5,7 @@ from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
      GetItem, SetItem, Array, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
-     UninitializedVariable
+     UninitializedVariable, ConstantAppend
 
 class TestParser(object):
     def test_assign(self):
@@ -304,11 +304,26 @@ class TestParser(object):
 
     def test_array_mix_creation(self):
         r = parse("array(1, 'a'=>2, 3, 'b'=>'c');")
-        assert r == Block([Stmt(Hash([(ConstantInt(0), ConstantInt(1)),
+        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1)),
                                       (ConstantStr("a"), ConstantInt(2)),
-                                      (ConstantInt(1), ConstantInt(3)),
+                                      (ConstantAppend(), ConstantInt(3)),
                                       (ConstantStr('b'), ConstantStr('c'))
                                       ]))])
+
+        r = parse("array(14 => 'xcx', 'a'=>2, 3);")
+        assert r == Block([Stmt(Hash([(ConstantInt(14), ConstantStr("xcx")),
+                                      (ConstantStr("a"), ConstantInt(2)),
+                                      (ConstantAppend(), ConstantInt(3))
+                                      ]))])
+
+        r = parse("array(1, 2, 3, 4 => 5);")
+        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1)),
+                                      (ConstantAppend(), ConstantInt(2)),
+                                      (ConstantAppend(), ConstantInt(3)),
+                                      (ConstantInt(4), ConstantInt(5))
+                                      ]))])
+
+
 
     def test_iterator(self):
         r = parse("foreach ($x as $y) {}")

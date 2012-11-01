@@ -10,7 +10,7 @@ from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject
 from hippy.objects.arrayobject import new_array_from_list, W_ArrayObject,\
-     new_array_from_pairs, new_map_from_pairs
+     new_array_from_pairs, new_map_from_pairs, W_FakeIndex
 
 @specialize.memo()
 def getspace():
@@ -36,7 +36,7 @@ class ObjSpace(object):
     prebuilt, it should not contain any state
     """
     (w_int, w_float, w_str, w_array,
-     w_cell, w_null, w_reference, w_bool) = range(8)
+     w_cell, w_null, w_reference, w_bool, w_fakeindex) = range(9)
 
     def __init__(self):
         self.w_True = W_BoolObject(True)
@@ -188,6 +188,133 @@ class ObjSpace(object):
         return new_array_from_list(self, lst_w)
 
     def new_array_from_pairs(self, lst_w):
+        return W_FloatObject(v)
+
+    def newbool(self, v):
+        if v:
+            return self.w_True
+        return self.w_False
+
+    @specialize.argtype(1)
+    def newstr(self, v):
+        if isinstance(v, str):
+            return W_StringObject.newstr(list(v))
+        return W_StringObject.newstr(v)
+
+    def newstrconst(self, v):
+        return W_StringObject(v)
+
+    def conststr_w(self, w_v):
+        return self.as_string(w_v).conststr_w(self)
+
+    def str_w(self, w_v):
+        return self.as_string(w_v).str_w(self)
+
+    def as_string(self, w_v):
+        return w_v.deref().as_string(self)
+
+    def as_number(self, w_v):
+        return w_v.deref().as_number(self)
+
+    def uplus(self, w_v):
+        return w_v.deref().uplus(self)
+
+    def uminus(self, w_v):
+        return w_v.deref().uminus(self)
+
+    def uplusplus(self, w_v):
+        return w_v.deref().uplusplus(self)
+
+    def uminusminus(self, w_v):
+        return w_v.deref().uminusminus(self)
+
+    def inplace_concat(self, w_v, w_value):
+        w_v = self.as_string(w_v)
+        w_v.inplace_concat(self, w_value)
+        return w_v
+
+    def getitem(self, w_obj, w_item):
+        return w_obj.deref().getitem(self, w_item.deref())
+
+    def itemreference(self, w_obj, w_item):
+        return w_obj.deref().itemreference(self, w_item.deref())
+
+    def setitem(self, w_obj, w_item, w_value):
+        return w_obj.deref().setitem(self, w_item.deref(),
+                                     w_value.deref_for_store())
+
+    def concat(self, w_left, w_right):
+        return self.as_string(w_left).strconcat(self, self.as_string(w_right))
+
+    def strlen(self, w_obj):
+        return w_obj.deref().strlen()
+
+    def arraylen(self, w_obj):
+        return w_obj.deref().arraylen(self)
+
+    def arrayrev(self, w_arr):
+        pairs = []
+        with self.iter(w_arr) as itr:
+            while not itr.done():
+                key, val = itr.next_item(self)
+                pairs.append(key, val)
+        return self.new_array_from_pairs(pairs)
+
+    def slice(self, w_arr, start, end, keep_keys):
+        res_arr = []
+        start = self.int_w(start)
+        end = self.int_w(end)
+        idx = 0
+        if start < 0:
+            start = self.arraylen(w_arr) + start
+            if end > 0:
+                end = start + end
+        if end < 0:
+            end = start + (self.arraylen(w_arr) + end)
+        if self.arraylen(w_arr) == 0:
+            return self.new_array_from_list([])
+        if start > self.arraylen(w_arr):
+            return self.new_array_from_list([])
+        with self.iter(w_arr) as itr:
+            while not itr.done():
+                key, value = itr.next_item(self)
+                if start <= idx < end:
+                    if self.is_true(keep_keys):
+                        res_arr.append((key, value))
+                    else:
+                        res_arr.append((self.newint(idx), value))
+                idx += 1
+        if self.is_true(keep_keys):
+            return self.new_array_from_pairs(res_arr)
+        return self.new_array_from_list([v for _, v in res_arr])
+
+    def append(self, w_arr, w_val):
+        w_arr.deref().append(self, w_val.deref_for_store())
+
+    def getchar(self, w_obj):
+        # get first character
+        return w_obj.deref().as_string(self).getchar(self)
+
+    @specialize.argtype(1)
+    def wrap(self, v):
+        if isinstance(v, bool):
+            return self.newbool(v)
+        elif isinstance(v, int):
+            return self.newint(v)
+        elif isinstance(v, float):
+            return self.newfloat(v)
+        elif isinstance(v, W_Root):
+            return v
+        else:
+            raise NotImplementedError
+
+    def _freeze_(self):
+        return True
+
+    def new_array_from_list(self, lst_w):
+        return new_array_from_list(self, lst_w)
+
+    def new_array_from_pairs(self, lst_w):
         return new_array_from_pairs(self, lst_w)
 
     def new_map_from_pairs(self, lst_w):
@@ -222,6 +349,7 @@ class ObjSpace(object):
         assert isinstance(w_obj, W_ArrayObject)
         return w_obj
 
+
 def _new_binop(name):
     def func(self, w_left, w_right):
         w_left = w_left.deref()
@@ -253,3 +381,4 @@ W_ArrayObject.tp = ObjSpace.w_array
 W_Cell.tp = ObjSpace.w_cell
 W_NullObject.tp = ObjSpace.w_null
 W_Reference.tp = ObjSpace.w_reference
+W_FakeIndex.tp = ObjSpace.w_fakeindex

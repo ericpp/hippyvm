@@ -4,6 +4,7 @@ from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
      BINOP_LIST, RETURN, INPLACE_LIST
 from hippy.builtin import setup_builtin_functions
+from hippy.array_funcs import setup_array_functions
 from hippy.error import InterpreterError
 from hippy.objects.reference import W_Variable, W_Cell, W_Reference
 from hippy.objects.base import W_Root
@@ -155,12 +156,13 @@ class Interpreter(object):
     def setup_globals(self, space, dct):
         self.globals = dct
         self.globals_wrapper = new_globals_wrapper(space, dct)
-    
+
     def __init__(self, space):
         self.functions = {}
         self.constants = {}
         self.setup_constants(space)
         setup_builtin_functions(self, space)
+        setup_array_functions(self, space)
         space.ec.interpreter = self # one interpreter at a time
 
     @jit.elidable
@@ -241,7 +243,7 @@ class Interpreter(object):
     def echo(self, space, v):
         # XXX extra copy of the string if mutable
         os.write(1, space.conststr_w(space.as_string(v)))
-    
+
     def ILLEGAL(self, bytecode, frame, space, arg, arg2, pc):
         raise IllegalInstruction()
 
@@ -351,7 +353,7 @@ class Interpreter(object):
         frame.push(w_var.deref().copy(space))
         frame.store_var(space, w_var, space.uplusplus(w_var))
         return pc
-    
+
     def SUFFIX_MINUSMINUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
         frame.push(w_var.deref().copy(space))
@@ -364,7 +366,7 @@ class Interpreter(object):
                         space.uplusplus(w_var.deref().copy(space)))
         frame.push(w_var.deref())
         return pc
-    
+
     def PREFIX_MINUSMINUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
         frame.store_var(space, w_var,

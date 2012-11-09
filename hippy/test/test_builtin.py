@@ -430,6 +430,19 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[5]) == "1"
         assert self.space.str_w(output[6]) == "0"
 
+    def test_array_values(self):
+        output = self.run('''
+        $a = array("php", 4.0, "key"=>"test");
+        $a = array_values($a);
+        echo $a[0];
+        echo $a[1];
+        echo $a[2];
+
+        ''')
+        assert self.space.str_w(output[0]) == "php"
+        assert self.space.str_w(output[1]) == "4.0"
+        assert self.space.str_w(output[2]) == "test"
+
     def test_array_combine_mix(self):
         output = self.run('''
         $a = array('a'=>1, 'b', 'c', 'd');

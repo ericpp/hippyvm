@@ -236,6 +236,18 @@ def array_keys(space, args_w):
     return space.new_array_from_pairs(pairs)
 
 
+@wrap(['space', W_Root])
+def array_values(space, w_arr):
+    pairs = []
+    idx = 0
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            _, val = itr.next_item(space)
+            pairs.append((space.newint(idx), val))
+            idx += 1
+    return space.new_array_from_pairs(pairs)
+
+
 # @wrap(['space', 'args_w'])
 # def array_reverse(space, args_w):
 #     keys = []

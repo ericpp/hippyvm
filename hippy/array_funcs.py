@@ -100,9 +100,9 @@ def array_change_key_case(space, w_arr, str_case):
 
 @wrap(['space', 'args_w'])
 def array_slice(space, args_w):
-    start = space.newint(0)
-    end = space.newint(0)
-    keep_keys = space.newbool(False)
+    w_start = space.newint(0)
+    w_end = space.newint(0)
+    w_keep_keys = space.newbool(False)
     w_arr = []
     if len(args_w) < 2:
         raise InterpreterError("first argument must be array,\
@@ -110,33 +110,33 @@ def array_slice(space, args_w):
     else:
         if args_w[0].tp == space.w_array and args_w[1].tp == space.w_int:
             w_arr = args_w[0]
-            start = args_w[1]
+            w_start = args_w[1]
         else:
             raise InterpreterError("first argument must be array,\
  second must be int")
     if len(args_w) == 2:
         # w_arr, start
-        end = space.newint(space.arraylen(w_arr))
+        w_end = space.newint(space.arraylen(w_arr))
     if len(args_w) == 3:
         # w_arr, start, end
         # w_arr, start, keep_keys
         if args_w[2].tp == space.w_bool:
-            keep_keys = args_w[2]
-            end = space.newint(space.arraylen(w_arr))
+            w_keep_keys = args_w[2]
+            w_end = space.newint(space.arraylen(w_arr))
         elif args_w[2].tp == space.w_int:
-            end = args_w[2]
+            w_end = args_w[2]
         else:
             raise InterpreterError("third arugment must be int or bool")
 
     if len(args_w) == 4:
         # w_arr, start, end, keep_keys
         if args_w[2].tp == space.w_int and args_w[3].tp == space.w_bool:
-            end = args_w[2]
-            keep_keys = args_w[3]
+            w_end = args_w[2]
+            w_keep_keys = args_w[3]
         else:
             raise InterpreterError("third arugment must\
  be int and fourth must be bool")
-    return space.slice(w_arr, start, end, keep_keys)
+    return space.slice(w_arr, w_start, w_end, w_keep_keys)
 
 
 @wrap(['space', 'args_w'])
@@ -151,7 +151,7 @@ arguments array and int")
     w_arr = args_w[0]
     w_chunk_size = args_w[1]
     chunk_size = space.int_w(w_chunk_size)
-    keep_keys = space.newbool(False)
+    w_keep_keys = space.newbool(False)
     last_idx = 0
     if len(args_w) == 3:
         keep_keys = args_w[2]
@@ -159,7 +159,7 @@ arguments array and int")
         res_arr.append(space.slice(w_arr,
                                    space.newint(last_idx),
                                    space.newint(last_idx + chunk_size),
-                                   keep_keys))
+                                   w_keep_keys))
         last_idx = i
     return space.new_array_from_list(res_arr)
 
@@ -189,18 +189,18 @@ def array_flip(space, w_arr):
     pairs = []
     with space.iter(w_arr) as itr:
         while not itr.done():
-            key, val = itr.next_item(space)
-            if key.tp not in (space.w_int, space.w_str) or\
-                    val.tp not in(space.w_int, space.w_str):
-                pairs.append((key, val))
-            pairs.append((val, key))
+            w_key, w_val = itr.next_item(space)
+            if w_key.tp not in (space.w_int, space.w_str) or\
+                    w_val.tp not in(space.w_int, space.w_str):
+                pairs.append((w_key, w_val))
+            pairs.append((w_val, w_key))
     return space.new_array_from_pairs(pairs)
 
 
 @wrap(['space', 'args_w'])
 def array_keys(space, args_w):
-    search = None
-    strict = space.newbool(False)
+    w_search = None
+    w_strict = space.newbool(False)
     idx = 0
     pairs = []
     if len(args_w) < 1:
@@ -211,27 +211,27 @@ def array_keys(space, args_w):
         else:
             raise InterpreterError("array_keys first arg must be array")
     if len(args_w) == 2:
-        search = args_w[1]
+        w_search = args_w[1]
     if len(args_w) == 3:
-        search = args_w[1]
+        w_search = args_w[1]
         if args_w[2].tp == space.w_bool:
-            strict = args_w[2]
+            w_strict = args_w[2]
         else:
             raise InterpreterError("third arugment must be bool")
     with space.iter(w_arr) as itr:
         while not itr.done():
-            key, val = itr.next_item(space)
-            if search:
-                if space.str_w(val) == space.str_w(search):
-                    if space.is_true(strict):
-                        if val.tp == search.tp:
-                            pairs.append((space.newint(idx), key))
+            w_key, w_val = itr.next_item(space)
+            if w_search:
+                if space.str_w(w_val) == space.str_w(w_search):
+                    if space.is_true(w_strict):
+                        if w_val.tp == w_search.tp:
+                            pairs.append((space.newint(idx), w_key))
                             idx += 1
                     else:
-                        pairs.append((space.newint(idx), key))
+                        pairs.append((space.newint(idx), w_key))
                         idx += 1
             else:
-                pairs.append((space.newint(idx), key))
+                pairs.append((space.newint(idx), w_key))
                 idx += 1
     return space.new_array_from_pairs(pairs)
 
@@ -242,8 +242,8 @@ def array_values(space, w_arr):
     idx = 0
     with space.iter(w_arr) as itr:
         while not itr.done():
-            _, val = itr.next_item(space)
-            pairs.append((space.newint(idx), val))
+            _, w_val = itr.next_item(space)
+            pairs.append((space.newint(idx), w_val))
             idx += 1
     return space.new_array_from_pairs(pairs)
 
@@ -281,8 +281,8 @@ def array_sum(space, w_arr):
     res = 0
     with space.iter(w_arr) as itr:
         while not itr.done():
-            _, val = itr.next_item(space)
-            res += space.int_w(space.as_number(val))
+            _, w_val = itr.next_item(space)
+            res += space.int_w(space.as_number(w_val))
     return space.newint(res)
 
 
@@ -291,8 +291,8 @@ def array_product(space, w_arr):
     res = 1
     with space.iter(w_arr) as itr:
         while not itr.done():
-            _, val = itr.next_item(space)
-            res *= space.int_w(space.as_number(val))
+            _, w_val = itr.next_item(space)
+            res *= space.int_w(space.as_number(w_val))
     return space.newint(res)
 
 

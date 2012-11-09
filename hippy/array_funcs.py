@@ -154,7 +154,7 @@ arguments array and int")
     w_keep_keys = space.newbool(False)
     last_idx = 0
     if len(args_w) == 3:
-        keep_keys = args_w[2]
+        w_keep_keys = args_w[2]
     for i in range(chunk_size, space.arraylen(w_arr) + chunk_size, chunk_size):
         res_arr.append(space.slice(w_arr,
                                    space.newint(last_idx),

@@ -1,16 +1,16 @@
 from pypy.rlib import jit
 from hippy.objects.base import W_Root
 from hippy.error import InterpreterError
-from builtin import BuiltinFunction
 from builtin import is_int
 from builtin import wrap
 BUILTIN_FUNCTIONS = []
 
 
-fill_keys_driver = jit.JitDriver(greens = [],
-                                 reds = ['w_value', 'w_res', 'w_arrayiter'],
-                                 name='fill_keys',
-                                 should_unroll_one_iteration=lambda *args: True)
+fill_keys_driver = jit.JitDriver(
+    greens=[],
+    reds=['w_value', 'w_res', 'w_arrayiter'],
+    name='fill_keys',
+    should_unroll_one_iteration=lambda *args: True)
 
 
 @wrap(['space', W_Root, W_Root])
@@ -53,6 +53,7 @@ def array_merge(space, args_w):
                 r.append((w_k, w_v))
         return space.new_array_from_pairs(r)
 
+
 @wrap(['space', 'args_w'])
 def array_diff_key(space, args_w):
     if len(args_w) < 2:
@@ -73,6 +74,7 @@ def array_diff_key(space, args_w):
             else:
                 keys.append(w_key)
     return space.new_array_from_list(keys)
+
 
 @wrap(['space', W_Root, int])
 def array_change_key_case(space, w_arr, str_case):
@@ -103,13 +105,15 @@ def array_slice(space, args_w):
     keep_keys = space.newbool(False)
     w_arr = []
     if len(args_w) < 2:
-        raise InterpreterError("first argument must be array, second must be int")
+        raise InterpreterError("first argument must be array,\
+ second must be int")
     else:
         if args_w[0].tp == space.w_array and args_w[1].tp == space.w_int:
             w_arr = args_w[0]
             start = args_w[1]
         else:
-            raise InterpreterError("first argument must be array, second must be int")
+            raise InterpreterError("first argument must be array,\
+ second must be int")
     if len(args_w) == 2:
         # w_arr, start
         end = space.newint(space.arraylen(w_arr))
@@ -130,7 +134,8 @@ def array_slice(space, args_w):
             end = args_w[2]
             keep_keys = args_w[3]
         else:
-            raise InterpreterError("third arugment must be int and fourth must be bool")
+            raise InterpreterError("third arugment must\
+ be int and fourth must be bool")
     return space.slice(w_arr, start, end, keep_keys)
 
 
@@ -138,9 +143,11 @@ def array_slice(space, args_w):
 def array_chunk(space, args_w):
     res_arr = []
     if len(args_w) < 2:
-        raise InterpreterError("function need at least two arguments array and int")
+        raise InterpreterError("function need at least two \
+arguments array and int")
     if args_w[0].tp != space.w_array and args_w[0].tp != space.w_int:
-        raise InterpreterError("function need at least two arguments array and int")
+        raise InterpreterError("function need at least two \
+ arguments array and int")
     w_arr = args_w[0]
     w_chunk_size = args_w[1]
     chunk_size = space.int_w(w_chunk_size)
@@ -148,13 +155,14 @@ def array_chunk(space, args_w):
     last_idx = 0
     if len(args_w) == 3:
         keep_keys = args_w[2]
-    for i in range(chunk_size, space.arraylen(w_arr)+chunk_size, chunk_size):
+    for i in range(chunk_size, space.arraylen(w_arr) + chunk_size, chunk_size):
         res_arr.append(space.slice(w_arr,
                                    space.newint(last_idx),
                                    space.newint(last_idx + chunk_size),
                                    keep_keys))
         last_idx = i
     return space.new_array_from_list(res_arr)
+
 
 @wrap(['space', W_Root, W_Root])
 def array_combine(space, w_arr_a, w_arr_b):
@@ -189,10 +197,72 @@ def array_flip(space, w_arr):
     return space.new_array_from_pairs(pairs)
 
 
-@wrap(['space', W_Root])
-def array_reverse(space, w_arr):
-    w_arr_copy = w_arr.copy(space)
-    return w_arr_copy
+@wrap(['space', 'args_w'])
+def array_keys(space, args_w):
+    search = None
+    strict = space.newbool(False)
+    idx = 0
+    pairs = []
+    if len(args_w) < 1:
+        raise InterpreterError("array_keys take at least one argument")
+    else:
+        if args_w[0].tp == space.w_array:
+            w_arr = args_w[0]
+        else:
+            raise InterpreterError("array_keys first arg must be array")
+    if len(args_w) == 2:
+        search = args_w[1]
+    if len(args_w) == 3:
+        search = args_w[1]
+        if args_w[2].tp == space.w_bool:
+            strict = args_w[2]
+        else:
+            raise InterpreterError("third arugment must be bool")
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            key, val = itr.next_item(space)
+            if search:
+                if space.str_w(val) == space.str_w(search):
+                    if space.is_true(strict):
+                        if val.tp == search.tp:
+                            pairs.append((space.newint(idx), key))
+                            idx += 1
+                    else:
+                        pairs.append((space.newint(idx), key))
+                        idx += 1
+            else:
+                pairs.append((space.newint(idx), key))
+                idx += 1
+    return space.new_array_from_pairs(pairs)
+
+
+# @wrap(['space', 'args_w'])
+# def array_reverse(space, args_w):
+#     keys = []
+#     vals = []
+#     last_idx = 0
+#     keep_keys = space.newbool(False)
+#     if len(args_w) < 1:
+#         raise InterpreterError("function need at least one argument array")
+#     if args_w[0].tp != space.w_array:
+#         raise InterpreterError("function need at least one argument array")
+#     w_arr = args_w[0]
+#     if len(args_w) == 2:
+#         if args_w[1].tp != space.w_bool:
+#             raise InterpreterError("preserve_keys has to be bool")
+#         keep_keys = args_w[1]
+
+#     with space.iter(w_arr) as itr:
+#         while not itr.done():
+#             key, val = itr.next_item(space)
+#             if key.tp == space.w_int and (not space.is_true(keep_keys)):
+#                 keys.append(last_idx)
+#                 last_idx += 1
+#             else:
+#                 keys.append(key)
+#             vals.append(val)
+#     pairs = zip(list(reversed(keys)), vals)
+#     return space.new_array_from_pairs(pairs)
 
 @wrap(['space', W_Root])
 def array_sum(space, w_arr):
@@ -203,6 +273,7 @@ def array_sum(space, w_arr):
             res += space.int_w(space.as_number(val))
     return space.newint(res)
 
+
 @wrap(['space', W_Root])
 def array_product(space, w_arr):
     res = 1
@@ -211,6 +282,7 @@ def array_product(space, w_arr):
             _, val = itr.next_item(space)
             res *= space.int_w(space.as_number(val))
     return space.newint(res)
+
 
 def setup_array_functions(interpreter, space):
     for name, func in BUILTIN_FUNCTIONS:

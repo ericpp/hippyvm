@@ -398,12 +398,37 @@ class TestBuiltin(BaseTestInterpreter):
     # def test_array_reverse(self):
     #     output = self.run('''
     #     $a = array("php", 4.0, array ("green", "red"));
-    #     $a = array_reverse($a)
+    #     $a = array_reverse($a);
     #     echo $a[2];
-    #     echo $a[0][0]
     #     ''')
     #     assert self.space.str_w(output[0]) == "php"
-    #     assert self.space.str_w(output[1]) == "green"
+
+    def test_array_keys(self):
+        output = self.run('''
+        $a = array("php", 4.0, "test"=>"test");
+        $a = array_keys($a);
+        echo $a[0];
+        echo $a[1];
+        echo $a[2];
+        $a = array("php", 4.0, "test"=>"test", "php");
+        $a = array_keys($a, "php");
+        echo $a[0];
+        echo $a[1];
+        $a = array(1, 2, 3, 4, 5, 6, 7);
+        $a = array_keys($a, '2');
+        echo $a[0];
+        $a = array(1, 2, 3, 4, 5, 6, 7);
+        $a = array_keys($a, '2', true);
+        echo sizeof($a);
+
+        ''')
+        assert self.space.str_w(output[0]) == "0"
+        assert self.space.str_w(output[1]) == "1"
+        assert self.space.str_w(output[2]) == "test"
+        assert self.space.str_w(output[3]) == "0"
+        assert self.space.str_w(output[4]) == "2"
+        assert self.space.str_w(output[5]) == "1"
+        assert self.space.str_w(output[6]) == "0"
 
     def test_array_combine_mix(self):
         output = self.run('''

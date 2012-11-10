@@ -1,2 +1,0 @@
-just the test file
-post-commit-hook test

@@ -288,6 +288,8 @@ def array_sum(space, w_arr):
 
 @wrap(['space', W_Root])
 def array_product(space, w_arr):
+    if space.arraylen(w_arr) == 0:
+        return space.newint(0)
     res = 1
     with space.iter(w_arr) as itr:
         while not itr.done():

@@ -393,7 +393,7 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[0]) == "0"
         assert self.space.str_w(output[1]) == "60"
         assert self.space.str_w(output[2]) == "60"
-        assert self.space.str_w(output[3]) == "1"
+        assert self.space.str_w(output[3]) == "0"
 
     # def test_array_reverse(self):
     #     output = self.run('''

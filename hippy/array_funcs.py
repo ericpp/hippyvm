@@ -248,6 +248,20 @@ def array_values(space, w_arr):
     return space.new_array_from_pairs(pairs)
 
 
+@wrap(['space', W_Root])
+def array_count_values(space, w_arr):
+    res = space.new_array_from_pairs([])
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            _, w_val = itr.next_item(space)
+            try:
+                itm = space.getitem(res, w_val)
+                space.setitem(res, w_val, itm.uplusplus(space))
+            except InterpreterError:
+                space.setitem(res, w_val, space.newint(1))
+    return res
+
+
 # @wrap(['space', 'args_w'])
 # def array_reverse(space, args_w):
 #     keys = []

@@ -555,26 +555,33 @@ def new_array_from_pairs(space, lst_w):
         space.setitem(w_obj, w_k, w_v)
     return w_obj
 
+
 def new_globals_wrapper(space, dct):
     strat = get_strategy(HashStrategy)
     storage = strat.erase(dct)
     return W_ArrayObject(strat, storage)
 
+
 def new_map_from_pairs(space, lst_w):
-    lst = [None] * len(lst_w)
+    lst = []
     dct = {}
     next_idx = 0
     for i, (k, v) in enumerate(lst_w):
         if k.tp == space.w_fakeindex:
-            lst[i] = v
-            dct[str(next_idx)] = i
+            lst.append(v)
+            dct[str(next_idx)] = len(lst) - 1
             next_idx += 1
         else:
             if k.tp == space.w_int:
                 if space.int_w(k) > next_idx:
                     next_idx = space.int_w(k) + 1
-            lst[i] = v
-            dct[space.str_w(space.as_string(k))] = i
+            if not space.str_w(space.as_string(k)) in dct:
+                lst.append(v)
+                dct[space.str_w(space.as_string(k))] = len(lst) - 1
+            else:
+                idx = dct[space.str_w(space.as_string(k))]
+                lst[idx] = v
+                dct[space.str_w(space.as_string(k))] = idx
     strat = get_strategy(MapStrategy)
     w_arr = W_ArrayObject(strat, strat.erase((dct, lst)), next_idx)
     return w_arr

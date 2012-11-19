@@ -181,12 +181,14 @@ class TestArray(BaseTestInterpreter):
 
     def test_array_constructor_to_hash(self):
         output = self.run('''
-        $a = array(1, "a" => 5, 3);
+        $a = array(1, "a" => 5, 3, "a" => 99);
         echo $a;
+        echo $a["a"];
         ''')
         space = self.space
         assert space.int_w(space.getitem(output[0], space.wrap(0))) == 1
         assert space.str_w(space.getitem(output[0], space.wrap(1))) == "3"
+        assert self.space.int_w(output[1]) == 99
 
     def test_array_empty_strat_append(self):
         output = self.run('''

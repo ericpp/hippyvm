@@ -26,6 +26,16 @@ def array_fill_keys(space, w_arr, w_value):
     return w_res
 
 
+@wrap(['space', W_Root, W_Root, W_Root])
+def array_fill(space, w_sidx, w_num, w_value):
+    pairs = []
+    sidx = space.int_w(w_sidx)
+    num = space.int_w(w_num)
+    for i in range(sidx, num):
+        pairs.append((space. newint(i), w_value))
+    return space.new_array_from_pairs(pairs)
+
+
 @wrap(['space', 'args_w'])
 def array_merge(space, args_w):
     lst = []  # list of values or (None, val) in case of ints
@@ -74,6 +84,33 @@ def array_diff_key(space, args_w):
             else:
                 keys.append(w_key)
     return space.new_array_from_list(keys)
+
+
+@wrap(['space', 'args_w'])
+def array_diff_assoc(space, args_w):
+    if len(args_w) < 2:
+        raise InterpreterError("not enough arguments to array_diff_key")
+    for w_arg in args_w:
+        if w_arg.tp != space.w_array:
+            # issue notice, ignored anyway
+            return space.w_Null
+    w_arr = space.as_array(args_w[0])
+    args_w = [space.as_array(w_arg) for w_arg in args_w[1:]]
+    pairs = []
+    with space.iter(w_arr) as w_iter:
+        while not w_iter.done():
+            w_key, w_val = w_iter.next_item(space)
+            for w_arg in args_w:
+                if w_arg.isset_index(space, w_key):
+                    try:
+                        other_w_val = space.getitem(w_arg, w_key)
+                        if space.str_eq(other_w_val, w_val):
+                            break
+                    except InterpreterError:
+                        pairs.append((w_key, w_val))
+            else:
+                pairs.append((w_key, w_val))
+    return space.new_array_from_pairs(pairs)
 
 
 @wrap(['space', W_Root, int])
@@ -261,6 +298,46 @@ def array_count_values(space, w_arr):
                 space.setitem(res, w_val, space.newint(1))
     return res
 
+
+
+@wrap(['space', W_Root, W_Root, W_Root])
+def array_pad(space, w_arr, w_size, w_value):
+    w_arr_res = w_arr
+    pairs = []
+    idx = 0
+    if space.arraylen(w_arr) - abs(space.int_w(w_size)) >= 0:
+        return w_arr_res
+    pad_size = abs(space.int_w(w_size)) - space.arraylen(w_arr)
+    if space.int_w(w_size) > 0:
+        with space.iter(w_arr) as itr:
+            while not itr.done():
+                w_key, w_val = itr.next_item(space)
+                if space.int_w(space.as_number(w_key)) == 0:
+                    if space.str_w(w_key) == "0":
+                        idx += 1
+                    pairs.append((w_key, w_val))
+                else:
+                    pairs.append((space.newint(idx), w_val))
+                    idx += 1
+        for i in range(0, pad_size):
+            pairs.append((space.newint(idx + i), w_value))
+    else:
+        for i in range(space.int_w(w_size) + pad_size, 0):
+            pairs.append((space.newint(idx), w_value))
+            idx += 1
+        with space.iter(w_arr) as itr:
+            while not itr.done():
+                w_key, w_val = itr.next_item(space)
+                if space.int_w(space.as_number(w_key)) == 0:
+                    if space.str_w(w_key) == "0":
+                        pairs.append((space.newint(idx), w_val))
+                        idx += 1
+                    else:
+                        pairs.append((w_key, w_val))
+                else:
+                    pairs.append((space.newint(idx), w_val))
+                    idx += 1
+    return space.new_array_from_pairs(pairs)
 
 # @wrap(['space', 'args_w'])
 # def array_reverse(space, args_w):

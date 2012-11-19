@@ -156,6 +156,13 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert [self.space.str_w(i) for i in output] == ["x", "x"]
 
+    def test_array_fill(self):
+        output = self.run('''
+        $a = array_fill(0, 10, "x");
+        echo $a[0];
+        echo $a[8];
+        ''')
+        assert [self.space.str_w(i) for i in output] == ["x", "x"]
 
     def test_is_array(self):
         output = self.run('''
@@ -192,6 +199,19 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert self.space.int_w(output[0]) == 1
         assert self.space.str_w(output[1]) == "a"
+
+    def test_array_diff_assoc(self):
+        output = self.run('''
+        $array1 = array("a" => "green", "b" => "brown", "c" => "blue", "red");
+        $array2 = array("a" => "green", "yellow", "red");
+        $result = array_diff_assoc($array1, $array2);
+        echo $result["b"];
+        echo $result["c"];
+        echo $result[0];
+        ''')
+        assert self.space.str_w(output[0]) == "brown"
+        assert self.space.str_w(output[1]) == "blue"
+        assert self.space.str_w(output[2]) == "red"
 
     def test_array_change_key_case(self):
         output = self.run('''
@@ -347,17 +367,17 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[12]) == "3"
         assert self.space.str_w(output[13]) == "1"
 
-    # def test_array_count_values(self):
-    #     output = self.run('''
-    #     $a = array(1, "hello", 1, "world", "hello");
-    #     $a = array_count_values($a);
-    #     echo $a[1];
-    #     echo $a["hello"];
-    #     echo $a["world"];
-    #     ''')
-    #     assert self.space.str_w(output[0]) == '2'
-    #     assert self.space.str_w(output[1]) == '2'
-    #     assert self.space.str_w(output[2]) == '1'
+    def test_array_count_values(self):
+        output = self.run('''
+        $a = array(1, "hello", 1, "world", "hello");
+        $a = array_count_values($a);
+        echo $a[1];
+        echo $a["hello"];
+        echo $a["world"];
+        ''')
+        assert self.space.str_w(output[0]) == '2'
+        assert self.space.str_w(output[1]) == '2'
+        assert self.space.str_w(output[2]) == '1'
 
     def test_array_flip(self):
         output = self.run('''
@@ -382,6 +402,22 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a;
         ''')
         assert self.space.str_w(output[0]) == "13"
+
+    def test_array_pad(self):
+        output = self.run('''
+        $b = array(1229600459=>'large', 1229604787=>20, 1229609459=>'red');
+        $b = array_pad($b, 5, 'foo');
+        echo $b[0];
+        echo $b[4];
+        $a= array('a'=> 'a', 'b'=>4, '0'=>'0');
+        $a = array_pad($a, -6, "x");
+        echo $a[0];
+        echo $a[3];
+        ''')
+        assert self.space.str_w(output[0]) == "large"
+        assert self.space.str_w(output[1]) == "foo"
+        assert self.space.str_w(output[2]) == "x"
+        assert self.space.str_w(output[3]) == "0"
 
     def test_array_product(self):
         output = self.run('''

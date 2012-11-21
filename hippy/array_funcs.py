@@ -299,44 +299,34 @@ def array_count_values(space, w_arr):
     return res
 
 
+def _pad_array(space, w_arr, pairs, idx):
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            w_key, w_val = itr.next_item(space)
+            if not space.is_valid_number(w_key):
+                pairs.append((w_key, w_val))
+            else:
+                pairs.append((space.newint(idx), w_val))
+                idx += 1
+    return idx
 
 @wrap(['space', W_Root, W_Root, W_Root])
 def array_pad(space, w_arr, w_size, w_value):
-    w_arr_res = w_arr
     pairs = []
-    idx = 0
+    size = space.int_w(w_size)
     if space.arraylen(w_arr) - abs(space.int_w(w_size)) >= 0:
-        return w_arr_res
-    pad_size = abs(space.int_w(w_size)) - space.arraylen(w_arr)
-    if space.int_w(w_size) > 0:
-        with space.iter(w_arr) as itr:
-            while not itr.done():
-                w_key, w_val = itr.next_item(space)
-                if space.int_w(space.as_number(w_key)) == 0:
-                    if space.str_w(w_key) == "0":
-                        idx += 1
-                    pairs.append((w_key, w_val))
-                else:
-                    pairs.append((space.newint(idx), w_val))
-                    idx += 1
-        for i in range(0, pad_size):
+        return w_arr
+    pad_size = abs(size) - space.arraylen(w_arr)
+    if size > 0:
+        idx = _pad_array(space, w_arr, pairs, 0)
+        for i in range(pad_size):
             pairs.append((space.newint(idx + i), w_value))
     else:
-        for i in range(space.int_w(w_size) + pad_size, 0):
+        idx = 0
+        for i in range(size + pad_size, 0):
             pairs.append((space.newint(idx), w_value))
             idx += 1
-        with space.iter(w_arr) as itr:
-            while not itr.done():
-                w_key, w_val = itr.next_item(space)
-                if space.int_w(space.as_number(w_key)) == 0:
-                    if space.str_w(w_key) == "0":
-                        pairs.append((space.newint(idx), w_val))
-                        idx += 1
-                    else:
-                        pairs.append((w_key, w_val))
-                else:
-                    pairs.append((space.newint(idx), w_val))
-                    idx += 1
+        _pad_array(space, w_arr, pairs, idx)
     return space.new_array_from_pairs(pairs)
 
 # @wrap(['space', 'args_w'])

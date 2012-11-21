@@ -425,6 +425,17 @@ class W_StringObject(W_Root):
             return space.newfloat(float(s[:i]))
         return space.newint(int(s[:i]))
 
+    def is_valid_number(self, space):
+        # XXX we might want to write two implementations of this
+        s = space.str_w(self)
+        if not len(s):
+            return False
+        if s[0] == '-':
+            if len(s) == 1:
+                return False
+            return s[1] >= '0' and s[1] <= '9'
+        return s[0] >= '0' and s[0] <= '9'
+
     def float_w(self, space):
         return space.float_w(self.as_number(space))
 

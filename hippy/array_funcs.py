@@ -234,7 +234,7 @@ def array_flip(space, w_arr):
 @wrap(['space', 'args_w'])
 def array_keys(space, args_w):
     w_search = None
-    w_strict = space.newbool(False)
+    strict = False
     idx = 0
     pairs = []
     if len(args_w) < 1:
@@ -249,7 +249,7 @@ def array_keys(space, args_w):
     if len(args_w) == 3:
         w_search = args_w[1]
         if args_w[2].tp == space.w_bool:
-            w_strict = args_w[2]
+            strict = space.is_true(args_w[2])
         else:
             raise InterpreterError("third arugment must be bool")
     with space.iter(w_arr) as itr:
@@ -257,7 +257,7 @@ def array_keys(space, args_w):
             w_key, w_val = itr.next_item(space)
             if w_search:
                 if space.str_w(w_val) == space.str_w(w_search):
-                    if space.is_true(w_strict):
+                    if strict:
                         if w_val.tp == w_search.tp:
                             pairs.append((space.newint(idx), w_key))
                             idx += 1

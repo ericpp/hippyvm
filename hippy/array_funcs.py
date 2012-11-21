@@ -6,11 +6,11 @@ from builtin import wrap
 BUILTIN_FUNCTIONS = []
 
 
-fill_keys_driver = jit.JitDriver(
-    greens=[],
-    reds=['w_value', 'w_res', 'w_arrayiter'],
-    name='fill_keys',
-    should_unroll_one_iteration=lambda *args: True)
+# fill_keys_driver = jit.JitDriver(
+#     greens=[],
+#     reds=['w_value', 'w_res', 'w_arrayiter'],
+#     name='fill_keys',
+#     should_unroll_one_iteration=lambda *args: True)
 
 
 @wrap(['space', W_Root, W_Root])
@@ -18,8 +18,8 @@ def array_fill_keys(space, w_arr, w_value):
     w_res = space.new_array_from_pairs([])
     with space.iter(w_arr) as w_arrayiter:
         while not w_arrayiter.done():
-            fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
-                                             w_arrayiter=w_arrayiter)
+            # fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
+            #                                  w_arrayiter=w_arrayiter)
             w_item = w_arrayiter.next(space)
             space.setitem(w_res, w_item, w_value)
 

@@ -156,6 +156,13 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert [self.space.str_w(i) for i in output] == ["x", "x"]
 
+    def test_array_fill(self):
+        output = self.run('''
+        $a = array_fill(0, 10, "x");
+        echo $a[0];
+        echo $a[8];
+        ''')
+        assert [self.space.str_w(i) for i in output] == ["x", "x"]
 
     def test_is_array(self):
         output = self.run('''
@@ -192,6 +199,19 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert self.space.int_w(output[0]) == 1
         assert self.space.str_w(output[1]) == "a"
+
+    def test_array_diff_assoc(self):
+        output = self.run('''
+        $array1 = array("a" => "green", "b" => "brown", "c" => "blue", "red");
+        $array2 = array("a" => "green", "yellow", "red");
+        $result = array_diff_assoc($array1, $array2);
+        echo $result["b"];
+        echo $result["c"];
+        echo $result[0];
+        ''')
+        assert self.space.str_w(output[0]) == "brown"
+        assert self.space.str_w(output[1]) == "blue"
+        assert self.space.str_w(output[2]) == "red"
 
     def test_array_change_key_case(self):
         output = self.run('''
@@ -239,6 +259,225 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[4]) == "q"
         assert self.space.str_w(output[5]) == "w"
         assert self.space.str_w(output[6]) == "5"
+
+    def test_array_slice(self):
+        output = self.run('''
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 2);
+        echo $a[0];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 1, 3);
+        echo $a[0];
+        echo $a[1];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 5, 6);
+        echo $a[0];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -2, 6);
+        echo $a[0];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -5, -2);
+        echo $a[0];
+        echo $a[1];
+        echo $a[2];
+
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 2, true);
+        echo $a[2];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 1, 3, true);
+        echo $a[1];
+        echo $a[2];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, 5, 6, true);
+        echo $a[5];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -2, 6, true);
+        echo $a[8];
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_slice($a, -5, -2, true);
+        echo $a[5];
+        echo $a[6];
+        echo $a[7];
+
+
+        ''')
+        assert self.space.str_w(output[0]) == '2'
+
+        assert self.space.str_w(output[1]) == '1'
+        assert self.space.str_w(output[2]) == '2'
+
+        assert self.space.str_w(output[3]) == '5'
+
+        assert self.space.str_w(output[4]) == '8'
+
+        assert self.space.str_w(output[5]) == '5'
+        assert self.space.str_w(output[6]) == '6'
+        assert self.space.str_w(output[7]) == '7'
+
+        assert self.space.str_w(output[8]) == '2'
+
+        assert self.space.str_w(output[9]) == '1'
+        assert self.space.str_w(output[10]) == '2'
+
+        assert self.space.str_w(output[11]) == '5'
+
+        assert self.space.str_w(output[12]) == '8'
+
+        assert self.space.str_w(output[13]) == '5'
+        assert self.space.str_w(output[14]) == '6'
+        assert self.space.str_w(output[15]) == '7'
+
+    def test_array_chunk(self):
+        output = self.run('''
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_chunk($a, 3);
+        echo $a[0][0];
+        echo $a[1][0];
+        echo $a[2][0];
+        echo count($a);
+        echo $a[3][0];
+        echo count($a[0]);
+        echo count($a[3]);
+
+        $a = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        $a = array_chunk($a, 3, true);
+        echo $a[0][0];
+        echo $a[1][3];
+        echo $a[2][6];
+        echo count($a);
+        echo $a[3][9];
+        echo count($a[0]);
+        echo count($a[3]);
+
+        ''')
+        assert self.space.str_w(output[0]) == "0"
+        assert self.space.str_w(output[1]) == "3"
+        assert self.space.str_w(output[2]) == "6"
+        assert self.space.str_w(output[3]) == "4"
+        assert self.space.str_w(output[4]) == "9"
+        assert self.space.str_w(output[5]) == "3"
+        assert self.space.str_w(output[6]) == "1"
+
+        assert self.space.str_w(output[7]) == "0"
+        assert self.space.str_w(output[8]) == "3"
+        assert self.space.str_w(output[9]) == "6"
+        assert self.space.str_w(output[10]) == "4"
+        assert self.space.str_w(output[11]) == "9"
+        assert self.space.str_w(output[12]) == "3"
+        assert self.space.str_w(output[13]) == "1"
+
+    def test_array_count_values(self):
+        output = self.run('''
+        $a = array(1, "hello", 1, "world", "hello");
+        $a = array_count_values($a);
+        echo $a[1];
+        echo $a["hello"];
+        echo $a["world"];
+        ''')
+        assert self.space.str_w(output[0]) == '2'
+        assert self.space.str_w(output[1]) == '2'
+        assert self.space.str_w(output[2]) == '1'
+
+    def test_array_flip(self):
+        output = self.run('''
+        $a = array('a'=>0, 'b'=>2, 'c');
+        $a = array_flip($a);
+        echo $a[2];
+        echo $a['c'];
+        echo $a[0];
+        $a =  array("a" => 1, "b" => 1, "c" => 2);
+        $a = array_flip($a);
+        echo $a[1];
+        ''')
+        assert self.space.str_w(output[0]) == "b"
+        assert self.space.str_w(output[1]) == "0"
+        assert self.space.str_w(output[2]) == "a"
+        assert self.space.str_w(output[3]) == "b"
+
+    def test_array_sum(self):
+        output = self.run('''
+        $a = array('a'=>0, 'b'=>2, 'c', 1, 2, 3, '5');
+        $a = array_sum($a);
+        echo $a;
+        ''')
+        assert self.space.str_w(output[0]) == "13"
+
+    def test_array_pad(self):
+        output = self.run('''
+        $b = array(1229600459=>'large', 1229604787=>20, 1229609459=>'red');
+        $b = array_pad($b, 5, 'foo');
+        echo $b[0];
+        echo $b[4];
+        $a= array('a'=> 'a', 'b'=>4, '0'=>'0');
+        $a = array_pad($a, -6, "x");
+        echo $a[0];
+        echo $a[3];
+        ''')
+        assert self.space.str_w(output[0]) == "large"
+        assert self.space.str_w(output[1]) == "foo"
+        assert self.space.str_w(output[2]) == "x"
+        assert self.space.str_w(output[3]) == "0"
+
+    def test_array_product(self):
+        output = self.run('''
+        echo array_product(array('a'=>1, 'b'=>2, 'c', 1, 2, 3, '5'));
+        echo array_product(array('a'=>1, 'b'=>2, 1, 1, 2, 3, '5'));
+        echo array_product(array(1=>1, 'b'=>2, 1, 1, 2, 3, 5));
+        echo array_product(array());
+        ''')
+        assert self.space.str_w(output[0]) == "0"
+        assert self.space.str_w(output[1]) == "60"
+        assert self.space.str_w(output[2]) == "60"
+        assert self.space.str_w(output[3]) == "0"
+
+    # def test_array_reverse(self):
+    #     output = self.run('''
+    #     $a = array("php", 4.0, array ("green", "red"));
+    #     $a = array_reverse($a);
+    #     echo $a[2];
+    #     ''')
+    #     assert self.space.str_w(output[0]) == "php"
+
+    def test_array_keys(self):
+        output = self.run('''
+        $a = array("php", 4.0, "test"=>"test");
+        $a = array_keys($a);
+        echo $a[0];
+        echo $a[1];
+        echo $a[2];
+        $a = array("php", 4.0, "test"=>"test", "php");
+        $a = array_keys($a, "php");
+        echo $a[0];
+        echo $a[1];
+        $a = array(1, 2, 3, 4, 5, 6, 7);
+        $a = array_keys($a, '2');
+        echo $a[0];
+        $a = array(1, 2, 3, 4, 5, 6, 7);
+        $a = array_keys($a, '2', true);
+        echo sizeof($a);
+
+        ''')
+        assert self.space.str_w(output[0]) == "0"
+        assert self.space.str_w(output[1]) == "1"
+        assert self.space.str_w(output[2]) == "test"
+        assert self.space.str_w(output[3]) == "0"
+        assert self.space.str_w(output[4]) == "2"
+        assert self.space.str_w(output[5]) == "1"
+        assert self.space.str_w(output[6]) == "0"
+
+    def test_array_values(self):
+        output = self.run('''
+        $a = array("php", 4.0, "key"=>"test");
+        $a = array_values($a);
+        echo $a[0];
+        echo $a[1];
+        echo $a[2];
+
+        ''')
+        assert self.space.str_w(output[0]) == "php"
+        assert self.space.str_w(output[1]) == "4.0"
+        assert self.space.str_w(output[2]) == "test"
 
     def test_array_combine_mix(self):
         output = self.run('''

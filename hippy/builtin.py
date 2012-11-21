@@ -1,11 +1,10 @@
-
 import py
 import math, time
+from pypy.rlib import jit
 from hippy.error import InterpreterError
 from hippy.objects.base import W_Root
 from hippy.objects.arrayobject import W_ArrayObject
 from hippy.objects.reference import W_BaseContainerReference
-from pypy.rlib import jit
 from pypy.rlib.rstring import StringBuilder
 from pypy.rlib.streamio import open_file_as_stream
 
@@ -181,6 +180,20 @@ def printf(space, args_w):
     space.ec.interpreter.echo(space, space.newstrconst(builder.build()))
     return space.w_Null
 
+@wrap(['space', W_Root])
+def is_array(space, w_obj):
+    return space.wrap(w_obj.tp == space.w_array)
+
+def is_int(s):
+    if not s:
+        return False
+    if s[0] == "0" and len(s) != 1:
+        return False
+    for c in s:
+        if c >= '9' or c <= '0':
+            return False
+    return True
+
 @wrap(['space', W_Root], aliases=['sizeof'])
 def count(space, w_arr):
     if not isinstance(w_arr, W_ArrayObject):
@@ -225,128 +238,6 @@ def empty(space, w_item):
         return space.newbool(space.arraylen(w_item) == 0)
     return space.newbool(not space.is_true(w_item))
 
-fill_keys_driver = jit.JitDriver(greens = [],
-                                 reds = 'auto',
-                                 name='fill_keys',
-                                 should_unroll_one_iteration=lambda *args: True)
-
-@wrap(['space', W_Root, W_Root])
-def array_fill_keys(space, w_arr, w_value):
-    w_res = space.new_array_from_pairs([])
-    with space.iter(w_arr) as w_arrayiter:
-        while not w_arrayiter.done():
-            fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
-                                             w_arrayiter=w_arrayiter)
-            w_item = w_arrayiter.next(space)
-            space.setitem(w_res, w_item, w_value)
-
-    return w_res
-
-@wrap(['space', W_Root])
-def is_array(space, w_obj):
-    return space.wrap(w_obj.tp == space.w_array)
-
-def is_int(s):
-    if not s:
-        return False
-    if s[0] == "0" and len(s) != 1:
-        return False
-    for c in s:
-        if c >= '9' or c <= '0':
-            return False
-    return True
-
-@wrap(['space', 'args_w'])
-def array_merge(space, args_w):
-    lst = [] # list of values or (None, val) in case of ints
-    is_hash = False
-    for w_arg in args_w:
-        w_arg = space.as_array(w_arg)
-        with space.iter(w_arg) as w_iter:
-            while not w_iter.done():
-                w_key, w_value = w_iter.next_item(space)
-            # XXX a fair bit inefficient
-                if w_key.tp == space.w_int or is_int(space.str_w(w_key)):
-                    lst.append((None, w_value))
-                else:
-                    lst.append((w_key, w_value))
-                    is_hash = True
-    if not is_hash:
-        return space.new_array_from_list([i for _, i in lst])
-    else:
-        r = []
-        i = 0
-        for w_k, w_v in lst:
-            if w_k is None:
-                r.append((space.wrap(i), w_v))
-            else:
-                r.append((w_k, w_v))
-        return space.new_array_from_pairs(r)
-
-@wrap(['space', 'args_w'])
-def array_diff_key(space, args_w):
-    if len(args_w) < 2:
-        raise InterpreterError("not enough arguments to array_diff_key")
-    for w_arg in args_w:
-        if w_arg.tp != space.w_array:
-            # issue notice, ignored anyway
-            return space.w_Null
-    w_arr = space.as_array(args_w[0])
-    args_w = [space.as_array(w_arg) for w_arg in args_w[1:]]
-    keys = []
-    with space.iter(w_arr) as w_iter:
-        while not w_iter.done():
-            w_key, _ = w_iter.next_item(space)
-            for w_arg in args_w:
-                if w_arg.isset_index(space, w_key):
-                    break
-            else:
-                keys.append(w_key)
-    return space.new_array_from_list(keys)
-
-@wrap(['space', W_Root, int])
-def array_change_key_case(space, w_arr, str_case):
-    pairs = []
-
-    if w_arr.tp != space.w_array:
-        return space.w_Null
-
-    with space.iter(w_arr) as itr:
-        while not itr.done():
-            w_key, w_value = itr.next_item(space)
-            if w_key.tp == space.w_str:
-                k_str = w_key.str_w(space)
-                if str_case == 1:
-                    k_str = k_str.upper()
-                else:
-                    k_str = k_str.lower()
-                pairs.append((space.newstrconst(k_str), w_value))
-            else:
-                pairs.append((w_key, w_value))
-    return space.new_array_from_pairs(pairs)
-
-
-# @wrap(['space', W_Root, bool])
-# def array_chunk(space, w_arr, keep_keys):
-
-@wrap(['space', W_Root, W_Root])
-def array_combine(space, w_arr_a, w_arr_b):
-    if w_arr_a.tp != space.w_array:
-        return space.w_False
-    if w_arr_b.tp != space.w_array:
-        return space.w_False
-    if space.arraylen(w_arr_a) != space.arraylen(w_arr_b):
-        return space.w_False
-    if space.arraylen(w_arr_a) == 0 or space.arraylen(w_arr_b) == 0:
-        return space.w_False
-    pairs = []
-    with space.iter(w_arr_a) as a_iter:
-        with space.iter(w_arr_b) as b_iter:
-            while not a_iter.done():
-                _, a_w_value = a_iter.next_item(space)
-                _, b_w_value = b_iter.next_item(space)
-                pairs.append((a_w_value, b_w_value))
-    return space.new_array_from_pairs(pairs)
 
 @wrap(['space', str])
 def defined(space, name):

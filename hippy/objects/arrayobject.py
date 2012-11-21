@@ -15,7 +15,7 @@ class BaseArrayStrategy(object):
 
 class ArrayStratMixin(object):
     _mixin_ = True
-    
+
     def create_iter(self, space, w_obj):
         if self.IteratorClass is None:
             res = arrayiter.EmptyArrayIterator(space)
@@ -231,7 +231,7 @@ class EmptyArrayStrategy(BaseArrayStrategy, ArrayStratMixin):
             new_storage = new_strat.erase([space.int_w(w_item)])
         elif w_item.tp == space.w_float:
             new_strat = get_strategy(FloatListArrayStrategy)
-            new_storage = new_strat.erase([space.float_w(w_item)])            
+            new_storage = new_strat.erase([space.float_w(w_item)])
         else:
             new_strat = get_strategy(ListArrayStrategy)
             new_storage = new_strat.erase([w_item])
@@ -310,6 +310,11 @@ class HashStrategy(BaseArrayStrategy, ArrayStratMixin):
         except KeyError:
             raise InterpreterError("Wrong offset")
 
+    def append(self, space, w_obj, w_item):
+        dct = self.unerase(w_obj.storage)
+        dct[str(w_obj.next_idx)] = w_item
+        w_obj.next_idx += 1
+
     def len(self, space, storage):
         return len(self.unerase(storage))
 
@@ -357,6 +362,13 @@ class MapStrategy(BaseArrayStrategy, ArrayStratMixin):
         else:
             return lst[pos]
 
+    def append(self, space, w_obj, w_item):
+        dct, lst = self.unerase(w_obj.storage)
+        dct = jit.hint(dct, promote=True)
+        lst[w_obj.next_idx] = w_item
+        dct[str(w_obj.next_idx)] = len(lst)
+        w_obj.next_idx += 1
+
     def len(self, space, storage):
         return len(self.unerase(storage)[0])
 
@@ -386,7 +398,7 @@ def new_weakref(w_obj):
 
 class Copy(object):
     prev_link = None
-    
+
     def __init__(self, next_link, parent):
         self.child = None
         self.parent = parent
@@ -404,11 +416,15 @@ class Copy(object):
         else:
             self.parent.copies = next_link
 
+class W_FakeIndex(W_Root):
+    pass
+
 class W_ArrayObject(W_Root):
-    def __init__(self, strategy, storage):
+    def __init__(self, strategy, storage, next_idx=0):
         self.strategy = strategy
         self.storage = storage
         self.copies = None
+        self.next_idx = next_idx
 
     def mark_invalid(self):
         self.strategy.mark_invalid(self.storage)
@@ -424,7 +440,7 @@ class W_ArrayObject(W_Root):
     def copy(self, space):
         new_strat = get_strategy(CopyArrayStrategy)
         cp = self.new_copy()
-        w_res = W_ArrayObject(new_strat, new_strat.erase(cp))
+        w_res = W_ArrayObject(new_strat, new_strat.erase(cp), self.next_idx)
         self.add_copy(cp, new_weakref(w_res))
         return w_res
 
@@ -492,7 +508,7 @@ class W_ArrayObject(W_Root):
 
 class W_ArrayConstant(W_ArrayObject):
     def copy(self, space):
-        return W_ArrayObject(self.strategy, self.storage)
+        return W_ArrayObject(self.strategy, self.storage, self.next_idx)
 
 @specialize.memo()
 def get_strategy(cls):
@@ -539,16 +555,33 @@ def new_array_from_pairs(space, lst_w):
         space.setitem(w_obj, w_k, w_v)
     return w_obj
 
+
 def new_globals_wrapper(space, dct):
     strat = get_strategy(HashStrategy)
     storage = strat.erase(dct)
     return W_ArrayObject(strat, storage)
 
+
 def new_map_from_pairs(space, lst_w):
-    lst = [None] * len(lst_w)
+    lst = []
     dct = {}
+    next_idx = 0
     for i, (k, v) in enumerate(lst_w):
-        lst[i] = v
-        dct[space.str_w(space.as_string(k))] = i
+        if k.tp == space.w_fakeindex:
+            lst.append(v)
+            dct[str(next_idx)] = len(lst) - 1
+            next_idx += 1
+        else:
+            if k.tp == space.w_int:
+                if space.int_w(k) > next_idx:
+                    next_idx = space.int_w(k) + 1
+            if not space.str_w(space.as_string(k)) in dct:
+                lst.append(v)
+                dct[space.str_w(space.as_string(k))] = len(lst) - 1
+            else:
+                idx = dct[space.str_w(space.as_string(k))]
+                lst[idx] = v
+                dct[space.str_w(space.as_string(k))] = idx
     strat = get_strategy(MapStrategy)
-    return W_ArrayObject(strat, strat.erase((dct, lst)))
+    w_arr = W_ArrayObject(strat, strat.erase((dct, lst)), next_idx)
+    return w_arr

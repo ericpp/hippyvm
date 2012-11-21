@@ -99,6 +99,11 @@ class ConstantFloat(Const):
     def repr(self):
         return str(self.floatval)
 
+class ConstantAppend(Const):
+
+    def repr(self):
+        return 'fake_index'
+
 class BinOp(Node):
     def __init__(self, op, left, right):
         self.op = op
@@ -643,7 +648,7 @@ class Transformer(object):
                 params['is_hash'] = True
             if len(node.children) == 1:
                 arr_args.append((
-                        ConstantInt(params['p_iter']),
+                        ConstantAppend(),
                         self.visit_expr(node.children[0])
                         ))
                 params['p_iter'] += 1

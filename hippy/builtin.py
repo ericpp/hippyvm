@@ -226,7 +226,7 @@ def empty(space, w_item):
     return space.newbool(not space.is_true(w_item))
 
 fill_keys_driver = jit.JitDriver(greens = [],
-                                 reds = ['w_value', 'w_res', 'w_arrayiter'],
+                                 reds = 'auto',
                                  name='fill_keys',
                                  should_unroll_one_iteration=lambda *args: True)
 

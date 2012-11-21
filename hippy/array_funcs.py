@@ -137,43 +137,42 @@ def array_change_key_case(space, w_arr, str_case):
 
 @wrap(['space', 'args_w'])
 def array_slice(space, args_w):
-    w_start = space.newint(0)
-    w_end = space.newint(0)
-    w_keep_keys = space.newbool(False)
-    w_arr = []
+    start = 0
+    end = 0
+    keep_keys = False
     if len(args_w) < 2:
         raise InterpreterError("first argument must be array,\
  second must be int")
     else:
         if args_w[0].tp == space.w_array and args_w[1].tp == space.w_int:
             w_arr = args_w[0]
-            w_start = args_w[1]
+            start = space.int_w(space.as_number(args_w[1]))
         else:
-            raise InterpreterError("first argument must be array,\
- second must be int")
+            raise InterpreterError("first argument must be array,"
+                                   " second must be int")
     if len(args_w) == 2:
         # w_arr, start
-        w_end = space.newint(space.arraylen(w_arr))
+        end = space.arraylen(w_arr)
     if len(args_w) == 3:
         # w_arr, start, end
         # w_arr, start, keep_keys
         if args_w[2].tp == space.w_bool:
-            w_keep_keys = args_w[2]
-            w_end = space.newint(space.arraylen(w_arr))
+            keep_keys = space.is_true(args_w[2])
+            end = space.arraylen(w_arr)
         elif args_w[2].tp == space.w_int:
-            w_end = args_w[2]
+            end = space.int_w(space.as_number(args_w[2]))
         else:
             raise InterpreterError("third arugment must be int or bool")
 
     if len(args_w) == 4:
         # w_arr, start, end, keep_keys
         if args_w[2].tp == space.w_int and args_w[3].tp == space.w_bool:
-            w_end = args_w[2]
-            w_keep_keys = args_w[3]
+            end = space.int_w(args_w[2])
+            keep_keys = space.is_true(args_w[3])
         else:
-            raise InterpreterError("third arugment must\
- be int and fourth must be bool")
-    return space.slice(w_arr, w_start, w_end, w_keep_keys)
+            raise InterpreterError("third arugment must"
+                                   "be int and fourth must be bool")
+    return space.slice(w_arr, start, end, keep_keys)
 
 
 @wrap(['space', 'args_w'])
@@ -188,15 +187,13 @@ arguments array and int")
     w_arr = args_w[0]
     w_chunk_size = args_w[1]
     chunk_size = space.int_w(w_chunk_size)
-    w_keep_keys = space.newbool(False)
+    keep_keys = False
     last_idx = 0
     if len(args_w) == 3:
-        w_keep_keys = args_w[2]
+        keep_keys = space.is_true(args_w[2])
     for i in range(chunk_size, space.arraylen(w_arr) + chunk_size, chunk_size):
-        res_arr.append(space.slice(w_arr,
-                                   space.newint(last_idx),
-                                   space.newint(last_idx + chunk_size),
-                                   w_keep_keys))
+        res_arr.append(space.slice(w_arr, last_idx,
+                                   last_idx + chunk_size, keep_keys))
         last_idx = i
     return space.new_array_from_list(res_arr)
 

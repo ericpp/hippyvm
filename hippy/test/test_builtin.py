@@ -468,7 +468,7 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_array_values(self):
         output = self.run('''
-        $a = array("php", 4.0, "key"=>"test");
+        $a = array("php", 4.5, "key"=>"test");
         $a = array_values($a);
         echo $a[0];
         echo $a[1];
@@ -476,7 +476,7 @@ class TestBuiltin(BaseTestInterpreter):
 
         ''')
         assert self.space.str_w(output[0]) == "php"
-        assert self.space.str_w(output[1]) == "4.0"
+        assert self.space.str_w(output[1]) == "4.5"
         assert self.space.str_w(output[2]) == "test"
 
     def test_array_combine_mix(self):

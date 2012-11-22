@@ -376,6 +376,19 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [3]
 
+    def test_references_7(self):
+        py.test.skip("XXX FIXME")
+        output = self.run('''
+        function foo1(&$a) {
+            $a[1] = & $a[0];
+            return 5;
+        }
+        $a = array(-5, 0);
+        $a[0] = foo1($a);
+        echo $a[1];
+        ''')
+        assert [self.space.int_w(i) for i in output] == [5]
+
     def test_references_function(self):
         output = self.run('''
         function f(&$a) {
@@ -399,6 +412,17 @@ class TestInterpreter(BaseTestInterpreter):
         echo $a[0], $b[0];
         ''')
         assert [self.space.int_w(i) for i in output] == [3, 20]
+
+    def test_references_function_3(self):
+        py.test.skip("XXX FIXME")
+        output = self.run('''
+        function foo(&$x) { global $a; $c=42; $a[10]=&$c; $y=$x; return $y; }
+        $a = array(1,2,3,4,5,6,7,8,9,10,11);
+        echo foo($a[10]);
+        echo $a[10];
+        ''')
+        assert self.space.int_w(output[0]) == 11
+        assert self.space.int_w(output[1]) == 42
 
     def test_dense_array_not_from_0(self):
         output = self.run('''

@@ -39,7 +39,7 @@ def create_function(signature, functocall):
             lines.append('    arg%s = args_w[%s]' % (i, inpi))
             inpi += 1
         else:
-            raise Exception("Uknown signature %s" % tp)
+            raise Exception("Unknown signature %s" % tp)
     lines.append('    return orig_func(%s)' % ', '.join(['arg%d' % i
                                        for i in range(len(signature))]))
     source = '\n'.join(lines)
@@ -289,6 +289,43 @@ def function_exists(space, funcname):
 def var_dump(space, args_w):
     for w_x in args_w:
         w_x.var_dump(space, indent='', recursion={})
+
+def _print_r(space, w_x, indent, recursion, builder):
+    if w_x.tp == space.tp_array:
+        if w_x in recursion:
+            builder.append('Array\n *RECURSION*')
+            return
+        recursion[w_x] = None
+        builder.append('Array\n%s(' % indent)
+        subindent = indent + '        '
+        with space.iter(w_x) as w_iter:
+            while not w_iter.done():
+                w_key, w_value = w_iter.next_item(space)
+                if w_key.tp == space.tp_int:
+                    key = space.int_w(w_key)
+                    s = '\n%s    [%d] => ' % (indent, key)
+                else:
+                    key = space.str_w(w_key)
+                    s = '\n%s    ["%s"] => ' % (indent, key)
+                builder.append(s)
+                _print_r(space, w_value, subindent, recursion, builder)
+        builder.append('\n%s)\n' % indent)
+        del recursion[w_x]
+    else:
+        builder.append(space.conststr_w(space.as_string(w_x)))
+
+@wrap(['space', 'args_w'])
+def print_r(space, args_w):
+    if len(args_w) < 1 or len(args_w) > 2:
+        raise InterpreterError("incorrect number of args")
+    builder = StringBuilder()
+    _print_r(space, args_w[0], '', {}, builder)
+    result = builder.build()
+    if len(args_w) >= 2 and space.is_true(args_w[1]):
+        return space.newstrconst(result)
+    else:
+        space.ec.writestr(result)
+        return space.w_True
 
 from hippy.module.serialize import unserialize
 

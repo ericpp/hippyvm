@@ -539,7 +539,7 @@ class TestBuiltin(BaseTestInterpreter):
         var_dump(NULL);
         var_dump(5, 6, 7);
         var_dump("foobar");
-        var_dump(array(4, 5));
+        $a = array(4, 5); var_dump($a);
         ''')
         assert ''.join(output) == '''\
 int(5)
@@ -586,3 +586,38 @@ array(2) {
     def test_var_dump_recursion(self):
         output = self.run('var_dump($GLOBALS);')
         assert '*RECURSION*' in ''.join(output)
+
+    def test_print_r_0(self):
+        output = self.run('''
+        print_r(25);
+        $a = 25.5; print_r($a);
+        print_r(25.0);
+        print_r(TRUE);
+        print_r(FALSE);
+        print_r(NULL);
+        print_r("foobar");
+        $a = array(4, 5); print_r($a);
+        ''')
+        assert output == [
+            '25',
+            '25.5',
+            '25',
+            '1',
+            '',
+            '',
+            'foobar',
+            'Array\n(\n    [0] => 4\n    [1] => 5\n)\n']
+
+    def test_print_r_recursion(self):
+        output = self.run('''
+        print_r($GLOBALS);
+        ''')
+        assert '*RECURSION*' in output[0]
+
+    def test_print_r_1(self):
+        output = self.run('''
+        $a = print_r(array(25.5), 1);
+        echo "the result is: ", $a;
+        ''')
+        assert self.space.str_w(output[0]) == 'the result is: '
+        assert self.space.str_w(output[1]) == 'Array\n(\n    [0] => 25.5\n)\n'

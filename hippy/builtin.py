@@ -281,6 +281,10 @@ def microtime(space, is_float):
 def gettype(space, w_x):
     return space.newstrconst(space.TYPENAMES[w_x.tp])
 
+@wrap(['space', str])
+def function_exists(space, funcname):
+    return space.newbool(funcname in space.ec.interpreter.functions)
+
 from hippy.module.serialize import unserialize
 
 unserialize = wrap(['space', str])(unserialize)

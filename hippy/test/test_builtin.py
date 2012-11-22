@@ -517,3 +517,14 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[3]) == 'string'
         assert self.space.str_w(output[4]) == 'array'
         assert self.space.str_w(output[5]) == 'NULL'
+
+    def test_function_exists(self):
+        output = self.run('''
+        function f42() { }
+        echo function_exists("f42");
+        echo function_exists("function_exists");
+        echo function_exists("f43");
+        ''')
+        assert self.space.str_w(output[0]) == '1'
+        assert self.space.str_w(output[1]) == '1'
+        assert self.space.str_w(output[2]) == ''

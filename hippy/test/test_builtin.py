@@ -166,41 +166,83 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_is_array(self):
         output = self.run('''
-        echo is_array(0), is_array(array());
+        echo is_array(0), is_array(0.0), is_array(NULL), is_array(array());
+        echo is_array(FALSE), is_array(TRUE), is_array("foo");
         ''')
-        assert [i.boolval for i in output] == [False, True]
+        assert [i.boolval for i in output] == [False, False, False, True,
+                                               False, False, False]
 
     def test_is_bool(self):
         output = self.run('''
         echo is_bool(0), is_bool(0.0), is_bool(NULL), is_bool(array());
-        echo is_bool(FALSE), is_bool(TRUE);
+        echo is_bool(FALSE), is_bool(TRUE), is_bool("foo");
         ''')
         assert [i.boolval for i in output] == [False, False, False, False,
-                                               True, True]
+                                               True, True, False]
 
     def test_is_int(self):
         output = self.run('''
         echo is_int(0), is_int(0.0), is_int(NULL), is_int(array());
-        echo is_int(FALSE), is_int(TRUE);
+        echo is_int(FALSE), is_int(TRUE), is_int("foo");
         ''')
         assert [i.boolval for i in output] == [True, False, False, False,
-                                               False, False]
+                                               False, False, False]
+
+    def test_is_integer(self):
+        output = self.run('''
+        echo is_integer(0), is_integer(0.0), is_integer(NULL), is_integer(array());
+        echo is_integer(FALSE), is_integer(TRUE), is_integer("foo");
+        ''')
+        assert [i.boolval for i in output] == [True, False, False, False,
+                                               False, False, False]
+
+    def test_is_long(self):
+        output = self.run('''
+        echo is_long(0), is_long(0.0), is_long(NULL), is_long(array());
+        echo is_long(FALSE), is_long(TRUE), is_long("foo");
+        ''')
+        assert [i.boolval for i in output] == [True, False, False, False,
+                                               False, False, False]
 
     def test_is_float(self):
         output = self.run('''
         echo is_float(0), is_float(0.0), is_float(NULL), is_float(array());
-        echo is_float(FALSE), is_float(TRUE);
+        echo is_float(FALSE), is_float(TRUE), is_float("foo");
         ''')
         assert [i.boolval for i in output] == [False, True, False, False,
-                                               False, False]
+                                               False, False, False]
 
     def test_is_double(self):
         output = self.run('''
         echo is_double(0), is_double(0.0), is_double(NULL), is_double(array());
-        echo is_double(FALSE), is_double(TRUE);
+        echo is_double(FALSE), is_double(TRUE), is_double("foo");
         ''')
         assert [i.boolval for i in output] == [False, True, False, False,
-                                               False, False]
+                                               False, False, False]
+
+    def test_is_real(self):
+        output = self.run('''
+        echo is_real(0), is_real(0.0), is_real(NULL), is_real(array());
+        echo is_real(FALSE), is_real(TRUE), is_real("foo");
+        ''')
+        assert [i.boolval for i in output] == [False, True, False, False,
+                                               False, False, False]
+
+    def test_is_null(self):
+        output = self.run('''
+        echo is_null(0), is_null(0.0), is_null(NULL), is_null(array());
+        echo is_null(FALSE), is_null(TRUE), is_null("foo");
+        ''')
+        assert [i.boolval for i in output] == [False, False, True, False,
+                                               False, False, False]
+
+    def test_is_scalar(self):
+        output = self.run('''
+        echo is_scalar(0), is_scalar(0.0), is_scalar(NULL), is_scalar(array());
+        echo is_scalar(FALSE), is_scalar(TRUE), is_scalar("foo");
+        ''')
+        assert [i.boolval for i in output] == [True, True, False, False,
+                                               True, True, True]
 
     def test_array_merge(self):
         output = self.run('''

@@ -193,12 +193,33 @@ def is_int(space, w_obj):
     return space.wrap(w_obj.tp == space.tp_int)
 
 @wrap(['space', W_Root])
+def is_integer(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_int)
+
+@wrap(['space', W_Root])
+def is_long(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_int)
+
+@wrap(['space', W_Root])
 def is_float(space, w_obj):
     return space.wrap(w_obj.tp == space.tp_float)
 
 @wrap(['space', W_Root])
 def is_double(space, w_obj):
     return space.wrap(w_obj.tp == space.tp_float)
+
+@wrap(['space', W_Root])
+def is_real(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_float)
+
+@wrap(['space', W_Root])
+def is_null(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_null)
+
+@wrap(['space', W_Root])
+def is_scalar(space, w_obj):
+    return space.wrap(w_obj.tp in (space.tp_int, space.tp_float,
+                                   space.tp_str, space.tp_bool))
 
 @wrap(['space', W_Root], aliases=['sizeof'])
 def count(space, w_arr):

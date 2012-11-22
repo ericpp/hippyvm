@@ -1,5 +1,6 @@
 
 from pypy.rlib import jit
+from pypy.rlib.rarithmetic import ovfcheck
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
@@ -49,7 +50,16 @@ class W_IntObject(W_Root):
 
     def div(self, space, w_other):
         assert isinstance(w_other, W_IntObject)
-        return space.newfloat(float(self.intval) / float(w_other.intval))
+        x = self.intval
+        y = w_other.intval
+        try:
+            z = ovfcheck(x % y)
+        except OverflowError:
+            z = 1
+        if z == 0:
+            return space.newint(x / y)
+        else:
+            return space.newfloat(float(x) / float(y))
 
     def is_true(self, space):
         return self.intval != 0

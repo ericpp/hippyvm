@@ -16,7 +16,12 @@ class W_FloatObject(W_Root):
         return self
 
     def as_string(self, space):
-        return space.newstrconst(str(self.floatval))
+        s = str(self.floatval)
+        if s.endswith('.0'):
+            i = len(s) - 2
+            assert i >= 0
+            s = s[:i]
+        return space.newstrconst(s)
 
     def coerce(self, space, tp):
         if tp == space.tp_float:

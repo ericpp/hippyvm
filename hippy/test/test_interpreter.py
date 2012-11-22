@@ -22,7 +22,12 @@ class BaseTestInterpreter(object):
         interp = MockInterpreter(self.space)
         bc = compile_ast(parse(source), self.space)
         interp.interpret(self.space, Frame(self.space, bc), bc)
-        return interp.output    
+        return interp.output
+
+    def echo(self, source):
+        output = self.run("echo %s;" % (source,))
+        assert len(output) == 1
+        return self.space.str_w(output[0])
 
 class TestInterpreter(BaseTestInterpreter):
 

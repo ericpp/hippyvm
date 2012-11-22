@@ -184,15 +184,21 @@ def printf(space, args_w):
 def is_array(space, w_obj):
     return space.wrap(w_obj.tp == space.tp_array)
 
-def is_int(s):
-    if not s:
-        return False
-    if s[0] == "0" and len(s) != 1:
-        return False
-    for c in s:
-        if c >= '9' or c <= '0':
-            return False
-    return True
+@wrap(['space', W_Root])
+def is_bool(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_bool)
+
+@wrap(['space', W_Root])
+def is_int(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_int)
+
+@wrap(['space', W_Root])
+def is_float(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_float)
+
+@wrap(['space', W_Root])
+def is_double(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_float)
 
 @wrap(['space', W_Root], aliases=['sizeof'])
 def count(space, w_arr):

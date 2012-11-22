@@ -1,8 +1,17 @@
 from pypy.rlib import jit
 from hippy.objects.base import W_Root
 from hippy.error import InterpreterError
-from builtin import is_int
 from builtin import wrap
+
+def is_int(s):
+    if not s:
+        return False
+    if s[0] == "0" and len(s) != 1:
+        return False
+    for c in s:
+        if c >= '9' or c <= '0':
+            return False
+    return True
 
 
 # fill_keys_driver = jit.JitDriver(

@@ -170,6 +170,38 @@ class TestBuiltin(BaseTestInterpreter):
         ''')
         assert [i.boolval for i in output] == [False, True]
 
+    def test_is_bool(self):
+        output = self.run('''
+        echo is_bool(0), is_bool(0.0), is_bool(NULL), is_bool(array());
+        echo is_bool(FALSE), is_bool(TRUE);
+        ''')
+        assert [i.boolval for i in output] == [False, False, False, False,
+                                               True, True]
+
+    def test_is_int(self):
+        output = self.run('''
+        echo is_int(0), is_int(0.0), is_int(NULL), is_int(array());
+        echo is_int(FALSE), is_int(TRUE);
+        ''')
+        assert [i.boolval for i in output] == [True, False, False, False,
+                                               False, False]
+
+    def test_is_float(self):
+        output = self.run('''
+        echo is_float(0), is_float(0.0), is_float(NULL), is_float(array());
+        echo is_float(FALSE), is_float(TRUE);
+        ''')
+        assert [i.boolval for i in output] == [False, True, False, False,
+                                               False, False]
+
+    def test_is_double(self):
+        output = self.run('''
+        echo is_double(0), is_double(0.0), is_double(NULL), is_double(array());
+        echo is_double(FALSE), is_double(TRUE);
+        ''')
+        assert [i.boolval for i in output] == [False, True, False, False,
+                                               False, False]
+
     def test_array_merge(self):
         output = self.run('''
         $a = array("xyz" => 1);

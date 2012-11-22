@@ -3,7 +3,7 @@ from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
      BINOP_LIST, RETURN, INPLACE_LIST
 from hippy.builtin import setup_builtin_functions
-from hippy.array_funcs import setup_array_functions
+from hippy import array_funcs     # site-effect of registering functions
 from hippy.error import InterpreterError
 from hippy.objects.reference import W_Variable, W_Cell, W_Reference
 from hippy.objects.base import W_Root
@@ -161,7 +161,6 @@ class Interpreter(object):
         self.constants = {}
         self.setup_constants(space)
         setup_builtin_functions(self, space)
-        setup_array_functions(self, space)
         space.ec.interpreter = self # one interpreter at a time
 
     @jit.elidable

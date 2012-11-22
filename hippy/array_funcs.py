@@ -3,7 +3,6 @@ from hippy.objects.base import W_Root
 from hippy.error import InterpreterError
 from builtin import is_int
 from builtin import wrap
-BUILTIN_FUNCTIONS = []
 
 
 # fill_keys_driver = jit.JitDriver(
@@ -374,8 +373,3 @@ def array_product(space, w_arr):
             _, w_val = itr.next_item(space)
             res *= space.int_w(space.as_number(w_val))
     return space.newint(res)
-
-
-def setup_array_functions(interpreter, space):
-    for name, func in BUILTIN_FUNCTIONS:
-        interpreter.functions[name] = func

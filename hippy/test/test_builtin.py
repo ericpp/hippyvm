@@ -583,6 +583,16 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a;
         ''')
         assert self.space.str_w(output[0]) == 'xyzxyz'
+        py.test.skip("XXX in-progress")
+        assert self.echo("str_repeat('a', 5)") == "aaaaa"
+        assert self.echo("str_repeat('a', 5.9)") == "aaaaa"
+        assert self.echo("str_repeat('a', '5')") == "aaaaa"
+        assert self.echo("str_repeat('a', '+5')") == "aaaaa"
+        assert self.echo("str_repeat('a', '5.1')") == "aaaaa"
+        assert self.echo("str_repeat('a', '5.1')") == "aaaaa"
+        assert self.echo("str_repeat('a', TRUE)") == "a"
+        assert self.echo("str_repeat('a', FALSE)") == ""
+        assert self.echo("str_repeat('a', NULL)") == ""
 
     def test_gettype(self):
         output = self.run('''

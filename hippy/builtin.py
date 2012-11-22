@@ -277,6 +277,10 @@ def microtime(space, is_float):
         raise InterpreterError("only is_float implemented")
     return space.wrap(time.time())
 
+@wrap(['space', W_Root])
+def gettype(space, w_x):
+    return space.newstrconst(space.TYPENAMES[w_x.tp])
+
 from hippy.module.serialize import unserialize
 
 unserialize = wrap(['space', str])(unserialize)

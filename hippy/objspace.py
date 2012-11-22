@@ -41,6 +41,11 @@ class ObjSpace(object):
     (w_int, w_float, w_str, w_array,
      w_cell, w_null, w_reference, w_bool, w_fakeindex) = range(9)
 
+    # in the same order as the types above
+    TYPENAMES = ["integer", "double", "string", "array",
+                 "unknown type", "NULL", "unknown type",
+                 "boolean", "unknown type"]
+
     def __init__(self):
         self.w_True = W_BoolObject(True)
         self.w_False = W_BoolObject(False)

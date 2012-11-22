@@ -501,3 +501,19 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a;
         ''')
         assert self.space.str_w(output[0]) == 'xyzxyz'
+
+    def test_gettype(self):
+        output = self.run('''
+        echo gettype(5 > 2);
+        echo gettype(5);
+        echo gettype(5.5);
+        echo gettype("5");
+        echo gettype(array());
+        echo gettype(NULL);
+        ''')
+        assert self.space.str_w(output[0]) == 'boolean'
+        assert self.space.str_w(output[1]) == 'integer'
+        assert self.space.str_w(output[2]) == 'double'
+        assert self.space.str_w(output[3]) == 'string'
+        assert self.space.str_w(output[4]) == 'array'
+        assert self.space.str_w(output[5]) == 'NULL'

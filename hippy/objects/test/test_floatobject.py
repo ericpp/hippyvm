@@ -17,3 +17,21 @@ class TestFloatObject(BaseTestInterpreter):
         assert self.echo('(-5.9) % 2.9') == '-1'
         assert self.echo('5.9 % (-2.9)') == '1'
         assert self.echo('gettype((-5.9) % 2.9)') == 'integer'
+
+    def test_lshift(self):
+        # truncated to ints
+        assert self.echo('5.9 << 1') == '10'
+        assert self.echo('5.9 << 1.9') == '10'
+        assert self.echo('gettype(5.9 << 1)') == 'integer'
+
+    def test_rshift(self):
+        # truncated to ints
+        assert self.echo('32.9 >> 1') == '16'
+        assert self.echo('32.9 >> 2.9') == '8'
+        assert self.echo('gettype(32.9 >> 1)') == 'integer'
+
+    def test_or(self):
+        # truncated to ints
+        assert self.echo('6.9 | 1') == '7'
+        assert self.echo('6.9 | 1.9') == '7'
+        assert self.echo('gettype(6.9 >> 1.9)') == 'integer'

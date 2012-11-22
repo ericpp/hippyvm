@@ -57,12 +57,25 @@ class W_FloatObject(W_Root):
         assert isinstance(w_other, W_FloatObject)
         return self._truncate(space).mod(space, w_other._truncate(space))
 
+    def lshift(self, space, w_other):
+        assert isinstance(w_other, W_FloatObject)
+        return self._truncate(space).lshift(space, w_other._truncate(space))
+
+    def rshift(self, space, w_other):
+        assert isinstance(w_other, W_FloatObject)
+        return self._truncate(space).rshift(space, w_other._truncate(space))
+
+    def or_(self, space, w_other):
+        assert isinstance(w_other, W_FloatObject)
+        return self._truncate(space).or_(space, w_other._truncate(space))
+
     def __repr__(self):
         return 'W_FloatObject(%s)' % self.floatval
 
 # floats have no shifts
-for _name in [i for i in BINOP_LIST if i not in ['lshift', 'rshift', 'mod',
-                                                 'or_']]:
+for _name in BINOP_LIST:
+    if hasattr(W_FloatObject, _name):
+        continue
     setattr(W_FloatObject, _name, _new_binop(W_FloatObject, _name,
                                              'floatval',
                                              _name in BINOP_COMPARISON_LIST))

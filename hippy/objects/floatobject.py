@@ -72,7 +72,6 @@ class W_FloatObject(W_Root):
     def __repr__(self):
         return 'W_FloatObject(%s)' % self.floatval
 
-# floats have no shifts
 for _name in BINOP_LIST:
     if hasattr(W_FloatObject, _name):
         continue

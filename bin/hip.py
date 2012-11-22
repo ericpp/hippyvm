@@ -29,6 +29,8 @@ def repl(argv):
         except EOFError:
             print
             break
+        if not line.lstrip() or line.lstrip().startswith('//'):
+            continue
         try:
             pc = parse(line)
             bc = compile_ast(pc, space, 0, print_exprs=True)

@@ -1,5 +1,5 @@
 
-import operator
+import os, operator
 from pypy.rlib.objectmodel import specialize
 from hippy.consts import BINOP_LIST
 from hippy.objects.base import W_Root
@@ -21,6 +21,9 @@ def getspace():
 class ExecutionContext(object):
     def __init__(self):
         self.interpreter = None
+
+    def writestr(self, str):
+        os.write(1, str)
 
 
 class ObjSpaceWithIter(object):

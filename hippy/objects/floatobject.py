@@ -18,13 +18,16 @@ class W_FloatObject(W_Root):
     def as_number(self, space):
         return self
 
-    def as_string(self, space):
+    def _as_str(self):
         s = str(self.floatval)
         if s.endswith('.0'):
             i = len(s) - 2
             assert i >= 0
             s = s[:i]
-        return space.newstrconst(s)
+        return s
+
+    def as_string(self, space):
+        return space.newstrconst(self._as_str())
 
     def coerce(self, space, tp):
         if tp == space.tp_float:
@@ -71,6 +74,9 @@ class W_FloatObject(W_Root):
 
     def __repr__(self):
         return 'W_FloatObject(%s)' % self.floatval
+
+    def var_dump(self, space, indent):
+        space.ec.writestr('%sfloat(%s)\n' % (indent, self._as_str()))
 
 for _name in BINOP_LIST:
     if hasattr(W_FloatObject, _name):

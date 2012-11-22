@@ -90,6 +90,10 @@ class W_Root(object):
     def hash(self, space):
         raise InterpreterError("unsupported hash")
 
+    def var_dump(self, space, indent):
+        # unsupported type: use the RPython repr
+        space.ec.writestr('%s%r\n' % (indent, self))
+
 class W_NullObject(W_Root):
     def copy(self, space):
         return self
@@ -105,3 +109,6 @@ class W_NullObject(W_Root):
 
     def eq_w(self, space, other):
         return True
+
+    def var_dump(self, space, indent):
+        space.ec.writestr("%sNULL\n" % indent)

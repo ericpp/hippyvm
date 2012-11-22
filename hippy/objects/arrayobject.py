@@ -506,6 +506,22 @@ class W_ArrayObject(W_Root):
     def as_string(self, space):
         return space.newstrconst("Array")
 
+    def var_dump(self, space, indent):
+        space.ec.writestr('%sarray(%d) {\n' % (indent, self.arraylen(space)))
+        subindent = indent + '  '
+        with space.iter(self) as itr:
+            while not itr.done():
+                w_key, w_value = itr.next_item(space)
+                if w_key.tp == space.tp_int:
+                    key = space.int_w(w_key)
+                    s = '%s[%d]=>\n' % (subindent, key)
+                else:
+                    key = space.str_w(w_key)
+                    s = '%s["%s"]=>\n' % (subindent, key)
+                space.ec.writestr(s)
+                w_value.var_dump(space, subindent)
+        space.ec.writestr('%s}\n' % indent)
+
 class W_ArrayConstant(W_ArrayObject):
     def copy(self, space):
         return W_ArrayObject(self.strategy, self.storage, self.next_idx)

@@ -1,5 +1,4 @@
 
-import os
 from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
      BINOP_LIST, RETURN, INPLACE_LIST
@@ -242,7 +241,7 @@ class Interpreter(object):
 
     def echo(self, space, v):
         # XXX extra copy of the string if mutable
-        os.write(1, space.conststr_w(space.as_string(v)))
+        space.ec.writestr(space.conststr_w(space.as_string(v)))
 
     def ILLEGAL(self, bytecode, frame, space, arg, arg2, pc):
         raise IllegalInstruction()

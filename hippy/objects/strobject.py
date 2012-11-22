@@ -487,3 +487,7 @@ class W_StringObject(W_Root):
     def hash(self):
         self.force_concat()
         return self.strategy.hash(self.storage)
+
+    def var_dump(self, space, indent):
+        s = self.str_w(space)
+        space.ec.writestr('%sstring(%d) "%s"\n' % (indent, len(s), s))

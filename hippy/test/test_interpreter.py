@@ -20,6 +20,7 @@ class BaseTestInterpreter(object):
     def run(self, source):
         self.space = ObjSpace()
         interp = MockInterpreter(self.space)
+        self.space.ec.writestr = interp.output.append
         bc = compile_ast(parse(source), self.space)
         interp.interpret(self.space, Frame(self.space, bc), bc)
         return interp.output

@@ -100,6 +100,9 @@ class W_IntObject(W_Root):
     def __repr__(self):
         return 'W_IntObject(%s)' % self.intval
 
+    def var_dump(self, space, indent):
+        space.ec.writestr('%sint(%d)\n' % (indent, self.intval))
+
 for _name in BINOP_LIST:
     if hasattr(W_IntObject, _name):
         continue

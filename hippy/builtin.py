@@ -285,6 +285,11 @@ def gettype(space, w_x):
 def function_exists(space, funcname):
     return space.newbool(funcname in space.ec.interpreter.functions)
 
+@wrap(['space', 'args_w'])
+def var_dump(space, args_w):
+    for w_x in args_w:
+        w_x.var_dump(space, indent='')
+
 from hippy.module.serialize import unserialize
 
 unserialize = wrap(['space', str])(unserialize)

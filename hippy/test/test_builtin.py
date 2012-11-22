@@ -528,3 +528,57 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[0]) == '1'
         assert self.space.str_w(output[1]) == '1'
         assert self.space.str_w(output[2]) == ''
+
+    def test_var_dump(self):
+        output = self.run('''
+        var_dump(5);
+        $a = 5.5; var_dump($a);
+        var_dump(5.0);
+        var_dump(TRUE);
+        var_dump(FALSE);
+        var_dump(NULL);
+        var_dump(5, 6, 7);
+        var_dump("foobar");
+        var_dump(array(4, 5));
+        ''')
+        assert ''.join(output) == '''\
+int(5)
+float(5.5)
+float(5)
+bool(true)
+bool(false)
+NULL
+int(5)
+int(6)
+int(7)
+string(6) "foobar"
+array(2) {
+  [0]=>
+  int(4)
+  [1]=>
+  int(5)
+}
+'''
+
+    def test_var_dump_2(self):
+        py.test.skip("FIXME")
+        output = self.run('''
+        var_dump(array(TRUE, 5), array("xx"=>array(0), 7));
+        ''')
+        assert ''.join(output) == '''\
+array(2) {
+  [0]=>
+  bool(true)
+  [1]=>
+  int(5)
+}
+array(2) {
+  ["xx"]=>
+  array(1) {
+    [0]=>
+    int(0)
+  }
+  [0]=>
+  int(7)
+}
+'''

@@ -5,6 +5,8 @@ from hippy.objspace import ObjSpace
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
 from hippy.error import InterpreterError
+from hippy.conftest import option
+from hippy.test.directrunner import run_source
 
 class MockInterpreter(Interpreter):
     """ Like the interpreter, but captures stdout
@@ -19,6 +21,8 @@ class MockInterpreter(Interpreter):
 class BaseTestInterpreter(object):
     def run(self, source):
         self.space = ObjSpace()
+        if option.runappdirect:
+            return run_source(self.space, source)
         interp = MockInterpreter(self.space)
         bc = compile_ast(parse(source), self.space)
         interp.interpret(self.space, Frame(self.space, bc), bc)

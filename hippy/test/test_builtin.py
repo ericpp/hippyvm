@@ -582,3 +582,7 @@ array(2) {
   int(7)
 }
 '''
+
+    def test_var_dump_recursion(self):
+        output = self.run('var_dump($GLOBALS);')
+        assert '*RECURSION*' in ''.join(output)

@@ -488,6 +488,6 @@ class W_StringObject(W_Root):
         self.force_concat()
         return self.strategy.hash(self.storage)
 
-    def var_dump(self, space, indent):
+    def var_dump(self, space, indent, recursion):
         s = self.str_w(space)
         space.ec.writestr('%sstring(%d) "%s"\n' % (indent, len(s), s))

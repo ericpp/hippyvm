@@ -25,7 +25,7 @@ class W_BoolObject(W_Root):
         # XXX quick hack, should go via coerce, but we don't have actual strings
         return str(int(self.boolval))
 
-    def var_dump(self, space, indent):
+    def var_dump(self, space, indent, recursion):
         if self.boolval:
             s = '%sbool(true)\n' % indent
         else:

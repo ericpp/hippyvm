@@ -506,7 +506,11 @@ class W_ArrayObject(W_Root):
     def as_string(self, space):
         return space.newstrconst("Array")
 
-    def var_dump(self, space, indent):
+    def var_dump(self, space, indent, recursion):
+        if self in recursion:
+            space.ec.writestr('%s*RECURSION*\n' % indent)
+            return
+        recursion[self] = None
         space.ec.writestr('%sarray(%d) {\n' % (indent, self.arraylen(space)))
         subindent = indent + '  '
         with space.iter(self) as itr:
@@ -519,8 +523,9 @@ class W_ArrayObject(W_Root):
                     key = space.str_w(w_key)
                     s = '%s["%s"]=>\n' % (subindent, key)
                 space.ec.writestr(s)
-                w_value.var_dump(space, subindent)
+                w_value.var_dump(space, subindent, recursion)
         space.ec.writestr('%s}\n' % indent)
+        del recursion[self]
 
 class W_ArrayConstant(W_ArrayObject):
     def copy(self, space):

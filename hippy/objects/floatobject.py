@@ -75,7 +75,7 @@ class W_FloatObject(W_Root):
     def __repr__(self):
         return 'W_FloatObject(%s)' % self.floatval
 
-    def var_dump(self, space, indent):
+    def var_dump(self, space, indent, recursion):
         space.ec.writestr('%sfloat(%s)\n' % (indent, self._as_str()))
 
 for _name in BINOP_LIST:

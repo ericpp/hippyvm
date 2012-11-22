@@ -15,20 +15,45 @@ def source_replace(source):
     reslines.append("\n?>\n")
     return "\n".join(reslines)
 
-def parse_single(space, i, lines, output):
-    line = lines[i]
+def parse_array(space, i, lines, lgt):
+    pairs = []
+    for k in range(lgt):
+        line = lines[i].strip()
+        assert line.endswith('=>')
+        if line[1] == '"':
+            w_key = space.newstrconst(line[2:-4])
+        else:
+            w_key = space.wrap(int(line[1:-3]))
+        w_value, i = parse_single(space, i + 1, lines)
+        pairs.append((w_key, w_value))
+    return space.new_array_from_pairs(pairs), i + 1
+
+def parse_single(space, i, lines):
+    line = lines[i].strip()
     if line.startswith('int'):
-        output.append(space.wrap(int(line[len('int('):-1])))
+        return space.wrap(int(line[len('int('):-1])), i + 1
+    elif line.startswith('bool'):
+        return space.wrap(line[len('bool('):-1] == 'true'), i + 1
+    if line.startswith('float'):
+        return space.wrap(float(line[len('float('):-1])), i + 1
+    elif line == 'NULL':
+        return space.w_Null, i + 1
+    elif line.startswith('array'):
+        lgt = int(line[len('array') + 1:line.find(')')])
+        return parse_array(space, i + 1, lines, lgt)
+    elif line.startswith('string'):
+        lgt = int(line[len('string') + 1:line.find(')')])
+        return space.newstrconst(line[line.find('"') + 1:-1]), i + 1
     else:
         raise Exception("unsupported line %s" % line)
-
 
 def parse_result(space, stdout):
     lines = stdout.splitlines()
     output = []
     i = 0
     while i < len(lines):
-        i = parse_single(space, i, lines, output)
+        next, i = parse_single(space, i, lines)
+        output.append(next)
     return output
 
 def run_source(space, source):

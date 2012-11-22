@@ -28,4 +28,31 @@ def test_source_run():
     assert space.int_w(output[0]) == 1
 
 def test_parse_array_output():
-    pass
+    space = ObjSpace()
+    output = run_source(space, '''
+    $a = array(1, 2, 3);
+    echo $a;
+    $a = array("c" => 2);
+    echo $a;
+    ''')
+    assert len(output) == 2
+    assert space.arraylen(output[0]) == 3
+    assert space.arraylen(output[1]) == 1
+    assert space.int_w(space.getitem(output[0], space.wrap(2))) == 3
+    assert space.int_w(space.getitem(output[1], space.newstrconst('c'))) == 2
+
+def test_parse_str():
+    space = ObjSpace()
+    output = run_source(space, '''
+    echo "dupa";
+    ''')
+    assert space.str_w(output[0]) == 'dupa'
+    
+def test_parse_misc():
+    space = ObjSpace()
+    output = run_source(space, '''
+    echo NULL, 3.5, TRUE;
+    ''')
+    assert output[0] is space.w_Null
+    assert space.float_w(output[1]) == 3.5
+    assert space.is_true(output[2])

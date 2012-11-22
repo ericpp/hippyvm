@@ -320,6 +320,7 @@ def function_exists(space, funcname):
 def var_dump(space, args_w):
     for w_x in args_w:
         w_x.var_dump(space, indent='', recursion={})
+    return space.w_Null
 
 def _print_r(space, w_x, indent, recursion, builder):
     if w_x.tp == space.tp_array:

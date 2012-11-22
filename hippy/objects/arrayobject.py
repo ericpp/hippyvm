@@ -29,8 +29,8 @@ class ArrayStratMixin(object):
         pass
 
 def decode_index(space, w_index):
-    if w_index.tp != space.w_int:
-        if w_index.tp == space.w_str:
+    if w_index.tp != space.tp_int:
+        if w_index.tp == space.tp_str:
             return int(space.str_w(w_index))
         raise ValueError
     return space.int_w(w_index)
@@ -54,7 +54,7 @@ class ListArrayStrategy(BaseArrayStrategy, ArrayStratMixin):
     def setitem(self, space, w_obj, w_item, w_value):
         # we can consider "contains references" as yet another storage, for
         # performance when we don't have to do that
-        if w_item.tp != space.w_int:
+        if w_item.tp != space.tp_int:
             w_obj.promote_to_hash(space)
             return w_obj.setitem(space, w_item, w_value)
         storage = self.unerase(w_obj.storage)
@@ -116,7 +116,7 @@ class UnwrappedListArrayStrategy(ArrayStratMixin):
             self.rewrite_to_object_strat(space, w_obj)
             w_obj.setitem(space, w_item, w_value)
             return w_value
-        if w_item.tp != space.w_int:
+        if w_item.tp != space.tp_int:
             w_obj.promote_to_hash(space)
             return w_obj.setitem(space, w_item, w_value)
         item = space.int_w(w_item)
@@ -173,7 +173,7 @@ class IntListArrayStrategy(BaseArrayStrategy, UnwrappedListArrayStrategy):
     IteratorClass = arrayiter.IntArrayIterator
 
     def check_type(self, space, w_obj):
-        return w_obj.tp == space.w_int
+        return w_obj.tp == space.tp_int
 
     def unwrap(self, space, w_obj):
         return space.int_w(w_obj)
@@ -188,7 +188,7 @@ class FloatListArrayStrategy(BaseArrayStrategy, UnwrappedListArrayStrategy):
     IteratorClass = arrayiter.FloatArrayIterator
 
     def check_type(self, space, w_obj):
-        return w_obj.tp == space.w_float
+        return w_obj.tp == space.tp_float
 
     def unwrap(self, space, w_obj):
         return space.float_w(w_obj)
@@ -208,7 +208,7 @@ class EmptyArrayStrategy(BaseArrayStrategy, ArrayStratMixin):
         raise InterpreterError("Undefined offset")
 
     def setitem(self, space, w_obj, w_item, w_value):
-        if w_item.tp == space.w_int:
+        if w_item.tp == space.tp_int:
             if space.int_w(w_item) == 0:
                 return self.append(space, w_obj, w_value)
             # XXX we can improve and have unwrapped-but-with-bitmask, if we
@@ -226,10 +226,10 @@ class EmptyArrayStrategy(BaseArrayStrategy, ArrayStratMixin):
         w_obj.strategy.setitem(space, w_obj, w_item, w_value)
 
     def append(self, space, w_obj, w_item):
-        if w_item.tp == space.w_int:
+        if w_item.tp == space.tp_int:
             new_strat = get_strategy(IntListArrayStrategy)
             new_storage = new_strat.erase([space.int_w(w_item)])
-        elif w_item.tp == space.w_float:
+        elif w_item.tp == space.tp_float:
             new_strat = get_strategy(FloatListArrayStrategy)
             new_storage = new_strat.erase([space.float_w(w_item)])
         else:
@@ -445,7 +445,7 @@ class W_ArrayObject(W_Root):
         return w_res
 
     def itemreference(self, space, w_item):
-        if w_item.tp == space.w_int:
+        if w_item.tp == space.tp_int:
             return W_ContainerIntReference(space, self, space.int_w(w_item))
         return W_ContainerReference(space, self, w_item)
 
@@ -527,17 +527,17 @@ def new_array_from_list(space, lst_w):
         # empty strategy
         strat = get_strategy(EmptyArrayStrategy)
         return W_ArrayConstant(strat, strat.erase(None))
-    if lst_w[0].deref().tp == space.w_int:
+    if lst_w[0].deref().tp == space.tp_int:
         for w_item in lst_w:
-            if w_item.deref().tp != space.w_int:
+            if w_item.deref().tp != space.tp_int:
                 break
         else:
             strat = get_strategy(IntListArrayStrategy)
             storage = strat.erase([space.int_w(w_obj) for w_obj in lst_w])
             return W_ArrayConstant(strat, storage)
-    elif lst_w[0].deref().tp == space.w_float:
+    elif lst_w[0].deref().tp == space.tp_float:
         for w_item in lst_w:
-            if w_item.deref().tp != space.w_float:
+            if w_item.deref().tp != space.tp_float:
                 break
         else:
             strat = get_strategy(FloatListArrayStrategy)
@@ -567,12 +567,12 @@ def new_map_from_pairs(space, lst_w):
     dct = {}
     next_idx = 0
     for i, (k, v) in enumerate(lst_w):
-        if k.tp == space.w_fakeindex:
+        if k.tp == space.tp_fakeindex:
             lst.append(v)
             dct[str(next_idx)] = len(lst) - 1
             next_idx += 1
         else:
-            if k.tp == space.w_int:
+            if k.tp == space.tp_int:
                 if space.int_w(k) > next_idx:
                     next_idx = space.int_w(k) + 1
             if not space.str_w(space.as_string(k)) in dct:

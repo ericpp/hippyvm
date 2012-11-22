@@ -693,7 +693,7 @@ class TestCompiler(object):
         assert bc.stackdepth == 1
         arr = bc.consts[0]
         space = self.space
-        assert arr.tp == space.w_array
+        assert arr.tp == space.tp_array
         assert space.str_w(space.getitem(arr, space.newstrconst('abc'))) == "def"
 
     def test_extra_offset(self):

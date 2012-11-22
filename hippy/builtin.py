@@ -182,7 +182,7 @@ def printf(space, args_w):
 
 @wrap(['space', W_Root])
 def is_array(space, w_obj):
-    return space.wrap(w_obj.tp == space.w_array)
+    return space.wrap(w_obj.tp == space.tp_array)
 
 def is_int(s):
     if not s:
@@ -234,7 +234,7 @@ def error_reporting(space, level):
 
 @wrap(['space', W_Root])
 def empty(space, w_item):
-    if w_item.tp == space.w_array:
+    if w_item.tp == space.tp_array:
         return space.newbool(space.arraylen(w_item) == 0)
     return space.newbool(not space.is_true(w_item))
 

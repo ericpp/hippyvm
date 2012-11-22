@@ -19,7 +19,7 @@ class W_FloatObject(W_Root):
         return space.newstrconst(str(self.floatval))
 
     def coerce(self, space, tp):
-        if tp == space.w_float:
+        if tp == space.tp_float:
             return self
         raise NotImplementedError
 

@@ -51,11 +51,11 @@ class TestArrayDirect(object):
         def unpack((w_1, w_2)):
             l = []
             for w_obj in w_1, w_2:
-                if w_obj.tp == space.w_str:
+                if w_obj.tp == space.tp_str:
                     l.append(space.str_w(w_obj))
-                elif w_obj.tp == space.w_float:
+                elif w_obj.tp == space.tp_float:
                     l.append(space.float_w(w_obj))
-                elif w_obj.tp == space.w_int:
+                elif w_obj.tp == space.tp_int:
                     l.append(space.int_w(w_obj))
                 else:
                     raise NotImplementedError
@@ -136,11 +136,11 @@ class TestArrayDirect(object):
         def unpack((w_1, w_2)):
             l = []
             for w_obj in w_1, w_2:
-                if w_obj.tp == space.w_str:
+                if w_obj.tp == space.tp_str:
                     l.append(space.str_w(w_obj))
-                elif w_obj.tp == space.w_float:
+                elif w_obj.tp == space.tp_float:
                     l.append(space.float_w(w_obj))
-                elif w_obj.tp == space.w_int:
+                elif w_obj.tp == space.tp_int:
                     l.append(space.int_w(w_obj))
                 else:
                     raise NotImplementedError

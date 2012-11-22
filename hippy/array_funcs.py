@@ -46,7 +46,7 @@ def array_merge(space, args_w):
             while not w_iter.done():
                 w_key, w_value = w_iter.next_item(space)
             # XXX a fair bit inefficient
-                if w_key.tp == space.w_int or is_int(space.str_w(w_key)):
+                if w_key.tp == space.tp_int or is_int(space.str_w(w_key)):
                     lst.append((None, w_value))
                 else:
                     lst.append((w_key, w_value))
@@ -69,7 +69,7 @@ def array_diff_key(space, args_w):
     if len(args_w) < 2:
         raise InterpreterError("not enough arguments to array_diff_key")
     for w_arg in args_w:
-        if w_arg.tp != space.w_array:
+        if w_arg.tp != space.tp_array:
             # issue notice, ignored anyway
             return space.w_Null
     w_arr = space.as_array(args_w[0])
@@ -91,7 +91,7 @@ def array_diff_assoc(space, args_w):
     if len(args_w) < 2:
         raise InterpreterError("not enough arguments to array_diff_key")
     for w_arg in args_w:
-        if w_arg.tp != space.w_array:
+        if w_arg.tp != space.tp_array:
             # issue notice, ignored anyway
             return space.w_Null
     w_arr = space.as_array(args_w[0])
@@ -117,13 +117,13 @@ def array_diff_assoc(space, args_w):
 def array_change_key_case(space, w_arr, str_case):
     pairs = []
 
-    if w_arr.tp != space.w_array:
+    if w_arr.tp != space.tp_array:
         return space.w_Null
 
     with space.iter(w_arr) as itr:
         while not itr.done():
             w_key, w_value = itr.next_item(space)
-            if w_key.tp == space.w_str:
+            if w_key.tp == space.tp_str:
                 k_str = w_key.str_w(space)
                 if str_case == 1:
                     k_str = k_str.upper()
@@ -144,7 +144,7 @@ def array_slice(space, args_w):
         raise InterpreterError("first argument must be array,\
  second must be int")
     else:
-        if args_w[0].tp == space.w_array and args_w[1].tp == space.w_int:
+        if args_w[0].tp == space.tp_array and args_w[1].tp == space.tp_int:
             w_arr = args_w[0]
             start = space.int_w(space.as_number(args_w[1]))
         else:
@@ -156,17 +156,17 @@ def array_slice(space, args_w):
     if len(args_w) == 3:
         # w_arr, start, end
         # w_arr, start, keep_keys
-        if args_w[2].tp == space.w_bool:
+        if args_w[2].tp == space.tp_bool:
             keep_keys = space.is_true(args_w[2])
             end = space.arraylen(w_arr)
-        elif args_w[2].tp == space.w_int:
+        elif args_w[2].tp == space.tp_int:
             end = space.int_w(space.as_number(args_w[2]))
         else:
             raise InterpreterError("third arugment must be int or bool")
 
     if len(args_w) == 4:
         # w_arr, start, end, keep_keys
-        if args_w[2].tp == space.w_int and args_w[3].tp == space.w_bool:
+        if args_w[2].tp == space.tp_int and args_w[3].tp == space.tp_bool:
             end = space.int_w(args_w[2])
             keep_keys = space.is_true(args_w[3])
         else:
@@ -181,7 +181,7 @@ def array_chunk(space, args_w):
     if len(args_w) < 2:
         raise InterpreterError("function need at least two \
 arguments array and int")
-    if args_w[0].tp != space.w_array and args_w[0].tp != space.w_int:
+    if args_w[0].tp != space.tp_array and args_w[0].tp != space.tp_int:
         raise InterpreterError("function need at least two \
  arguments array and int")
     w_arr = args_w[0]
@@ -200,9 +200,9 @@ arguments array and int")
 
 @wrap(['space', W_Root, W_Root])
 def array_combine(space, w_arr_a, w_arr_b):
-    if w_arr_a.tp != space.w_array:
+    if w_arr_a.tp != space.tp_array:
         return space.w_False
-    if w_arr_b.tp != space.w_array:
+    if w_arr_b.tp != space.tp_array:
         return space.w_False
     if space.arraylen(w_arr_a) != space.arraylen(w_arr_b):
         return space.w_False
@@ -224,8 +224,8 @@ def array_flip(space, w_arr):
     with space.iter(w_arr) as itr:
         while not itr.done():
             w_key, w_val = itr.next_item(space)
-            if w_key.tp not in (space.w_int, space.w_str) or\
-                    w_val.tp not in(space.w_int, space.w_str):
+            if w_key.tp not in (space.tp_int, space.tp_str) or\
+                    w_val.tp not in(space.tp_int, space.tp_str):
                 pairs.append((w_key, w_val))
             pairs.append((w_val, w_key))
     return space.new_array_from_pairs(pairs)
@@ -240,7 +240,7 @@ def array_keys(space, args_w):
     if len(args_w) < 1:
         raise InterpreterError("array_keys take at least one argument")
     else:
-        if args_w[0].tp == space.w_array:
+        if args_w[0].tp == space.tp_array:
             w_arr = args_w[0]
         else:
             raise InterpreterError("array_keys first arg must be array")
@@ -248,7 +248,7 @@ def array_keys(space, args_w):
         w_search = args_w[1]
     if len(args_w) == 3:
         w_search = args_w[1]
-        if args_w[2].tp == space.w_bool:
+        if args_w[2].tp == space.tp_bool:
             strict = space.is_true(args_w[2])
         else:
             raise InterpreterError("third arugment must be bool")
@@ -334,18 +334,18 @@ def array_pad(space, w_arr, w_size, w_value):
 #     keep_keys = space.newbool(False)
 #     if len(args_w) < 1:
 #         raise InterpreterError("function need at least one argument array")
-#     if args_w[0].tp != space.w_array:
+#     if args_w[0].tp != space.tp_array:
 #         raise InterpreterError("function need at least one argument array")
 #     w_arr = args_w[0]
 #     if len(args_w) == 2:
-#         if args_w[1].tp != space.w_bool:
+#         if args_w[1].tp != space.tp_bool:
 #             raise InterpreterError("preserve_keys has to be bool")
 #         keep_keys = args_w[1]
 
 #     with space.iter(w_arr) as itr:
 #         while not itr.done():
 #             key, val = itr.next_item(space)
-#             if key.tp == space.w_int and (not space.is_true(keep_keys)):
+#             if key.tp == space.tp_int and (not space.is_true(keep_keys)):
 #                 keys.append(last_idx)
 #                 last_idx += 1
 #             else:

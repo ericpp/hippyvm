@@ -38,8 +38,8 @@ class ObjSpace(object):
     """ This implements all the operations on the object. Since this is
     prebuilt, it should not contain any state
     """
-    (w_int, w_float, w_str, w_array,
-     w_cell, w_null, w_reference, w_bool, w_fakeindex) = range(9)
+    (tp_int, tp_float, tp_str, tp_array,
+     tp_cell, tp_null, tp_reference, tp_bool, tp_fakeindex) = range(9)
 
     # in the same order as the types above
     TYPENAMES = ["integer", "double", "string", "array",
@@ -57,8 +57,8 @@ class ObjSpace(object):
         tpright = self.deref(w_right).tp
         if tpleft == tpright:
             return tpleft
-        if tpleft == self.w_float or tpright == self.w_float:
-            return self.w_float
+        if tpleft == self.tp_float or tpright == self.tp_float:
+            return self.tp_float
         raise NotImplementedError
 
     def int_w(self, w_obj):
@@ -189,8 +189,6 @@ class ObjSpace(object):
             return v
         else:
             raise NotImplementedError
-    (w_int, w_float, w_str, w_array,
-     w_cell, w_null, w_reference, w_bool, w_fakeindex) = range(9)
 
     def _freeze_(self):
         return True
@@ -226,7 +224,7 @@ class ObjSpace(object):
 
     def as_array(self, w_obj):
         w_obj = w_obj.deref()
-        if w_obj.tp != self.w_array:
+        if w_obj.tp != self.tp_array:
             if w_obj is self.w_Null:
                 return self.new_array_from_list([])
             w_obj = self.new_array_from_list([w_obj])
@@ -243,7 +241,7 @@ def _new_binop(name):
             # to number for comparison
             if w_left.tp == w_right.tp:
                 return getattr(w_left, name)(self, w_right)
-            if w_left.tp == self.w_null or w_right.tp == self.w_null:
+            if w_left.tp == self.tp_null or w_right.tp == self.tp_null:
                 return self.wrap(getattr(operator, name)(self.is_true(w_left),
                                                          self.is_true(w_right)))
         w_left = w_left.as_number(self)
@@ -257,12 +255,12 @@ def _new_binop(name):
 for _name in BINOP_LIST:
     setattr(ObjSpace, _name, _new_binop(_name))
 
-W_FloatObject.tp = ObjSpace.w_float
-W_BoolObject.tp = ObjSpace.w_bool
-W_IntObject.tp = ObjSpace.w_int
-W_StringObject.tp = ObjSpace.w_str
-W_ArrayObject.tp = ObjSpace.w_array
-W_Cell.tp = ObjSpace.w_cell
-W_NullObject.tp = ObjSpace.w_null
-W_Reference.tp = ObjSpace.w_reference
-W_FakeIndex.tp = ObjSpace.w_fakeindex
+W_FloatObject.tp = ObjSpace.tp_float
+W_BoolObject.tp = ObjSpace.tp_bool
+W_IntObject.tp = ObjSpace.tp_int
+W_StringObject.tp = ObjSpace.tp_str
+W_ArrayObject.tp = ObjSpace.tp_array
+W_Cell.tp = ObjSpace.tp_cell
+W_NullObject.tp = ObjSpace.tp_null
+W_Reference.tp = ObjSpace.tp_reference
+W_FakeIndex.tp = ObjSpace.tp_fakeindex

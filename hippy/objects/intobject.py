@@ -41,9 +41,9 @@ class W_IntObject(W_Root):
         return space.newstrconst(str(self.intval))
 
     def coerce(self, space, tp):
-        if tp == space.w_int:
+        if tp == space.tp_int:
             return self
-        elif tp == space.w_float:
+        elif tp == space.tp_float:
             return space.newfloat(float(self.intval))
         raise NotImplementedError
 

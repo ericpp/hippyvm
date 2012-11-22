@@ -116,13 +116,13 @@ class Frame(object):
             return self.lookup_var_pos(name)
         pos = jit.hint(bytecode.lookup_var_pos(name), promote=True)
         w_v = self.vars_w[pos]
-        if w_v.tp == space.w_cell:
+        if w_v.tp == space.tp_cell:
             return w_v
         return W_Variable(self, pos)
 
     def load_fast(self, space, bytecode, no):
         w_v = self.vars_w[no]
-        if w_v.tp == space.w_cell:
+        if w_v.tp == space.tp_cell:
             return w_v
         return W_Variable(self, no)
 

@@ -583,6 +583,16 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a;
         ''')
         assert self.space.str_w(output[0]) == 'xyzxyz'
+        py.test.skip("XXX in-progress")
+        assert self.echo("str_repeat('a', 5)") == "aaaaa"
+        assert self.echo("str_repeat('a', 5.9)") == "aaaaa"
+        assert self.echo("str_repeat('a', '5')") == "aaaaa"
+        assert self.echo("str_repeat('a', '+5')") == "aaaaa"
+        assert self.echo("str_repeat('a', '5.1')") == "aaaaa"
+        assert self.echo("str_repeat('a', '5.1')") == "aaaaa"
+        assert self.echo("str_repeat('a', TRUE)") == "a"
+        assert self.echo("str_repeat('a', FALSE)") == ""
+        assert self.echo("str_repeat('a', NULL)") == ""
 
     def test_gettype(self):
         output = self.run('''
@@ -703,3 +713,23 @@ array(2) {
         ''')
         assert self.space.str_w(output[0]) == 'the result is: '
         assert self.space.str_w(output[1]) == 'Array\n(\n    [0] => 25.5\n)\n'
+
+    def test_intval(self):
+        py.test.skip("XXX in-progress")
+        assert self.echo("intval(42)") == "42"
+        assert self.echo("intval(4.2)") == "4"
+        assert self.echo("intval('42')") == "42"
+        assert self.echo("intval('+42')") == "42"
+        assert self.echo("intval('-42')") == "-42"
+        assert self.echo("intval(042)") == "34"
+        assert self.echo("intval('042')") == "42"
+        assert self.echo("intval(1e10)") == "1410065408"
+        assert self.echo("intval('1e10')") == "1"
+        assert self.echo("intval(0x1A)") == "26"
+        assert self.echo("intval(42000000)") == "42000000"
+        assert self.echo("intval(420000000000000000000)") == "0"
+        assert self.echo("intval('420000000000000000000')") == "2147483647"
+        assert self.echo("intval(42, 8)") == "42"
+        assert self.echo("intval('42', 8)") == "34"
+        assert self.echo("intval(array())") == "0"
+        assert self.echo("intval(array('foo', 'bar'))") == "1"

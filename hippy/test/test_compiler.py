@@ -26,9 +26,9 @@ def test_preprocess_string():
     assert c.vars == ['x', 'y', 'z']
 
 class TestCompiler(object):
-    def check_compile(self, source, expected=None):
+    def check_compile(self, source, expected=None, **kwds):
         self.space = ObjSpace()
-        bc = compile_ast(parse(source), self.space)
+        bc = compile_ast(parse(source), self.space, **kwds)
         if expected is not None:
             self.compare(bc, expected)
         return bc
@@ -727,3 +727,18 @@ class TestCompiler(object):
         RETURN_NULL
         """)
         assert bc.static_vars.keys() == ['a']
+
+    def test_print_exprs(self):
+        bc = self.check_compile("$x = 3;", """
+        LOAD_VAR_NAME 0
+        LOAD_VAR
+        LOAD_CONST 0
+        STORE
+        LOAD_NAME 0
+        ECHO 2
+        RETURN_NULL
+        """, print_exprs=True)
+        c = bc.consts[0]
+        assert isinstance(c, W_IntObject)
+        assert c.intval == 3
+        assert bc.stackdepth == 2

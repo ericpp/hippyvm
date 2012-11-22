@@ -18,8 +18,9 @@ from hippy.bytecode import ByteCode
 from hippy.function import Function
 from pypy.rlib.rsre.rsre_re import compile
 
-def compile_ast(mainnode, space, extra_offset=0):
-    c = CompilerContext(0, space, extra_offset=extra_offset)
+def compile_ast(mainnode, space, extra_offset=0, print_exprs=False):
+    c = CompilerContext(0, space, extra_offset=extra_offset,
+                        print_exprs=print_exprs)
     mainnode.compile(c)
     c.emit(consts.RETURN_NULL)
     return c.create_bytecode()
@@ -41,7 +42,7 @@ class CompilerContext(object):
     """ Context for compiling a piece of bytecode. It'll store the necessary
     """
     def __init__(self, startlineno, space, name='<main>', is_main=True,
-                 extra_offset=0):
+                 extra_offset=0, print_exprs=False):
         self.space = space
         self.data = []
         self.consts = []
@@ -63,6 +64,7 @@ class CompilerContext(object):
         self.uses_GLOBALS = False
         self.is_main = is_main
         self.extra_offset = extra_offset
+        self.print_exprs = print_exprs
         self.static_vars = {}
 
     def register_superglobal(self, name):
@@ -234,7 +236,13 @@ class __extend__(Stmt):
     def compile(self, ctx):
         ctx.set_lineno(self.lineno)
         self.expr.compile(ctx)
-        ctx.emit(consts.DISCARD_TOP)
+        if ctx.print_exprs:
+            # special mode used for interactive usage: print all expressions
+            # (with a final \n) instead of discarding them.
+            ctx.emit(consts.LOAD_NAME, ctx.create_name("\n"))
+            ctx.emit(consts.ECHO, 2)
+        else:
+            ctx.emit(consts.DISCARD_TOP)
 
 class __extend__(Return):
     def compile(self, ctx):

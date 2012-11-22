@@ -20,8 +20,8 @@ def repl(argv):
     space = getspace()
     interp = Interpreter(space)
     namespace = {}
+    print
     while True:
-        print
         try:
             line = raw_input("Hippy > ")
         except EOFError:
@@ -29,7 +29,7 @@ def repl(argv):
             break
         try:
             pc = parse(line)
-            bc = compile_ast(pc, space, 0)
+            bc = compile_ast(pc, space, 0, print_exprs=True)
             assert bc.uses_dict
         except Exception, e:
             print >> sys.stderr, '%s: %s' % (e.__class__.__name__, e)

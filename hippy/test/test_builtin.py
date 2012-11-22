@@ -431,13 +431,37 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[2]) == "60"
         assert self.space.str_w(output[3]) == "0"
 
-    # def test_array_reverse(self):
-    #     output = self.run('''
-    #     $a = array("php", 4.0, array ("green", "red"));
-    #     $a = array_reverse($a);
-    #     echo $a[2];
-    #     ''')
-    #     assert self.space.str_w(output[0]) == "php"
+    def test_array_reverse(self):
+        output = self.run('''
+        $a = array("php", 4.0, array ("green", "red"));
+        $a = array_reverse($a);
+        echo $a[2];
+        echo $a[1];
+        $a = array(0=>1, 2=>4, '3'=>'6');
+        $b = array_reverse($a, true);
+        $c = array_reverse($a, false);
+        echo $b[0];
+        echo $c[0];
+        $a = array(0=>1, 2=>4, '3'=>'6');
+        $b = array_reverse($a, 'x');
+        $c = array_reverse($a, '');
+        echo $b[0];
+        echo $c[0];
+        $a = array(0=>1, 2=>4, '3'=>'6');
+        $b = array_reverse($a, 0.001);
+        $c = array_reverse($a, 0);
+        echo $b[0];
+        echo $c[0];
+
+        ''')
+        assert self.space.str_w(output[0]) == "php"
+        assert self.space.str_w(output[1]) == "4.0"
+        assert self.space.str_w(output[2]) == "1"
+        assert self.space.str_w(output[3]) == "6"
+        assert self.space.str_w(output[4]) == "1"
+        assert self.space.str_w(output[5]) == "6"
+        assert self.space.str_w(output[6]) == "1"
+        assert self.space.str_w(output[7]) == "6"
 
     def test_array_keys(self):
         output = self.run('''

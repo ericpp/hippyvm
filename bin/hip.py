@@ -3,7 +3,7 @@
 Main read-eval-print loop for untranslated Hippy.
 """
 
-import sys, os
+import sys, os, pdb
 
 if __name__ == '__main__':
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,7 +19,9 @@ def repl(argv):
         print "XXX arguments ignored"
     space = getspace()
     interp = Interpreter(space)
+    namespace = {}
     while True:
+        print
         try:
             line = raw_input("Hippy > ")
         except EOFError:
@@ -28,11 +30,14 @@ def repl(argv):
         try:
             pc = parse(line)
             bc = compile_ast(pc, space, 0)
+            assert bc.uses_dict
         except Exception, e:
             print >> sys.stderr, '%s: %s' % (e.__class__.__name__, e)
             continue
-        frame = Frame(space, bc)
         try:
+            frame = Frame(space, bc)
+            frame.vars_dict.d.update(namespace)
+            namespace = frame.vars_dict.d
             interp.interpret(space, frame, bc)
         except Exception, e:
             print e

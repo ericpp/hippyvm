@@ -9,6 +9,9 @@ class W_FloatObject(W_Root):
     def __init__(self, floatval):
         self.floatval = floatval
 
+    def _truncate(self, space):
+        return space.wrap(int(self.floatval))
+
     def copy(self, space):
         return self # immutable object
 
@@ -49,6 +52,10 @@ class W_FloatObject(W_Root):
     def eq_w(self, space, w_other):
         assert isinstance(w_other, W_FloatObject)
         return self.floatval == w_other.floatval
+
+    def mod(self, space, w_other):
+        assert isinstance(w_other, W_FloatObject)
+        return self._truncate(space).mod(space, w_other._truncate(space))
 
     def __repr__(self):
         return 'W_FloatObject(%s)' % self.floatval

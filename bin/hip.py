@@ -21,9 +21,11 @@ def repl(argv):
     interp = Interpreter(space)
     namespace = {}
     print
+    print '-=- Hippy -=-'
+    print
     while True:
         try:
-            line = raw_input("Hippy > ")
+            line = raw_input("<? ")
         except EOFError:
             print
             break

@@ -61,6 +61,17 @@ class W_IntObject(W_Root):
         else:
             return space.newfloat(float(x) / float(y))
 
+    def mod(self, space, w_other):
+        assert isinstance(w_other, W_IntObject)
+        x = self.intval
+        y = w_other.intval
+        if y < 0:
+            y = -y
+        z = x % y
+        if x < 0:
+            z = -z
+        return space.newint(z)
+
     def is_true(self, space):
         return self.intval != 0
 
@@ -89,7 +100,9 @@ class W_IntObject(W_Root):
     def __repr__(self):
         return 'W_IntObject(%s)' % self.intval
 
-for _name in [i for i in BINOP_LIST if i != 'div']: # div returns floats
+for _name in BINOP_LIST:
+    if hasattr(W_IntObject, _name):
+        continue
     setattr(W_IntObject, _name, _new_binop(W_IntObject, _name,
                                            'intval',
                                            _name in BINOP_COMPARISON_LIST))

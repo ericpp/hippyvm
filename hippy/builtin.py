@@ -221,6 +221,10 @@ def is_scalar(space, w_obj):
     return space.wrap(w_obj.tp in (space.tp_int, space.tp_float,
                                    space.tp_str, space.tp_bool))
 
+@wrap(['space', W_Root])
+def is_string(space, w_obj):
+    return space.wrap(w_obj.tp == space.tp_str)
+
 @wrap(['space', W_Root], aliases=['sizeof'])
 def count(space, w_arr):
     if not isinstance(w_arr, W_ArrayObject):

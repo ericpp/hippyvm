@@ -244,6 +244,14 @@ class TestBuiltin(BaseTestInterpreter):
         assert [i.boolval for i in output] == [True, True, False, False,
                                                True, True, True]
 
+    def test_is_string(self):
+        output = self.run('''
+        echo is_string(0), is_string(0.0), is_string(NULL), is_string(array());
+        echo is_string(FALSE), is_string(TRUE), is_string("foo");
+        ''')
+        assert [i.boolval for i in output] == [False, False, False, False,
+                                               False, False, True]
+
     def test_array_merge(self):
         output = self.run('''
         $a = array("xyz" => 1);

@@ -413,6 +413,41 @@ class TestParser(object):
         assert r == Block([StaticDecl([InitializedVariable('x',
                                                         ConstantInt(3))], 1)])
 
+    def test_octal(self):
+        r = parse('''
+        027;
+        ''')
+        assert r == Block([Stmt(ConstantInt(23), 1)])
+
+    def test_ill_octal(self):
+        r = parse('''
+        02792;
+        ''')
+        assert r == Block([Stmt(ConstantInt(23), 1)])
+
+    def test_more_ill_octal(self):
+        r = parse('''
+        -07182;
+        ''')
+        assert r == Block([Stmt(ConstantInt(-57), 1)])
+
+    def test_hex(self):
+        r = parse('''
+        0xff;
+        ''')
+        assert r == Block([Stmt(ConstantInt(255), 1)])
+
+    def test_hex(self):
+        r = parse('''
+        0xff33ff33f23f;
+        ''')
+        assert r == Block([Stmt(ConstantInt(int('0xff33ff33f23f', 16)), 1)])
+
+    def test_minus_octal(self):
+        r = parse('''
+        -027;
+        ''')
+        assert r == Block([Stmt(ConstantInt(-23), 1)])
 
     def test_bug_1(self):
         r = parse('$i < $iter and $Tr;')

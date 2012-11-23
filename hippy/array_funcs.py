@@ -335,33 +335,33 @@ def array_pad(space, w_arr, w_size, w_value):
         _pad_array(space, w_arr, pairs, idx)
     return space.new_array_from_pairs(pairs)
 
-# @wrap(['space', 'args_w'])
-# def array_reverse(space, args_w):
-#     keys = []
-#     vals = []
-#     last_idx = 0
-#     keep_keys = space.newbool(False)
-#     if len(args_w) < 1:
-#         raise InterpreterError("function need at least one argument array")
-#     if args_w[0].tp != space.tp_array:
-#         raise InterpreterError("function need at least one argument array")
-#     w_arr = args_w[0]
-#     if len(args_w) == 2:
-#         if args_w[1].tp != space.tp_bool:
-#             raise InterpreterError("preserve_keys has to be bool")
-#         keep_keys = args_w[1]
-
-#     with space.iter(w_arr) as itr:
-#         while not itr.done():
-#             key, val = itr.next_item(space)
-#             if key.tp == space.tp_int and (not space.is_true(keep_keys)):
-#                 keys.append(last_idx)
-#                 last_idx += 1
-#             else:
-#                 keys.append(key)
-#             vals.append(val)
-#     pairs = zip(list(reversed(keys)), vals)
-#     return space.new_array_from_pairs(pairs)
+@wrap(['space', 'args_w'])
+def array_reverse(space, args_w):
+    keep_keys = False
+    if len(args_w) < 1:
+        raise InterpreterError("function need at least one argument array")
+    if args_w[0].tp != space.w_array:
+        raise InterpreterError("function need at least one argument array")
+    if len(args_w) == 2:
+        # if args_w[1].tp != space.w_bool:
+        #     raise InterpreterError("array_reverse() expects parameter"
+        #                            " 2 to be boolean")
+        keep_keys = space.is_true(args_w[1])
+    w_arr = args_w[0]
+    keys = []
+    vals = []
+    idx = space.arraylen(w_arr) - 1
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            w_key, w_val = itr.next_item(space)
+            if keep_keys:
+                keys.append(w_key)
+            else:
+                keys.append(space.newint(idx))
+                idx -= 1
+            vals.append(w_val)
+    pairs = zip(reversed(keys), reversed(vals))
+    return space.new_array_from_pairs(pairs)
 
 @wrap(['space', W_Root])
 def array_sum(space, w_arr):

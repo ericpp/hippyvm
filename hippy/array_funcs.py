@@ -319,16 +319,17 @@ def _pad_array(space, w_arr, pairs, idx):
 def array_pad(space, w_arr, w_size, w_value):
     pairs = []
     size = space.int_w(w_size)
-    if space.arraylen(w_arr) - abs(space.int_w(w_size)) >= 0:
+    arr_len = space.arraylen(w_arr)
+    if arr_len - abs(size) >= 0:
         return w_arr
-    pad_size = abs(size) - space.arraylen(w_arr)
+    pad_size = abs(size) - arr_len
     if size > 0:
         idx = _pad_array(space, w_arr, pairs, 0)
         for i in range(pad_size):
             pairs.append((space.newint(idx + i), w_value))
     else:
         idx = 0
-        for i in range(size + pad_size, 0):
+        for i in range(size + arr_len, 0):
             pairs.append((space.newint(idx), w_value))
             idx += 1
         _pad_array(space, w_arr, pairs, idx)

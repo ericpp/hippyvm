@@ -36,7 +36,7 @@ echo "-- Sub array for \$input argument --\n";
 var_dump( array_pad($input[1], $pad_size, $pad_value) );  // positive 'pad_size'
 var_dump( array_pad($input[1], -$pad_size, $pad_value) );  // negative 'pad_size'
 
-echo "Done";
+echo "Done\n";
 ?>
 --EXPECTF--
 *** Testing array_pad() : Passing 2-D array to $input argument ***

@@ -34,8 +34,10 @@ def parse_phpt(fname):
         if st == -1:
             tname = l.strip()
         if st == 0:
-            if l.startswith('<?'): continue
-            if l.startswith('?>'): continue
+            if l.startswith('<?'):
+                continue
+            if l.startswith('?>'):
+                continue
             src.append(l)
         if st == 1:
             exp.append(l)
@@ -81,5 +83,26 @@ class TestPHPTSuite(BaseTestInterpreter):
         for i, line in enumerate(output):
             if not isinstance(line, str):
                 line = self.space.str_w(line)
-            #print i, exp[i].strip(), self.space.str_w(line).strip()
+            assert line == exp[i]
+
+    def test_array_pad_variation5_phpt(self):
+        fname = os.path.join(PHPT_DIR,
+                             'standard/tests/array/array_pad_variation5.phpt')
+        (tname, src, exp) = parse_phpt(fname)
+
+        output = self.run(src)
+        for i, line in enumerate(output):
+            if not isinstance(line, str):
+                line = self.space.str_w(line)
+            assert line == exp[i]
+
+    def test_array_pad_variation7_phpt(self):
+        fname = os.path.join(PHPT_DIR,
+                             'standard/tests/array/array_pad_variation7.phpt')
+        (tname, src, exp) = parse_phpt(fname)
+
+        output = self.run(src)
+        for i, line in enumerate(output):
+            if not isinstance(line, str):
+                line = self.space.str_w(line)
             assert line == exp[i]

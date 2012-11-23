@@ -76,33 +76,25 @@ class BaseTestInterpreter(object):
 class TestPHPTSuite(BaseTestInterpreter):
 
     def test_array_pad_phpt(self):
-        fname = os.path.join(PHPT_DIR, 'standard/tests/array/array_pad.phpt')
-        (tname, src, exp) = parse_phpt(fname)
+        files = [
+            'array_pad.phpt',
+            #'array_pad_error.phpt',
+            #'array_pad_variation1.phpt',
+            #'array_pad_variation2.phpt',
+            #'array_pad_variation3.phpt',
+            #'array_pad_variation4.phpt', # parser error for $a = b"asda";
+            'array_pad_variation5.phpt',
+            #'array_pad_variation6.phpt',
+            'array_pad_variation7.phpt',
+            ]
+        prefix = 'standard/tests/array/'
+        test_dir = os.path.join(PHPT_DIR, prefix)
+        for f in files:
+            fname = os.path.join(test_dir, f)
+            (tname, src, exp) = parse_phpt(fname)
 
-        output = self.run(src)
-        for i, line in enumerate(output):
-            if not isinstance(line, str):
-                line = self.space.str_w(line)
-            assert line == exp[i]
-
-    def test_array_pad_variation5_phpt(self):
-        fname = os.path.join(PHPT_DIR,
-                             'standard/tests/array/array_pad_variation5.phpt')
-        (tname, src, exp) = parse_phpt(fname)
-
-        output = self.run(src)
-        for i, line in enumerate(output):
-            if not isinstance(line, str):
-                line = self.space.str_w(line)
-            assert line == exp[i]
-
-    def test_array_pad_variation7_phpt(self):
-        fname = os.path.join(PHPT_DIR,
-                             'standard/tests/array/array_pad_variation7.phpt')
-        (tname, src, exp) = parse_phpt(fname)
-
-        output = self.run(src)
-        for i, line in enumerate(output):
-            if not isinstance(line, str):
-                line = self.space.str_w(line)
-            assert line == exp[i]
+            output = self.run(src)
+            for i, line in enumerate(output):
+                if not isinstance(line, str):
+                    line = self.space.str_w(line)
+                assert line == exp[i]

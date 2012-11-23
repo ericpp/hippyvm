@@ -725,6 +725,15 @@ class Transformer(object):
         symname = node.children[0].symbol
         if symname == 'DECIMAL':
             return ConstantInt(int(node.children[0].additional_info))
+        if symname == 'HEXADECIMAL':
+            return ConstantInt(int(node.children[0].additional_info, 16))
+        if symname == 'OCTAL':
+            o = node.children[0].additional_info
+            if o.find('8') > 0:
+                o = o[:o.find('8')]
+            if o.find('9') > 0:
+                o = o[:o.find('9')]
+            return ConstantInt(int(o, 8))
         if symname == 'STR':
             info = node.children[0].additional_info
             end = len(info) - 1

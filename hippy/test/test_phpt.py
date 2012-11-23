@@ -9,9 +9,6 @@ from hippy.error import InterpreterError
 from hippy.conftest import option
 from hippy.test.directrunner import run_source
 
-TEST_DIR = os.path.dirname(__file__)
-PHPT_DIR = os.path.join(TEST_DIR, 'phpts')
-
 
 def parse_phpt(fname):
     src = []
@@ -73,28 +70,27 @@ class BaseTestInterpreter(object):
         return self.space.str_w(output[0])
 
 
+def pytest_generate_tests(metafunc):
+    argvalues = []
+    for phpt in metafunc.cls.phpt_files:
+        argvalues.append(phpt)
+    metafunc.parametrize("file_name", argvalues)
+
+TEST_DIR = os.path.dirname(__file__)
+PHPT_DIR = os.path.join(TEST_DIR, 'phpts')
+PHPT_FILES = []
+for root, dirs, files in os.walk(PHPT_DIR):
+    PHPT_FILES = [os.path.join(root, f) for f in files]
+
+
 class TestPHPTSuite(BaseTestInterpreter):
+    phpt_files = PHPT_FILES
 
-    def test_array_pad_phpt(self):
-        files = [
-            'array_pad.phpt',
-            #'array_pad_error.phpt',
-            #'array_pad_variation1.phpt',
-            #'array_pad_variation2.phpt',
-            #'array_pad_variation3.phpt',
-            #'array_pad_variation4.phpt', # parser error for $a = b"asda";
-            'array_pad_variation5.phpt',
-            #'array_pad_variation6.phpt',
-            'array_pad_variation7.phpt',
-            ]
-        prefix = 'standard/tests/array/'
-        test_dir = os.path.join(PHPT_DIR, prefix)
-        for f in files:
-            fname = os.path.join(test_dir, f)
-            (tname, src, exp) = parse_phpt(fname)
+    def test_phpt(self, file_name):
+        (tname, src, exp) = parse_phpt(file_name)
 
-            output = self.run(src)
-            for i, line in enumerate(output):
-                if not isinstance(line, str):
-                    line = self.space.str_w(line)
+        output = self.run(src)
+        for i, line in enumerate(output):
+            if not isinstance(line, str):
+                line = self.space.str_w(line)
                 assert line == exp[i]

@@ -16,7 +16,7 @@ class W_Root(object):
     def float_w(self, space):
         raise InterpreterError("TypeError: casting to float of wrong type")
 
-    def str_w(self, space): 
+    def str_w(self, space):
         raise InterpreterError("TypeError: casting to string of wrong type")
 
     def conststr_w(self, space):
@@ -94,6 +94,7 @@ class W_Root(object):
         # unsupported type: use the RPython repr
         space.ec.writestr('%s%r\n' % (indent, self))
 
+
 class W_NullObject(W_Root):
     def copy(self, space):
         return self
@@ -112,3 +113,6 @@ class W_NullObject(W_Root):
 
     def var_dump(self, space, indent, recursion):
         space.ec.writestr("%sNULL\n" % indent)
+
+    def abs(self, space):
+        return 0

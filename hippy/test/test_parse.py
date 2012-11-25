@@ -467,6 +467,18 @@ class TestParser(object):
         ''')
         assert r == Block([Stmt(ConstantFloat(float('10.3e-1')), 1)])
 
+    def test_exponent_simple(self):
+        r = parse('''
+        2.345e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(23.45), 1)])
+
+    def test_exponent_simple_minus(self):
+        r = parse('''
+        -2.345e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(-23.45), 1)])
+
     def test_minus_octal(self):
         r = parse('''
         -027;

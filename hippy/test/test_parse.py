@@ -437,11 +437,35 @@ class TestParser(object):
         ''')
         assert r == Block([Stmt(ConstantInt(255), 1)])
 
-    def test_hex(self):
+    def test_hex2(self):
         r = parse('''
         0xff33ff33f23f;
         ''')
         assert r == Block([Stmt(ConstantInt(int('0xff33ff33f23f', 16)), 1)])
+
+    def test_exponent(self):
+        r = parse('''
+        10e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10e1')), 1)])
+
+    def test_exponent_float(self):
+        r = parse('''
+        10.3e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10.3e1')), 1)])
+
+    def test_exponent_float_plus(self):
+        r = parse('''
+        10.3e+1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10.3e+1')), 1)])
+
+    def test_exponent_float_minus(self):
+        r = parse('''
+        10.3e-1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10.3e-1')), 1)])
 
     def test_minus_octal(self):
         r = parse('''

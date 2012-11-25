@@ -3,7 +3,6 @@ import py
 from hippy import hippydir
 from pypy.rlib.parsing.ebnfparse import parse_ebnf, make_parse_function
 from pypy.tool.pairtype import extendabletype
-
 grammar = py.path.local(hippydir).join('grammar.txt').read("rt")
 regexs, rules, ToAST = parse_ebnf(grammar)
 _parse = make_parse_function(regexs, rules, eof=True)
@@ -727,6 +726,8 @@ class Transformer(object):
             return ConstantInt(int(node.children[0].additional_info))
         if symname == 'HEXADECIMAL':
             return ConstantInt(int(node.children[0].additional_info, 16))
+        if symname == 'EXPONENT':
+            return ConstantFloat(float(node.children[0].additional_info))
         if symname == 'OCTAL':
             o = node.children[0].additional_info
             if o.find('8') > 0:

@@ -340,7 +340,7 @@ def array_reverse(space, args_w):
     keep_keys = False
     if len(args_w) < 1:
         raise InterpreterError("function need at least one argument array")
-    if args_w[0].tp != space.w_array:
+    if args_w[0].tp != space.tp_array:
         raise InterpreterError("function need at least one argument array")
     if len(args_w) == 2:
         # if args_w[1].tp != space.w_bool:

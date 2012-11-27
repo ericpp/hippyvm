@@ -515,7 +515,7 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_array_reverse(self):
         output = self.run('''
-        $a = array("php", 4.0, array ("green", "red"));
+        $a = array("php", 4.5, array ("green", "red"));
         $a = array_reverse($a);
         echo $a[2];
         echo $a[1];
@@ -537,7 +537,7 @@ class TestBuiltin(BaseTestInterpreter):
 
         ''')
         assert self.space.str_w(output[0]) == "php"
-        assert self.space.str_w(output[1]) == "4.0"
+        assert self.space.str_w(output[1]) == "4.5"
         assert self.space.str_w(output[2]) == "1"
         assert self.space.str_w(output[3]) == "6"
         assert self.space.str_w(output[4]) == "1"
@@ -547,12 +547,12 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_array_keys(self):
         output = self.run('''
-        $a = array("php", 4.0, "test"=>"test");
+        $a = array("php", 4.5, "test"=>"test");
         $a = array_keys($a);
         echo $a[0];
         echo $a[1];
         echo $a[2];
-        $a = array("php", 4.0, "test"=>"test", "php");
+        $a = array("php", 4.5, "test"=>"test", "php");
         $a = array_keys($a, "php");
         echo $a[0];
         echo $a[1];

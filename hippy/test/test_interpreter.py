@@ -313,9 +313,9 @@ class TestInterpreter(BaseTestInterpreter):
 
     def test_references(self):
         output = self.run('''
-        $a = 3;
-        $b = &$a;
-        $b = 5;
+        $a = 3;      // [Int(3), None]
+        $b = &$a;    // [r, r]  with r == Ref(Int(3),c=2)
+        $b = 5;      //                       Int(5)
         echo $b, $a;
         ''')
         assert [self.space.int_w(i) for i in output] == [5, 5]
@@ -334,9 +334,9 @@ class TestInterpreter(BaseTestInterpreter):
 
     def test_references_3(self):
         output = self.run('''
-        $a = 5;
-        $x = array();
-        $x[] = &$a;
+        $a = 5;         // [Int(5), None]
+        $x = array();   // [Int(5), Array([],c=1)]
+        $x[] = &$a;     // [r, Array([r],c=1)],  r == Ref(Int(5),c=2)
         $x[0] = 3;
         echo $a;
         ''')
@@ -686,6 +686,7 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_reference_to_a_reference(self):
+        py.test.skip("XXX fix me")
         output = self.run('''
         function f(&$x) {
             $x = 3;
@@ -698,6 +699,126 @@ class TestInterpreter(BaseTestInterpreter):
         echo g();
         ''')
         assert self.space.int_w(output[0]) == 3
+
+    def test_function_returns_reference_1(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function &f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        $a = array(array(5));
+        $b = &f($a);
+        $b[0] = 6;
+        echo $a[0][0];
+        ''')
+        assert self.space.int_w(output[0]) == 6
+
+    def test_function_returns_reference_2(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function &f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        $a = array(array(5));
+        $b = f($a);
+        $b[0] = 6;
+        echo $a[0][0];
+        ''')               # missing '&' in front of the call to f()
+        assert self.space.int_w(output[0]) == 5
+
+    def test_function_returns_reference_3(self):
+        output = self.run('''
+        function f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        $a = array(array(5));
+        $b = &f($a);
+        $b[0] = 6;
+        echo $a[0][0];
+        ''')               # missing '&' in front of the function declaration
+        assert self.space.int_w(output[0]) == 5
+
+    def test_function_returns_reference_4(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function &f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        function g(&$x) {
+            $x[0] = 6;
+        }
+        $a = array(array(5));
+        g(f($a));
+        echo $a[0][0];
+        ''')               # passing a reference directly to another call
+        assert self.space.int_w(output[0]) == 6
+
+    def test_function_returns_reference_5(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function &f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        function g($x) {
+            $x[0] = 6;
+        }
+        $a = array(array(5));
+        g(f($a));
+        echo $a[0][0];
+        ''')               # missing '&' in the argument in g()
+        assert self.space.int_w(output[0]) == 5
+
+    def test_function_returns_reference_5bis(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        function g(&$x) {
+            $x[0] = 6;
+        }
+        $a = array(array(5));
+        g(f($a));
+        echo $a[0][0];
+        ''')               # missing '&' in the return from f()
+        assert self.space.int_w(output[0]) == 5
+
+    def test_function_returns_reference_6(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function &f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        $a = array(array(5));
+        $b = array(f($a));
+        $b[0] = "foo";
+        echo $a[0][0];
+        ''')
+        assert self.space.int_w(output[0]) == 5
+
+    def test_function_returns_reference_7(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function &f(&$x) {
+            $y = &$x[0];
+            return $y;
+        }
+        function makearray(&$a) {
+            return array(&$a);
+        }
+        $a = array(array(5));
+        $b = makearray(f($a));
+        $b[0][0] = 6;
+        echo $a[0][0];
+        ''')
+        assert self.space.int_w(output[0]) == 6
 
     def test_function_mixed_case(self):
         output = self.run('''

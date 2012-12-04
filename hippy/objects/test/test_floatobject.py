@@ -34,4 +34,9 @@ class TestFloatObject(BaseTestInterpreter):
         # truncated to ints
         assert self.echo('6.9 | 1') == '7'
         assert self.echo('6.9 | 1.9') == '7'
-        assert self.echo('gettype(6.9 >> 1.9)') == 'integer'
+        assert self.echo('gettype(6.9 | 1.9)') == 'integer'
+
+    def test_and(self):
+        # truncated to ints
+        assert self.echo('6.9 & 5.9') == '4'
+        assert self.echo('gettype(6.9 & 5.9)') == 'integer'

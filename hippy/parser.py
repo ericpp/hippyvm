@@ -501,45 +501,399 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def atom_decimal(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("top_statement_list : top_statement_list top_statement")
     def top_statement_list_top_statement(self, p):
-        return p[0], p[1]
+        raise NotImplementedError(p), p[1]
 
     @pg.production("top_statement_list : top_statement")
     def top_statatement_list(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("top_statement : statement")
     def top_statement(self, p):
-        return p[0]
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : function_declaration_statement")
+    def top_statement_function_declaration_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : class_declaration_statement")
+    def top_statement_class_declaration_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : T_HALT_COMPILER H_LB H_RB H_END_STMT")
+    def top_statement_t_halt_compiler(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : T_NAMESPACE namespace_name H_END_STMT")
+    def top_statement_t_namespace_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : T_NAMESPACE namespace_name "
+                   "H_L_CB top_statement_list H_R_CB")
+    def top_statement_t_namespace_namespace_name_top_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : T_USE use_declarations H_END_STMT")
+    def top_statement_t_use_use_declarations(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("top_statement : constant_declaration H_END_STMT")
+    def top_statement_constant_declaration(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("constant_declaration : constant_declaration"
+                   " , T_STRING H_EQUAL static_scalar")
+    def constant_declaration_constant_decl_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("constant_declaration : T_CONST"
+                   " T_STRING H_EQUAL static_scalar")
+    def constant_declaration_t_const_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("use_declarations : use_declarations , use_declaration")
+    def use_declarations_use_declarations_use_declaration(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("use_declarations : use_declaration")
+    def use_declarations_use_declaration(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("function_declaration_statement : "
+                   "unticked_function_declaration_statement")
+    def function_declaration_statement_unticked_f_decl_stmt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_function_declaration_statement : "
+               "function is_reference T_STRING H_LB parameter_list H_RB "
+                " H_L_CB inner_statement_list H_R_CB")
+    def unticked_func_decl_stmt_f_is_ref_param_list_inner_stmt_lst(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("inner_statement_list : "
+                   "inner_statement_list inner_statement")
+    def inner_statement_list_inner_statement_list_inner_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("function : T_FUNCTION")
+    def function_t_function(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_declaration_statement : "
+                   "unticked_class_declaration_statement")
+    def class_declaration_statement_unticked_class_decl_stmt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("inner_statement : statement")
+    def inner_statement_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("inner_statement : function_declaration_statement")
+    def inner_statement_function_declaration_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("inner_statement : class_declaration_statement")
+    def inner_statement_class_declaration_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("inner_statement : T_HALT_COMPILER H_LB H_RB H_END_STMT")
+    def inner_statement_halt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("is_reference : H_REFERENCE")
+    def is_reference_reference(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("is_reference : empty")
+    def is_reference_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_class_declaration_statement : "
+                   "class_entry_type T_STRING extends_from implements_list "
+                   "H_L_CB class_statement_list H_R_CB")
+    def unticked_class_declaration_statemet_class_entry_type(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_class_declaration_statement : "
+                   "interface_entry T_STRING interface_extends_list "
+                   "H_L_CB class_statement_list H_R_CB")
+    def unticked_class_declaration_statemet_interface_entry(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_entry_type : T_CLASS")
+    def class_entry_type_t_class(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_entry_type : T_ABSTRACT T_CLASS")
+    def class_entry_type_t_abstract_t_class(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_entry_type : T_FINAL T_CLASS")
+    def class_entry_type_t_final_t_class(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("extends_from : T_EXTENDS fully_qualified_class_name")
+    def extends_from_t_extends_fully_qual_class_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_statement_list : "
+                   "class_statement_list class_statement")
+    def class_statement_list_class_statement_list_class_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_statement_list : empty")
+    def class_statement_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_statement : variable_modifiers "
+                   "class_variable_declaration H_END_STMT")
+    def class_statement_variable_modifiers_class_var_declaration(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_statement : class_constant_declaration H_END_STMT")
+    def class_statement_class_const_declaration(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_statement : method_modifiers function"
+                   " is_reference T_STRING H_LB "
+                   "parameter_list H_RB method_body")
+    def class_statement_method_modifiers_function(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("fully_qualified_class_name : namespace_name")
+    def fqcn_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("fully_qualified_class_name : "
+                   "T_NAMESPACE T_NS_SEPARATOR namespace_name")
+    def fqcn_t_namespace_t_ns_sep_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("fully_qualified_class_name : "
+                   "T_NS_SEPARATOR namespace_name")
+    def fqcn_t_ns_sep_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("implements_list : T_IMPLEMENTS interface_list")
+    def implements_list_t_implements_interface_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("implements_list : empty")
+    def implements_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("interface_list : interface_list"
+                   " , fully_qualified_class_name")
+    def interface_list_interface_list_fqcn(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("interface_list : fully_qualified_class_name")
+    def interface_list_fqcn(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_constant_declaration : "
+                   "class_constant_declaration , "
+                   "T_STRING H_EQUAL static_scalar")
+    def class_constant_decl_class_constant_decl_t_string(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_constant_declaration : "
+                   "T_CONST T_STRING H_EQUAL static_scalar")
+    def class_constant_decl_class_constant_decl_t_const_t_string(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("method_body : H_END_STMT")
+    def method_body_end_stmt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("method_body : H_L_CB inner_statement_list H_R_CB")
+    def method_body_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("variable_modifiers : non_empty_member_modifiers")
+    def variable_modifiers_non_empty_member_modifiers(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("variable_modifiers : T_VAR")
+    def variable_modifiers_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_member_modifiers : "
+                   "non_empty_member_modifiers member_modifier")
+    def non_empty_member_modifiers_non_empty_member_modifiers(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("member_modifier : T_PUBLIC")
+    @pg.production("member_modifier : T_PROTECTED")
+    @pg.production("member_modifier : T_PRIVATE")
+    @pg.production("member_modifier : T_STATIC")
+    @pg.production("member_modifier : T_ABSTRACT")
+    @pg.production("member_modifier : T_FINAL")
+    def member_modifier(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_member_modifiers : "
+                   "member_modifier")
+    def non_empty_member_modifiers_member_modifier(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("interface_extends_list : T_EXTENDS interface_list")
+    def interface_extends_list_t_extends(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("interface_extends_list : empty")
+    def interface_extends_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("method_modifiers : non_empty_member_modifiers")
+    def method_modifiers_non_empty_member_modifiers(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("method_modifiers : empty")
+    def method_modifiers_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_member_modifiers : "
+                   "non_empty_member_modifiers member_modifier")
+    def ne_member_modifiers_ne_member_modifiers_member_modifier(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_member_modifiers : "
+                   "member_modifier")
+    def ne_member_modifiers_member_modifier(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("optional_class_type : fully_qualified_class_name")
+    def optional_class_type_fqcn(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("optional_class_type : T_ARRAY")
+    def optional_class_type_t_array(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("optional_class_type : empty")
+    def optional_class_type_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_variable_declaration : "
+                   "class_variable_declaration , T_VARIABLE")
+    def class_vdecl_class_vdecl_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_variable_declaration : "
+                   "class_variable_declaration , "
+                   "T_VARIABLE H_EQUAL static_scalar")
+    def class_vdecl_class_vdecl_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_variable_declaration : T_VARIABLE")
+    def class_vdecl_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("class_variable_declaration : "
+                   "T_VARIABLE H_EQUAL static_scalar")
+    def class_vdecl_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("interface_entry : T_INTERFACE")
+    def interface_entry_t_interface(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("parameter_list : non_empty_parameter_list")
+    def parameter_list_non_empty_parameter_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("parameter_list : empty")
+    def parameter_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type T_VARIABLE")
+    def nepl_optional_class_type_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "non_empty_parameter_list , optional_class_type T_VARIABLE")
+    def nepl_nepl_optional_class_type_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type H_REFERENCE T_VARIABLE")
+    def nepl_optional_class_type_h_ref_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "non_empty_parameter_list , "
+                   "optional_class_type H_REFERENCE T_VARIABLE")
+    def nepl_nepl_optional_class_type_h_ref_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type T_VARIABLE H_EQUAL static_scalar")
+    def nepl_optional_class_type_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "non_empty_parameter_list , optional_class_type"
+                   " T_VARIABLE H_EQUAL static_scalar")
+    def nepl_nepl_optional_class_type_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type "
+                   "H_REFERENCE T_VARIABLE H_EQUAL static_scalar")
+    def nepl_optional_class_type_h_ref_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("inner_statement_list : empty")
+    def inner_statement_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("use_declaration : namespace_name")
+    def use_declaration_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("use_declaration : namespace_name T_AS T_STRING")
+    def use_declaration_namespace_name_as_string(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("use_declaration : T_NS_SEPARATOR namespace_name")
+    def use_declaration_t_ns_namespace_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("use_declaration : T_NS_SEPARATOR "
+                   "namespace_name T_AS T_STRING")
+    def use_declaration_t_ns_namespace_namespace_name_as_string(self, p):
+        raise NotImplementedError(p)
 
     @pg.production("statement : unticked_statement")
     def statement(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("unticked_statement : expr H_END_STMT")
     def unticked_statement_expr(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("expr : expr_without_variable")
     def expr_expr_without_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("expr_without_variable : scalar")
     def expr_expr_without_variable_scalar(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("expr_without_variable : T_ARRAY H_LB "
                    "array_pair_list H_RB")
     def expr_expr_without_variable_array(self, p):
-        return p[2]
+        raise NotImplementedError(p)
 
     @pg.production("scalar : T_STRING_VARNAME")
     @pg.production("scalar : common_scalar")
     def scalar_t_string_varname(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("common_scalar : T_LNUMBER")
     @pg.production("common_scalar : T_DNUMBER")
@@ -560,8 +914,7 @@ class Parser(object):
 
     @pg.production("static_scalar : common_scalar")
     def static_scalar(self, p):
-        return p
-        #raise NotImplementedError(p)
+        raise NotImplementedError(p)
 
     @pg.production("static_array_pair_list : empty")
     def static_array_pair_list_empty(self, p):
@@ -584,7 +937,6 @@ class Parser(object):
     @pg.production("non_empty_static_array_pair_list : "
                    "non_empty_static_array_pair_list , static_scalar")
     def non_empty_static_array_pair_list_list(self, p):
-        return p[0], p[2]
         raise NotImplementedError(p)
 
     @pg.production("non_empty_static_array_pair_list : "
@@ -600,7 +952,6 @@ class Parser(object):
 
     @pg.production("non_empty_static_array_pair_list : static_scalar")
     def non_empty_static_array_pair_list_scalar(self, p):
-        return p
         raise NotImplementedError(p)
 
     @pg.production("assignment_list : "
@@ -886,7 +1237,7 @@ class Parser(object):
 
     @pg.production("possible_comma : empty")
     def possible_comma_empty(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("possible_comma : ,")
     def possible_comma(self, p):

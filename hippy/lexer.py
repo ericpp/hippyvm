@@ -135,7 +135,7 @@ RULES = [
     ("__NAMESPACE__", 'T_NS_C'),
     ("__DIR__", 'T_DIR'),
     ("\\\\", 'T_NS_SEPARATOR'),
-
+    ("\_\_halt_compiler", 'T_HALT_COMPILER'),
 
     ("\&", 'H_REFERENCE'),
     ("\,", ','),
@@ -162,7 +162,6 @@ RULES = [
     ("\~", 'H_TILDE'),
     ("\@", 'H_AT'),
     ("\$", 'H_DOLLAR'),
-    ("\:\:", 'T_PAAMAYIM_NEKUDOTAYIM'),
 
     ("\s+", None),
 

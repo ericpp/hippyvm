@@ -1095,11 +1095,11 @@ class Parser(object):
     def expr_bracket_expr_bracket(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("expr : expr H_EQUAL expr H_COLON expr")
+    @pg.production("expr : expr H_QUESTION expr H_COLON expr")
     def expr_expr_if_expr_else_expr(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("expr : expr H_EQUAL H_COLON expr")
+    @pg.production("expr : expr H_QUESTION H_COLON expr")
     def expr_expr_else_expr(self, p):
         raise NotImplementedError(p)
 

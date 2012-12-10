@@ -500,20 +500,20 @@ class Parser(object):
                          cache_id="hippy")
 
     @pg.production("main : top_statement_list")
-    def atom_decimal(self, p):
+    def main_top_statement_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("top_statement_list : top_statement_list top_statement")
     def top_statement_list_top_statement(self, p):
-        raise NotImplementedError(p), p[1]
+        return p[0], p[1]
 
     @pg.production("top_statement_list : top_statement")
     def top_statatement_list(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("top_statement : statement")
     def top_statement(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("top_statement : function_declaration_statement")
     def top_statement_function_declaration_statement(self, p):
@@ -871,19 +871,136 @@ class Parser(object):
 
     @pg.production("statement : unticked_statement")
     def statement(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("unticked_statement : expr H_END_STMT")
     def unticked_statement_expr(self, p):
+        return Stmt(p[0])
+
+    @pg.production("unticked_statement : H_L_CB inner_statement_list H_R_CB")
+    def unticked_statement_inner_statement_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_IF H_LB expr H_RB "
+                   "statement elseif_list else_single")
+    def unticked_statement_if_statement_elseif_else_single(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_IF H_LB expr H_RB H_COLON "
+                   "inner_statement_list new_elseif_list "
+                   "new_else_single T_ENDIF H_END_STMT")
+    def unticked_statement_if_inner_statement_elseif_else_single(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_WHILE "
+                   "H_LB expr H_RB while_statement")
+    def unticked_statement_t_while(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_DO statement "
+                   "T_WHILE H_LB expr H_RB H_END_STMT")
+    def unticked_statement_t_do(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_FOR "
+                   "H_LB for_expr H_END_STMT "
+                   "for_expr H_END_STMT for_expr H_RB for_statement")
+    def unticked_statement_t_for(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : "
+                   "T_SWITCH H_LB expr H_RB switch_case_list")
+    def unticked_statement_t_switch(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_BREAK H_END_STMT")
+    def unticked_statement_t_break(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_BREAK expr H_END_STMT")
+    def unticked_statement_t_break_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_CONTINUE H_END_STMT")
+    def unticked_statement_t_continue(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_CONTINUE expr H_END_STMT")
+    def unticked_statement_t_continue_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_RETURN H_END_STMT")
+    def unticked_statement_t_return(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_RETURN "
+                   "expr_without_variable H_END_STMT")
+    def unticked_statement_t_return_expr_wo_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_RETURN variable H_END_STMT")
+    def unticked_statement_t_return_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_GLOBAL global_var_list H_END_STMT")
+    def unticked_statement_t_global_global_var_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_STATIC static_var_list H_END_STMT")
+    def unticked_statement_t_static_static_var_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_ECHO echo_expr_list H_END_STMT")
+    def unticked_statement_t_echo_expr_list(self, p):
+        raise NotImplementedError(p)
+
+    #@pg.production("unticked_statement : T_INLINE_HTML")
+
+    @pg.production("unticked_statement : T_UNSET "
+                   "H_LB unset_variables H_RB H_END_STMT")
+    def unticked_statement_t_unset_variables(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_FOREACH "
+                   "H_LB variable T_AS foreach_variable "
+                   "foreach_optional_arg H_RB foreach_statement")
+    def unticked_statement_t_for_each_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_FOREACH "
+                   "H_LB expr_without_variable T_AS "
+                   "variable foreach_optional_arg H_RB foreach_statement")
+    def unticked_statement_t_for_each_expr_wo_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_DECLARE "
+                   "H_LB declare_list H_RB declare_statement")
+    def unticked_statement_t_declare_declare_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_TRY "
+                   "H_L_CB inner_statement_list H_R_CB "
+                   "T_CATCH H_LB fully_qualified_class_name "
+                   "T_VARIABLE H_RB H_L_CB "
+                   "inner_statement_list H_R_CB additional_catches")
+    def unticked_statement_t_try(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_THROW expr H_END_STMT")
+    def unticked_statement_t_throw_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_GOTO T_STRING H_END_STMT")
+    def unticked_statement_t_goto_string(self, p):
         raise NotImplementedError(p)
 
     @pg.production("expr : expr_without_variable")
     def expr_expr_without_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("expr_without_variable : scalar")
     def expr_expr_without_variable_scalar(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("expr_without_variable : T_ARRAY H_LB "
                    "array_pair_list H_RB")
@@ -893,7 +1010,7 @@ class Parser(object):
     @pg.production("scalar : T_STRING_VARNAME")
     @pg.production("scalar : common_scalar")
     def scalar_t_string_varname(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("common_scalar : T_LNUMBER")
     @pg.production("common_scalar : T_DNUMBER")
@@ -914,7 +1031,7 @@ class Parser(object):
 
     @pg.production("static_scalar : common_scalar")
     def static_scalar(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("static_array_pair_list : empty")
     def static_array_pair_list_empty(self, p):
@@ -1054,6 +1171,193 @@ class Parser(object):
     @pg.production("variable_property : T_OBJECT_OPERATOR "
                    "object_property method_or_not")
     def variable_property_t_object_operator(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_variable : variable")
+    def foreach_variable_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_variable : H_REFERENCE variable")
+    def foreach_variable_ref_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("while_statement : statement")
+    def while_stmt_stmt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("while_statement : "
+                   "H_COLON inner_statement_list T_ENDWHILE H_END_STMT")
+    def while_stmt_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("for_statement : statement")
+    def for_stmt_stmt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("for_statement : "
+                   "H_COLON inner_statement_list T_ENDFOR H_END_STMT")
+    def for_stmt_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("declare_statement : statement")
+    def declare_stmt_stmt(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("declare_statement : "
+                   "H_COLON inner_statement_list T_ENDDECLARE H_END_STMT")
+    def declare_stmt_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("else_single : T_ELSE statement")
+    def else_single_t_else_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("else_single : empty")
+    def else_single_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("switch_case_list : H_L_CB case_list H_R_CB")
+    def switch_case_list_case_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("switch_case_list : H_L_CB H_END_STMT case_list H_R_CB")
+    def switch_case_list_h_end_stmt_case_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("switch_case_list : H_COLON "
+                   "case_list T_ENDSWITCH H_END_STMT")
+    def switch_case_list_h_colon_case_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("switch_case_list : H_COLON "
+                   "H_END_STMT case_list T_ENDSWITCH H_END_STMT")
+    def switch_case_list_h_colon_h_end_stmt_case_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("case_list : case_list "
+                   "T_CASE expr case_separator inner_statement_list")
+    def case_list_case_list_t_case_expr_case_sep_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("case_list : case_list "
+                   "T_DEFAULT expr case_separator inner_statement_list")
+    def case_list_case_list_t_default_expr_case_sep_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("static_var_list : static_var_list , T_VARIABLE")
+    def static_var_list_static_var_list_t_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("static_var_list : static_var_list"
+                   " , T_VARIABLE H_EQUAL static_scalar")
+    def static_var_list_static_var_list_t_variable_t_eq_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("static_var_list : T_VARIABLE")
+    def static_var_list_t_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("static_var_list : T_VARIABLE H_EQUAL static_scalar")
+    def static_var_list_t_variable_t_eq_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("elseif_list : elseif_list "
+                   "T_ELSEIF H_LB expr H_RB statement")
+    def elseif_list_elseif_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("elseif_list : empty")
+    def elseif_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("new_else_single : T_ELSE H_COLON inner_statement_list")
+    def new_else_single_t_else(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("new_else_single : empty")
+    def new_else_single_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("echo_expr_list : echo_expr_list , expr")
+    def echo_expr_list_echo_expr_list_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("echo_expr_list : expr")
+    def echo_expr_list_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("global_var_list : global_var_list , global_var")
+    def global_var_list_global_var_list_global_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("global_var_list : global_var")
+    def global_var_list_global_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("new_elseif_list : new_elseif_list "
+                   "T_ELSEIF H_LB expr H_RB H_COLON inner_statement_list")
+    def new_elseif_list_new_elseif_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("new_elseif_list : empty")
+    def new_elseif_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_statement : statement")
+    def foreach_statement_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_statement : "
+                   "H_COLON inner_statement_list T_ENDFOREACH H_END_STMT")
+    def foreach_statement_inner_statement_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_optional_arg : T_DOUBLE_ARROW foreach_variable")
+    def foreach_opt_arg_t_d_arrow_foreach_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_optional_arg : empty")
+    def foreach_opt_arg_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("additional_catches : non_empty_additional_catches")
+    def additional_catches_non_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("additional_catches : empty")
+    def additional_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_additional_catches : "
+                   "non_empty_additional_catches additional_catch")
+    def non_empty_additional_catches_nead_additional_catch(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_additional_catches : additional_catch")
+    def non_empty_additional_catches_additional_catch(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("additional_catch : T_CATCH "
+                   "H_LB fully_qualified_class_name "
+                   "T_VARIABLE H_RB H_L_CB inner_statement_list H_R_CB")
+    def additional_catch(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("case_spearator : H_COLON")
+    @pg.production("case_spearator : H_END_STMT")
+    def case_separator(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unset_variables : unset_variables, unset_variable")
+    def unset_vars_unset_vars_unset_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unset_variables : unset_variable")
+    def unset_vars_unset_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unset_variable : variable")
+    def unset_var_var(self, p):
         raise NotImplementedError(p)
 
     @pg.production("method_or_not : H_LB function_call_parameter_list H_RB")
@@ -1227,6 +1531,18 @@ class Parser(object):
     def variable_class_name_reference_variable(self, p):
         raise NotImplementedError(p)
 
+    @pg.production("global_var : T_VARIABLE")
+    def global_var_t_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("global_var : H_DOLLAR r_variable")
+    def global_var_dollar_r_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("global_var : H_DOLLAR H_L_CB expr H_R_CB")
+    def global_var_expr(self, p):
+        raise NotImplementedError(p)
+
     @pg.production("namespace_name : T_STRING")
     def namespace_name_t_string(self, p):
         raise NotImplementedError(p)
@@ -1258,7 +1574,7 @@ class Parser(object):
 
 
 if __name__ == '__main__':
-    _source = """1; 23; 12.23; array(1, 2, 3, 4);"""
+    _source = """1; 23; 12.23; $a = 1;"""
 
     lx = Lexer(RULES, skip_whitespace=True)
     lx.input(_source)

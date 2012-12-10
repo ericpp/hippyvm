@@ -54,6 +54,7 @@ RULES = [
     ("clone", 'T_CLONE'),
     ("exit", 'T_EXIT'),
     ("if", 'T_IF'),
+    ("else", 'T_ELSE'),
     ("elseif", 'T_ELSEIF'),
     ("endif", 'T_ENDIF'),
 
@@ -73,7 +74,7 @@ RULES = [
     ("endwhile", 'T_ENDWHILE'),
     ("for", 'T_FOR'),
     ("endfor", 'T_ENDFOR'),
-    ("foreach", 'T_ENDFOR'),
+    ("foreach", 'T_FOREACH'),
     ("endforeach", 'T_ENDFOREACH'),
     ("declare", 'T_DECLARE'),
     ("enddeclare", 'T_ENDDECLARE'),

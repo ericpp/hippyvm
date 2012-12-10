@@ -1007,6 +1007,222 @@ class Parser(object):
     def expr_expr_without_variable_array(self, p):
         raise NotImplementedError(p)
 
+    @pg.production("expr_without_variable : variable H_EQUAL expr")
+    def expr_without_variable_variable_eq_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : variable "
+                   "H_EQUAL H_REFERENCE variable")
+    def expr_without_variable_variable_eq_ref_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : variable "
+                   "H_EQUAL H_REFERENCE T_NEW "
+                   "class_name_reference ctor_arguments")
+    def expr_without_variable_variable_eq_var_t_new_class(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : T_NEW "
+                   "class_name_reference ctor_arguments")
+    def expr_without_variable_variable_t_new_class(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : T_CLONE expr")
+    def expr_without_variable_variable_t_clone(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : variable T_PLUS_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_MINUS_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_MUL_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_DIV_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_CONCAT_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_MOD_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_AND_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_OR_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_XOR_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_SL_EQUAL expr")
+    @pg.production("expr_without_variable : variable T_SR_EQUAL expr")
+    def expr_without_variable_variable_var_t_sth_eq_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : rw_variable T_INC")
+    @pg.production("expr_without_variable : rw_variable T_DEC")
+    def expr_without_variable_variable_rw_var_t_inc_dec(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr_without_variable : T_INC rw_variable")
+    @pg.production("expr_without_variable : T_DEC rw_variable")
+    def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : expr T_BOOLEAN_OR expr")
+    @pg.production("expr : expr T_BOOLEAN_AND expr")
+    @pg.production("expr : expr T_LOGICAL_OR expr")
+    @pg.production("expr : expr T_LOGICAL_XOR expr")
+    @pg.production("expr : expr T_LOGICAL_AND expr")
+    @pg.production("expr : expr H_PIPE expr")
+    @pg.production("expr : expr H_REFERENCE expr")
+    @pg.production("expr : expr H_DASH expr")
+    @pg.production("expr : expr H_DOT expr")
+    @pg.production("expr : expr H_PLUS expr")
+    @pg.production("expr : expr H_MINUS expr")
+    @pg.production("expr : expr H_STAR expr")
+    @pg.production("expr : expr H_SLASH expr")
+    @pg.production("expr : expr H_PERCENT expr")
+    @pg.production("expr : expr T_SL expr")
+    @pg.production("expr : expr T_SR expr")
+    @pg.production("expr : expr T_IS_IDENTICAL expr")
+    @pg.production("expr : expr T_IS_NOT_IDENTICAL expr")
+    @pg.production("expr : expr T_IS_EQUAL expr")
+    @pg.production("expr : expr T_IS_NOT_EQUAL expr")
+    @pg.production("expr : expr H_LT expr")
+    @pg.production("expr : expr T_IS_SMALLER_OR_EQUAL expr")
+    @pg.production("expr : expr H_GT expr")
+    @pg.production("expr : expr T_IS_GREATER_OR_EQUAL expr")
+    def expr_oper_expr(self, p):
+        raise NotImplementedError(p)
+
+    # |'+' expr %prec T_INC
+    # |'-' expr %prec T_INC
+    # |'!' expr
+    # |'~' expr
+
+    @pg.production("expr : expr T_INSTANCEOF class_name_reference")
+    def expr_expr_is_instance(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : H_LB expr H_RB")
+    def expr_bracket_expr_bracket(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : expr H_EQUAL expr H_COLON expr")
+    def expr_expr_if_expr_else_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : expr H_EQUAL H_COLON expr")
+    def expr_expr_else_expr(self, p):
+        raise NotImplementedError(p)
+
+    # internal_functions_in_yacc
+    @pg.production("expr : T_INT_CAST expr")
+    @pg.production("expr : T_DOUBLE_CAST expr")
+    @pg.production("expr : T_STRING_CAST expr")
+    @pg.production("expr : T_UNICODE_CAST expr")
+    @pg.production("expr : T_BINARY_CAST expr")
+    @pg.production("expr : T_ARRAY_CAST expr")
+    @pg.production("expr : T_OBJECT_CAST expr")
+    @pg.production("expr : T_BOOL_CAST expr")
+    @pg.production("expr : T_UNSET_CAST expr")
+    def expr_cast_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : T_EXIT exit_expr")
+    def expr_t_exit_exit_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : H_AT expr")
+    def expr_at_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : scalar")
+    def expr_scalar(self, p):
+        raise NotImplementedError(p)
+
+    # '`' backticks_expr '`'
+    @pg.production("expr : T_PRINT expr")
+    def expr_t_print_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : function is_reference "
+                   "H_LB parameter_list H_RB "
+                   "lexical_vars H_L_CB inner_statement_list H_R_CB")
+    def expr_function_is_reference(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("expr : T_STATIC function is_reference "
+                   "H_LB parameter_list H_RB "
+                   "lexical_vars H_L_CB inner_statement_list H_R_CB")
+    def expr_t_static_function_is_reference(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("exit_expr : H_LB H_RB")
+    def expr_empty_brackets(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("exit_expr : H_LB expr H_RB")
+    def expr_expr_in_brackets(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("exit_expr : empty")
+    def expr_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("ctor_arguments : H_LB function_call_parameter_list H_RB")
+    def ctor_arguments_function_call_parameter_list(self, p):
+        return p[0]
+
+    @pg.production("ctor_arguments : empty")
+    def ctor_empty(self, p):
+        return p[0]
+
+    @pg.production("class_name_reference : class_name")
+    def class_name_reference_class_name(self, p):
+        return p[0]
+
+    @pg.production("class_name_reference : dynamic_class_name_reference")
+    def class_name_reference_dynamic_class_name_reference(self, p):
+        return p[0]
+
+    @pg.production("dynamic_class_name_reference : base_variable "
+                   "T_OBJECT_OPERATOR object_property "
+                   "dynamic_class_name_variable_properties")
+    def dynamic_class_name_reference_base_variable_t_object_operator(self, p):
+        return p[0]
+
+    @pg.production("dynamic_class_name_reference : base_variable")
+    def dynamic_class_name_reference_base_variable(self, p):
+        return p[0]
+
+    @pg.production("dynamic_class_name_variable_properties : "
+                   "dynamic_class_name_variable_properties "
+                   "dynamic_class_name_variable_property")
+    def dynamic_class_name_variable_dcnvps_dcnvp(self, p):
+        return p[0]
+
+    @pg.production("dynamic_class_name_variable_properties : empty")
+    def dynamic_class_name_variable_empty(self, p):
+        return p[0]
+
+    @pg.production("dynamic_class_name_variable_property : "
+                   "T_OBJECT_OPERATOR object_property")
+    def dynamic_class_name_variable_property(self, p):
+        return p[0]
+
+    @pg.production("lexical_vars : T_USE H_LB lexical_var_list H_RB")
+    def lexical_vars_t_use_lexical_var_list(self, p):
+        return p[0]
+
+    @pg.production("lexical_vars : empty")
+    def lexical_vars_empty(self, p):
+        return p[0]
+
+    @pg.production("lexical_var_list : lexical_var_list , T_VARIABLE")
+    def lexical_var_list_lexical_var_list_t_variable(self, p):
+        return p[0]
+
+    @pg.production("lexical_var_list : lexical_var_list , "
+                   "H_REFERENCE T_VARIABLE")
+    def lexical_var_list_lexical_var_list_ref_t_variable(self, p):
+        return p[0]
+
+    @pg.production("lexical_var_list : T_VARIABLE")
+    def lexical_var_list_t_variable(self, p):
+        return p[0]
+
+    @pg.production("lexical_var_list : H_REFERENCE T_VARIABLE")
+    def lexical_var_list_ref_t_variable(self, p):
+        return p[0]
+
     @pg.production("scalar : T_STRING_VARNAME")
     @pg.production("scalar : common_scalar")
     def scalar_t_string_varname(self, p):
@@ -1101,11 +1317,11 @@ class Parser(object):
 
     @pg.production("variable : base_variable_with_function_calls")
     def variable_base_variable_with_function_calls(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("base_variable_with_function_calls : base_variable")
     def base_variable_with_function_calls_base_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("base_variable_with_function_calls : function_call")
     def base_variable_with_function_calls_function_call(self, p):
@@ -1113,7 +1329,7 @@ class Parser(object):
 
     @pg.production("base_variable : reference_variable")
     def base_variable_reference_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("base_variable : simple_indirect_reference "
                    "reference_variable")
@@ -1136,11 +1352,11 @@ class Parser(object):
 
     @pg.production("reference_variable : compound_variable")
     def reference_variable_compound_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("compound_variable : T_VARIABLE")
     def compound_variable_t_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("compound_variable : H_DOLLAR H_L_CB expr H_R_CB")
     def compound_variable_expr(self, p):
@@ -1292,7 +1508,7 @@ class Parser(object):
 
     @pg.production("global_var_list : global_var")
     def global_var_list_global_var(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("new_elseif_list : new_elseif_list "
                    "T_ELSEIF H_LB expr H_RB H_COLON inner_statement_list")
@@ -1343,12 +1559,37 @@ class Parser(object):
     def additional_catch(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("case_spearator : H_COLON")
-    @pg.production("case_spearator : H_END_STMT")
+    @pg.production("case_separator : H_COLON")
+    @pg.production("case_separator : H_END_STMT")
     def case_separator(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("unset_variables : unset_variables, unset_variable")
+    @pg.production("declare_list : declare_list , "
+                   "T_STRING H_EQUAL static_scalar")
+    def declare_list_declare_list_t_string_eq_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("declare_list : T_STRING H_EQUAL static_scalar")
+    def declare_list_t_string_eq_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("for_expr : non_empty_for_expr")
+    def for_expr_non_empty_for_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("for_expr : empty")
+    def for_expr_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_for_expr : non_empty_for_expr , expr")
+    def non_empty_for_expr_non_empty_for_expr_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_for_expr : expr")
+    def non_empty_for_expr_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unset_variables : unset_variables , unset_variable")
     def unset_vars_unset_vars_unset_var(self, p):
         raise NotImplementedError(p)
 
@@ -1533,7 +1774,7 @@ class Parser(object):
 
     @pg.production("global_var : T_VARIABLE")
     def global_var_t_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("global_var : H_DOLLAR r_variable")
     def global_var_dollar_r_variable(self, p):

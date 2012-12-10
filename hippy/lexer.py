@@ -49,6 +49,8 @@ RULES = [
     ("\(object\)", 'T_OBJECT_CAST'),
     ("\(bool\)", 'T_BOOL_CAST'),
     ("\(unset\)", 'T_UNSET_CAST'),
+    ("\(binary\)", 'T_BINARY_CAST'),
+    ("\(unicode\)", 'T_UNICODE_CAST'),
 
     ("new", 'T_NEW'),
     ("clone", 'T_CLONE'),
@@ -161,6 +163,7 @@ RULES = [
     ("\{", 'H_L_CB'),
     ("\}", 'H_R_CB'),
     ("\~", 'H_TILDE'),
+    ("\^", 'H_DASH'),
     ("\@", 'H_AT'),
     ("\$", 'H_DOLLAR'),
 

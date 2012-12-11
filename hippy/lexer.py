@@ -48,6 +48,7 @@ RULES = [
     ("\(array\)", 'T_ARRAY_CAST'),
     ("\(object\)", 'T_OBJECT_CAST'),
     ("\(bool\)", 'T_BOOL_CAST'),
+    ("\(boolean\)", 'T_BOOL_CAST'),
     ("\(unset\)", 'T_UNSET_CAST'),
     ("\(binary\)", 'T_BINARY_CAST'),
     ("\(unicode\)", 'T_UNICODE_CAST'),

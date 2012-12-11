@@ -176,7 +176,7 @@ PRECEDENCES = [
               "T_REQUIRE", "T_REQUIRE_ONCE"]),
     ("left", [",", ]),
     ("left", ["T_LOGICAL_OR", "T_LOGICAL_XOR", "T_LOGICAL_AND"]),
-    ("right", ["T_PRINT"]),
+    ("right", ["T_PRINT", ]),
     ("left", ["EQUAL", "T_PLUS_EQUAL", "T_MINUS_EQUAL",
               "T_MUL_EQUAL", "T_DIV_EQUAL", "T_CONCAT_EQUAL",
               "T_MOD_EQUAL", "T_AND_EQUAL", "T_OR_EQUAL",
@@ -184,10 +184,10 @@ PRECEDENCES = [
     ("left", ["QUESTION", "COLON", "PIPE", "CARET", "REFERENCE"]),
     ("nonassoc", ["T_IS_EQUAL", "T_IS_NOT_EQUAL",
                   "T_IS_IDENTICAL", "T_IS_NOT_IDENTICAL"]),
-    ("nonassoc", ["LT", "GT", "T_IS_SMALLER_OR_EQUAL",
+    ("nonassoc", ["H_LT", "H_GT", "T_IS_SMALLER_OR_EQUAL",
                   "T_IS_GREATER_OR_EQUAL"]),
     ("left", ["T_SL", "T_SR"]),
-    ("left", ["PLUS", "MINUS", "DOT", "STAR", "SLASH", "PERCENT"]),
+    ("left", ["H_PLUS", "H_MINUS", "H_DOT", "H_STAR", "H_SLASH", "H_PERCENT"]),
     ("right", ["EXCLAMATION"]),
     ("nonassoc", ["T_INSTANCEOF"]),
     ("right", ["TILDE", "T_INC", "T_DEC", "T_INT_CAST",
@@ -290,7 +290,7 @@ class Lexer(object):
 
 if __name__ == '__main__':
     lx = Lexer(RULES, skip_whitespace=True)
-    lx.input('$erw = "abc" + 12*($R-623902); as; if; 122.232  ')
+    lx.input('1 * 2 - $x;')
 
     try:
         for tok in lx.tokens():

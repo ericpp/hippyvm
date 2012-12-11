@@ -1,3 +1,4 @@
+
 class BaseBox(object):
     pass
 
@@ -18,6 +19,9 @@ class Token(BaseBox):
         return self.source_pos
 
     def getstr(self):
+        return self.value
+
+    def repr(self):
         return self.value
 
     def __repr__(self):

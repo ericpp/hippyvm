@@ -1,3 +1,3 @@
-from rply.errors import ParsingError
-from rply.parsergenerator import ParserGenerator
-from rply.token import Token
+from hippy.rply.errors import ParsingError
+from hippy.rply.parsergenerator import ParserGenerator
+from hippy.rply.token import Token

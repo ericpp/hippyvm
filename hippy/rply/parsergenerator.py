@@ -7,10 +7,10 @@ import sys
 import tempfile
 import warnings
 
-from rply.errors import ParserGeneratorError, ParserGeneratorWarning
-from rply.grammar import Grammar
-from rply.parser import LRParser
-from rply.utils import IdentityDict, Counter, iteritems, itervalues
+from hippy.rply.errors import ParserGeneratorError, ParserGeneratorWarning
+from hippy.rply.grammar import Grammar
+from hippy.rply.parser import LRParser
+from hippy.rply.utils import IdentityDict, Counter, iteritems, itervalues
 
 
 LARGE_VALUE = sys.maxsize

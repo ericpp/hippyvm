@@ -1,5 +1,5 @@
-from rply.errors import ParserGeneratorError
-from rply.utils import iteritems
+from hippy.rply.errors import ParserGeneratorError
+from hippy.rply.utils import iteritems
 
 
 def rightmost_terminal(symbols, terminals):

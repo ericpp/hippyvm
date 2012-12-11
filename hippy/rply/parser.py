@@ -1,4 +1,5 @@
-from rply.errors import ParsingError
+from hippy.rply.errors import ParsingError
+from hippy.rply.token import Token
 
 
 class LRParser(object):
@@ -7,7 +8,6 @@ class LRParser(object):
         self.error_handler = error_handler
 
     def parse(self, tokenizer, state=None):
-        from rply.token import Token
 
         lookahead = None
         lookaheadstack = []

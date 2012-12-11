@@ -1,7 +1,7 @@
-from rply import ParserGenerator
-from lexer import RULES
-from lexer import PRECEDENCES
-from lexer import Lexer
+from hippy.rply import ParserGenerator
+from hippy.lexer import RULES
+from hippy.lexer import PRECEDENCES
+from hippy.lexer import Lexer
 from pypy.tool.pairtype import extendabletype
 
 
@@ -488,6 +488,7 @@ class LexerWrapper(object):
 
 
 class Parser(object):
+
     def __init__(self, lexer):
         self.lexer = lexer
 
@@ -501,15 +502,21 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
-        raise NotImplementedError(p)
+        print p[0]
+        return Block(p[0])
 
     @pg.production("top_statement_list : top_statement_list top_statement")
     def top_statement_list_top_statement(self, p):
-        return p[0], p[1]
+        if isinstance(p[0], list):
+            if p[1]:
+                p[0].append(p[1])
+                return p[0]
+            return p[0]
+        return [p[0], p[1]]
 
     @pg.production("top_statement_list : top_statement")
     def top_statatement_list(self, p):
-        return p[0]
+        return [p[0]]
 
     @pg.production("top_statement : statement")
     def top_statement(self, p):
@@ -994,6 +1001,10 @@ class Parser(object):
     def unticked_statement_t_goto_string(self, p):
         raise NotImplementedError(p)
 
+    @pg.production("expr : r_variable")
+    def expr_expr_r_variable(self, p):
+        return p[0]
+
     @pg.production("expr : expr_without_variable")
     def expr_expr_without_variable(self, p):
         return p[0]
@@ -1009,7 +1020,7 @@ class Parser(object):
 
     @pg.production("expr_without_variable : variable H_EQUAL expr")
     def expr_without_variable_variable_eq_expr(self, p):
-        raise NotImplementedError(p)
+        return Assignment(p[0], p[2])
 
     @pg.production("expr_without_variable : variable "
                    "H_EQUAL H_REFERENCE variable")
@@ -1048,12 +1059,12 @@ class Parser(object):
     @pg.production("expr_without_variable : rw_variable T_INC")
     @pg.production("expr_without_variable : rw_variable T_DEC")
     def expr_without_variable_variable_rw_var_t_inc_dec(self, p):
-        raise NotImplementedError(p)
+        return SuffixOp(p[1].getstr(), p[0])
 
     @pg.production("expr_without_variable : T_INC rw_variable")
     @pg.production("expr_without_variable : T_DEC rw_variable")
     def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
-        raise NotImplementedError(p)
+        return PrefixOp(p[0].getstr(), p[1])
 
     @pg.production("expr : expr T_BOOLEAN_OR expr")
     @pg.production("expr : expr T_BOOLEAN_AND expr")
@@ -1080,8 +1091,12 @@ class Parser(object):
     @pg.production("expr : expr H_GT expr")
     @pg.production("expr : expr T_IS_GREATER_OR_EQUAL expr")
     def expr_oper_expr(self, p):
-        raise NotImplementedError(p)
+        return BinOp(p[1].getstr(), p[0], p[2])
 
+    @pg.production("expr : H_MINUS expr", precedence="T_DEC")
+    @pg.production("expr : H_PLUS expr", precedence="T_INC")
+    def expr_h_minus_expr(self, p):
+        return PrefixOp(p[0].getstr(), p[1])
     # |'+' expr %prec T_INC
     # |'-' expr %prec T_INC
     # |'!' expr
@@ -1093,7 +1108,7 @@ class Parser(object):
 
     @pg.production("expr : H_LB expr H_RB")
     def expr_bracket_expr_bracket(self, p):
-        raise NotImplementedError(p)
+        return p[1]
 
     @pg.production("expr : expr H_QUESTION expr H_COLON expr")
     def expr_expr_if_expr_else_expr(self, p):
@@ -1159,73 +1174,76 @@ class Parser(object):
 
     @pg.production("ctor_arguments : H_LB function_call_parameter_list H_RB")
     def ctor_arguments_function_call_parameter_list(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("ctor_arguments : empty")
     def ctor_empty(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("class_name_reference : class_name")
     def class_name_reference_class_name(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("class_name_reference : dynamic_class_name_reference")
     def class_name_reference_dynamic_class_name_reference(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("dynamic_class_name_reference : base_variable "
                    "T_OBJECT_OPERATOR object_property "
                    "dynamic_class_name_variable_properties")
     def dynamic_class_name_reference_base_variable_t_object_operator(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("dynamic_class_name_reference : base_variable")
     def dynamic_class_name_reference_base_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("dynamic_class_name_variable_properties : "
                    "dynamic_class_name_variable_properties "
                    "dynamic_class_name_variable_property")
     def dynamic_class_name_variable_dcnvps_dcnvp(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("dynamic_class_name_variable_properties : empty")
     def dynamic_class_name_variable_empty(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("dynamic_class_name_variable_property : "
                    "T_OBJECT_OPERATOR object_property")
     def dynamic_class_name_variable_property(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("lexical_vars : T_USE H_LB lexical_var_list H_RB")
     def lexical_vars_t_use_lexical_var_list(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("lexical_vars : empty")
     def lexical_vars_empty(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("lexical_var_list : lexical_var_list , T_VARIABLE")
     def lexical_var_list_lexical_var_list_t_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("lexical_var_list : lexical_var_list , "
                    "H_REFERENCE T_VARIABLE")
     def lexical_var_list_lexical_var_list_ref_t_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("lexical_var_list : T_VARIABLE")
     def lexical_var_list_t_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("lexical_var_list : H_REFERENCE T_VARIABLE")
     def lexical_var_list_ref_t_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("scalar : T_STRING_VARNAME")
-    @pg.production("scalar : common_scalar")
     def scalar_t_string_varname(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("scalar : common_scalar")
+    def scalar_common_scalar(self, p):
         return p[0]
 
     @pg.production("common_scalar : T_LNUMBER")
@@ -1249,22 +1267,22 @@ class Parser(object):
     def static_scalar(self, p):
         return p[0]
 
-    @pg.production("static_array_pair_list : empty")
-    def static_array_pair_list_empty(self, p):
-        raise NotImplementedError(p)
-
     @pg.production("static_array_pair_list : "
                    "non_empty_static_array_pair_list possible_comma")
     def static_array_pair_list_non_empty(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("array_pair_list : empty")
-    def array_pair_list_empty(self, p):
+    @pg.production("static_array_pair_list : empty")
+    def static_array_pair_list_empty(self, p):
         raise NotImplementedError(p)
 
     @pg.production("array_pair_list : "
                    "non_empty_static_array_pair_list possible_comma")
     def array_pair_list_non_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("array_pair_list : empty")
+    def array_pair_list_empty(self, p):
         raise NotImplementedError(p)
 
     @pg.production("non_empty_static_array_pair_list : "
@@ -1356,7 +1374,7 @@ class Parser(object):
 
     @pg.production("compound_variable : T_VARIABLE")
     def compound_variable_t_variable(self, p):
-        return p[0]
+        return Variable(ConstantStr(p[0].getstr()[1:]))
 
     @pg.production("compound_variable : H_DOLLAR H_L_CB expr H_R_CB")
     def compound_variable_expr(self, p):
@@ -1364,11 +1382,11 @@ class Parser(object):
 
     @pg.production("r_variable : variable")
     def variable_r_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("rw_variable : variable")
     def variable_rw_variable(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("w_variable : variable")
     def variable_w_variable(self, p):
@@ -1774,7 +1792,7 @@ class Parser(object):
 
     @pg.production("global_var : T_VARIABLE")
     def global_var_t_variable(self, p):
-        return p[0]
+        raise NotImplementedError(p)
 
     @pg.production("global_var : H_DOLLAR r_variable")
     def global_var_dollar_r_variable(self, p):
@@ -1814,10 +1832,8 @@ class Parser(object):
     parser = pg.build()
 
 
-if __name__ == '__main__':
-    _source = """1; 23; 12.23; $a = 1;"""
-
+def parse(_source):
     lx = Lexer(RULES, skip_whitespace=True)
     lx.input(_source)
     parser = Parser(lx.tokens())
-    print parser.parse()
+    return parser.parse()

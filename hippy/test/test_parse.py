@@ -1,11 +1,12 @@
-
-from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
+import py
+from hippy.parser import parse, Block, Stmt, Assignment, ConstantInt,\
      Variable, Echo, Return, If, PrefixOp, SuffixOp, While, For, ConstantStr,\
      SimpleCall, DynamicCall, FunctionDecl, Argument, BinOp, ConstantFloat,\
      GetItem, SetItem, Array, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
      UninitializedVariable, ConstantAppend
+
 
 class TestParser(object):
     def test_assign(self):

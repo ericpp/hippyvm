@@ -514,6 +514,7 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[3]) == "0"
 
     def test_array_reverse(self):
+        py.test.skip("XXX fixme")
         output = self.run('''
         $a = array("php", 4.5, array ("green", "red"));
         $a = array_reverse($a);

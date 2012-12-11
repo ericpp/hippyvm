@@ -191,7 +191,7 @@ class TestParser(object):
                                 [ConstantInt(3), ConstantInt(4)])))])
 
     def test_function_declr(self):
-        py.test.skip("fixme")
+        py.test.skip("XXX FIXME")
         r = parse("""
         function f() {}
         f();
@@ -281,7 +281,7 @@ class TestParser(object):
                                    NamedConstant('TRUE'))])
 
     def test_reference(self):
-        py.test.skip("fixme")
+        py.test.skip("XXX: test fails")
         r = parse('&$a;')
         assert r == Block([Stmt(Reference(Variable(ConstantStr("a"))))])
 
@@ -327,9 +327,8 @@ class TestParser(object):
                                       ]))])
 
 
-
     def test_iterator(self):
-        py.test.skip("fixme")
+        py.test.skip("XXX FIXME")
         r = parse("foreach ($x as $y) {}")
         assert r == Block([ForEach(Variable(ConstantStr("x")),
                                    Argument("y"), Block([]))])

@@ -3,7 +3,6 @@ from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
      BINOP_LIST, RETURN, INPLACE_LIST
 from hippy.builtin import setup_builtin_functions
-from hippy import array_funcs     # site-effect of registering functions
 from hippy.error import InterpreterError
 from hippy.objects.reference import W_Variable, W_Cell, W_Reference
 from hippy.objects.base import W_Root
@@ -14,8 +13,7 @@ from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
 
-class FunctionNotFound(InterpreterError):
-    pass
+import hippy.array_funcs     # side-effect of registering functions
 
 def get_printable_location(pc, bytecode, interp):
     lineno = bytecode.bc_mapping[pc]
@@ -32,7 +30,7 @@ class Frame(object):
     """ Frame implementation. Note that vars_w store references, while
     stack stores values (also references)
     """
-    _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos']
+    _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos', 'f_backref']
 
     @jit.unroll_safe
     def __init__(self, space, code):
@@ -147,6 +145,15 @@ class Interpreter(object):
     """ Interpreter keeps the state of the current run. There will be a new
     interpreter instance per run of script
     """
+    def __init__(self, space, logger):
+        self.functions = {}
+        self.constants = {}
+        self.logger = logger
+        self.setup_constants(space)
+        setup_builtin_functions(self, space)
+        space.ec.interpreter = self # one interpreter at a time
+        self.topframeref = jit.vref_None
+
     def setup_constants(self, space):
         self.constants['true'] = space.w_True
         self.constants['false'] = space.w_False
@@ -155,13 +162,6 @@ class Interpreter(object):
     def setup_globals(self, space, dct):
         self.globals = dct
         self.globals_wrapper = new_globals_wrapper(space, dct)
-
-    def __init__(self, space):
-        self.functions = {}
-        self.constants = {}
-        self.setup_constants(space)
-        setup_builtin_functions(self, space)
-        space.ec.interpreter = self # one interpreter at a time
 
     @jit.elidable
     def lookup_global(self, space, name):
@@ -185,11 +185,12 @@ class Interpreter(object):
         try:
             return self.functions[name.lower()]
         except KeyError:
-            raise InterpreterError("undefined function %s" % name)
+            self.logger.fatal("undefined function %s" % name)
 
     def interpret(self, space, frame, bytecode):
         bytecode.setup_functions(self, space)
         pc = 0
+        self.enter(frame)
         try:
             while True:
                 driver.jit_merge_point(bytecode=bytecode, frame=frame,
@@ -233,10 +234,16 @@ class Interpreter(object):
                     #print get_printable_location(pc, bytecode, self)
                     pc = getattr(self, BYTECODE_NAMES[next_instr])(bytecode,
                                  frame, space, arg, arg2, pc)
-        except InterpreterError:
-            print "Error occured in %s line %d" % (bytecode.name,
-                                   bytecode.bc_mapping[pc])
-            raise
+        finally:
+            self.leave(frame)
+
+    def enter(self, frame):
+        frame.f_backref = self.topframeref
+        self.topframeref = jit.virtual_ref(frame)
+
+    def leave(self, frame):
+        jit.virtual_ref_finish(self.topframeref, frame)
+        self.topframeref = frame.f_backref
 
     def echo(self, space, v):
         # XXX extra copy of the string if mutable

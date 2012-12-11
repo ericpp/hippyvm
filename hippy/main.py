@@ -14,6 +14,7 @@ if __name__ == '__main__':
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
 from hippy.interpreter import Interpreter, Frame
+from hippy.logger import Logger
 from hippy.objspace import getspace
 from pypy.rlib.streamio import open_file_as_stream
 from pypy.rlib.objectmodel import we_are_translated
@@ -66,7 +67,7 @@ def entry_point(argv):
     data = data[start:end]
     space = getspace()
     bc = compile_ast(parse(data), space, extra_offset)
-    interp = Interpreter(space)
+    interp = Interpreter(space, Logger())
     frame = Frame(space, bc)
     if not we_are_translated():
         try:

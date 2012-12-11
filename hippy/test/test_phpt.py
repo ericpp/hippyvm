@@ -9,6 +9,7 @@ from hippy.error import InterpreterError
 from hippy.conftest import option
 from hippy.test.directrunner import run_source
 
+py.test.skip("xxx")
 
 def parse_phpt(fname):
     src = []

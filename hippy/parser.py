@@ -1,3 +1,4 @@
+import sys
 from hippy.rply import ParserGenerator
 from hippy.lexer import RULES
 from hippy.lexer import PRECEDENCES
@@ -501,6 +502,7 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
+        # XXX : remove print!!
         print p[0]
         return Block(p[0])
 
@@ -582,7 +584,16 @@ class Parser(object):
     @pg.production("inner_statement_list : "
                    "inner_statement_list inner_statement")
     def inner_statement_list_inner_statement_list_inner_statement(self, p):
-        raise NotImplementedError(p)
+        if isinstance(p[0], list):
+            if p[1]:
+                if p[0] is None:
+                    return p[1]
+                p[0].append(p[1])
+                return p[0]
+            return p[0]
+        if p[0] is None:
+            return p[1]
+        return [p[0], p[1]]
 
     @pg.production("function : T_FUNCTION")
     def function_t_function(self, p):
@@ -595,7 +606,7 @@ class Parser(object):
 
     @pg.production("inner_statement : statement")
     def inner_statement_statement(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("inner_statement : function_declaration_statement")
     def inner_statement_function_declaration_statement(self, p):
@@ -856,7 +867,7 @@ class Parser(object):
 
     @pg.production("inner_statement_list : empty")
     def inner_statement_list_empty(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("use_declaration : namespace_name")
     def use_declaration_namespace_name(self, p):
@@ -885,12 +896,12 @@ class Parser(object):
 
     @pg.production("unticked_statement : { inner_statement_list }")
     def unticked_statement_inner_statement_list(self, p):
-        raise NotImplementedError(p)
+        return Block(p[1])
 
     @pg.production("unticked_statement : T_IF ( expr ) "
                    "statement elseif_list else_single")
     def unticked_statement_if_statement_elseif_else_single(self, p):
-        raise NotImplementedError(p)
+        return If(p[2], p[4])
 
     @pg.production("unticked_statement : T_IF ( expr ) : "
                    "inner_statement_list new_elseif_list "
@@ -983,6 +994,10 @@ class Parser(object):
                    "( declare_list ) declare_statement")
     def unticked_statement_t_declare_declare_list(self, p):
         raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : ;")
+    def unticked_statement_empty_statement(self, p):
+        return None
 
     @pg.production("unticked_statement : T_TRY "
                    "{ inner_statement_list } "
@@ -1447,7 +1462,7 @@ class Parser(object):
 
     @pg.production("else_single : empty")
     def else_single_empty(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("switch_case_list : { case_list }")
     def switch_case_list_case_list(self, p):
@@ -1501,7 +1516,7 @@ class Parser(object):
 
     @pg.production("elseif_list : empty")
     def elseif_list_empty(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("new_else_single : T_ELSE : inner_statement_list")
     def new_else_single_t_else(self, p):
@@ -1509,7 +1524,7 @@ class Parser(object):
 
     @pg.production("new_else_single : empty")
     def new_else_single_empty(self, p):
-        raise NotImplementedError(p)
+        return p[0]
 
     @pg.production("echo_expr_list : echo_expr_list , expr")
     def echo_expr_list_echo_expr_list_expr(self, p):
@@ -1823,7 +1838,7 @@ class Parser(object):
 
     @pg.error
     def error_handler(self, token):
-        raise ValueError("syntax error, unexpected %s line(%s)" %
+        raise ValueError("syntax error, unexpected \'%s\' line(%s)" %
                          (token.gettokentype(),
                           token.getsourcepos())
                          )
@@ -1838,4 +1853,4 @@ def parse(_source):
     try:
         return parser.parse()
     except ValueError, e:
-        return "PHP Parse error:  %s" % e
+        sys.stderr.write("PHP Parse error:  %s\n" % e)

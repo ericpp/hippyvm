@@ -284,6 +284,8 @@ class Lexer(object):
                 break
             while tok.name in ('H_NEW_LINE', 'H_WHITESPACE'):
                 tok = self.token()
+                if tok is None:
+                    break
             yield tok
 
 

@@ -529,7 +529,7 @@ class Parser(object):
     def top_statement_class_declaration_statement(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("top_statement : T_HALT_COMPILER H_LB H_RB ;")
+    @pg.production("top_statement : T_HALT_COMPILER ( ) ;")
     def top_statement_t_halt_compiler(self, p):
         raise NotImplementedError(p)
 
@@ -574,7 +574,7 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("unticked_function_declaration_statement : "
-               "function is_reference T_STRING H_LB parameter_list H_RB "
+               "function is_reference T_STRING ( parameter_list ) "
                 " { inner_statement_list }")
     def unticked_func_decl_stmt_f_is_ref_param_list_inner_stmt_lst(self, p):
         raise NotImplementedError(p)
@@ -605,7 +605,7 @@ class Parser(object):
     def inner_statement_class_declaration_statement(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("inner_statement : T_HALT_COMPILER H_LB H_RB ;")
+    @pg.production("inner_statement : T_HALT_COMPILER ( ) ;")
     def inner_statement_halt(self, p):
         raise NotImplementedError(p)
 
@@ -664,8 +664,8 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("class_statement : method_modifiers function"
-                   " is_reference T_STRING H_LB "
-                   "parameter_list H_RB method_body")
+                   " is_reference T_STRING ( "
+                   "parameter_list ) method_body")
     def class_statement_method_modifiers_function(self, p):
         raise NotImplementedError(p)
 
@@ -887,35 +887,35 @@ class Parser(object):
     def unticked_statement_inner_statement_list(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("unticked_statement : T_IF H_LB expr H_RB "
+    @pg.production("unticked_statement : T_IF ( expr ) "
                    "statement elseif_list else_single")
     def unticked_statement_if_statement_elseif_else_single(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("unticked_statement : T_IF H_LB expr H_RB : "
+    @pg.production("unticked_statement : T_IF ( expr ) : "
                    "inner_statement_list new_elseif_list "
                    "new_else_single T_ENDIF ;")
     def unticked_statement_if_inner_statement_elseif_else_single(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_WHILE "
-                   "H_LB expr H_RB while_statement")
+                   "( expr ) while_statement")
     def unticked_statement_t_while(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_DO statement "
-                   "T_WHILE H_LB expr H_RB ;")
+                   "T_WHILE ( expr ) ;")
     def unticked_statement_t_do(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_FOR "
-                   "H_LB for_expr ; "
-                   "for_expr ; for_expr H_RB for_statement")
+                   "( for_expr ; "
+                   "for_expr ; for_expr ) for_statement")
     def unticked_statement_t_for(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : "
-                   "T_SWITCH H_LB expr H_RB switch_case_list")
+                   "T_SWITCH ( expr ) switch_case_list")
     def unticked_statement_t_switch(self, p):
         raise NotImplementedError(p)
 
@@ -963,31 +963,31 @@ class Parser(object):
     #@pg.production("unticked_statement : T_INLINE_HTML")
 
     @pg.production("unticked_statement : T_UNSET "
-                   "H_LB unset_variables H_RB ;")
+                   "( unset_variables ) ;")
     def unticked_statement_t_unset_variables(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_FOREACH "
-                   "H_LB variable T_AS foreach_variable "
-                   "foreach_optional_arg H_RB foreach_statement")
+                   "( variable T_AS foreach_variable "
+                   "foreach_optional_arg ) foreach_statement")
     def unticked_statement_t_for_each_variable(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_FOREACH "
-                   "H_LB expr_without_variable T_AS "
-                   "variable foreach_optional_arg H_RB foreach_statement")
+                   "( expr_without_variable T_AS "
+                   "variable foreach_optional_arg ) foreach_statement")
     def unticked_statement_t_for_each_expr_wo_variable(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_DECLARE "
-                   "H_LB declare_list H_RB declare_statement")
+                   "( declare_list ) declare_statement")
     def unticked_statement_t_declare_declare_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_TRY "
                    "{ inner_statement_list } "
-                   "T_CATCH H_LB fully_qualified_class_name "
-                   "T_VARIABLE H_RB { "
+                   "T_CATCH ( fully_qualified_class_name "
+                   "T_VARIABLE ) { "
                    "inner_statement_list } additional_catches")
     def unticked_statement_t_try(self, p):
         raise NotImplementedError(p)
@@ -1012,8 +1012,8 @@ class Parser(object):
     def expr_expr_without_variable_scalar(self, p):
         return p[0]
 
-    @pg.production("expr_without_variable : T_ARRAY H_LB "
-                   "array_pair_list H_RB")
+    @pg.production("expr_without_variable : T_ARRAY ( "
+                   "array_pair_list )")
     def expr_expr_without_variable_array(self, p):
         raise NotImplementedError(p)
 
@@ -1105,7 +1105,7 @@ class Parser(object):
     def expr_expr_is_instance(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("expr : H_LB expr H_RB")
+    @pg.production("expr : ( expr )")
     def expr_bracket_expr_bracket(self, p):
         return p[1]
 
@@ -1148,22 +1148,22 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("expr : function is_reference "
-                   "H_LB parameter_list H_RB "
+                   "( parameter_list ) "
                    "lexical_vars { inner_statement_list }")
     def expr_function_is_reference(self, p):
         raise NotImplementedError(p)
 
     @pg.production("expr : T_STATIC function is_reference "
-                   "H_LB parameter_list H_RB "
+                   "( parameter_list ) "
                    "lexical_vars { inner_statement_list }")
     def expr_t_static_function_is_reference(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("exit_expr : H_LB H_RB")
+    @pg.production("exit_expr : ( )")
     def expr_empty_brackets(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("exit_expr : H_LB expr H_RB")
+    @pg.production("exit_expr : ( expr )")
     def expr_expr_in_brackets(self, p):
         raise NotImplementedError(p)
 
@@ -1171,7 +1171,7 @@ class Parser(object):
     def expr_empty(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("ctor_arguments : H_LB function_call_parameter_list H_RB")
+    @pg.production("ctor_arguments : ( function_call_parameter_list )")
     def ctor_arguments_function_call_parameter_list(self, p):
         raise NotImplementedError(p)
 
@@ -1212,7 +1212,7 @@ class Parser(object):
     def dynamic_class_name_variable_property(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("lexical_vars : T_USE H_LB lexical_var_list H_RB")
+    @pg.production("lexical_vars : T_USE ( lexical_var_list )")
     def lexical_vars_t_use_lexical_var_list(self, p):
         raise NotImplementedError(p)
 
@@ -1318,7 +1318,7 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("assignment_list_element : "
-                   "T_LIST H_LB assignment_list H_RB")
+                   "T_LIST ( assignment_list )")
     def assignment_list_element_t_list(self, p):
         raise NotImplementedError(p)
 
@@ -1495,7 +1495,7 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("elseif_list : elseif_list "
-                   "T_ELSEIF H_LB expr H_RB statement")
+                   "T_ELSEIF ( expr ) statement")
     def elseif_list_elseif_list(self, p):
         raise NotImplementedError(p)
 
@@ -1528,7 +1528,7 @@ class Parser(object):
         return p[0]
 
     @pg.production("new_elseif_list : new_elseif_list "
-                   "T_ELSEIF H_LB expr H_RB : inner_statement_list")
+                   "T_ELSEIF ( expr ) : inner_statement_list")
     def new_elseif_list_new_elseif_list(self, p):
         raise NotImplementedError(p)
 
@@ -1571,8 +1571,8 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("additional_catch : T_CATCH "
-                   "H_LB fully_qualified_class_name "
-                   "T_VARIABLE H_RB { inner_statement_list }")
+                   "( fully_qualified_class_name "
+                   "T_VARIABLE ) { inner_statement_list }")
     def additional_catch(self, p):
         raise NotImplementedError(p)
 
@@ -1618,7 +1618,7 @@ class Parser(object):
     def unset_var_var(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("method_or_not : H_LB function_call_parameter_list H_RB")
+    @pg.production("method_or_not : ( function_call_parameter_list )")
     def method_or_not_function_call_paramter_list(self, p):
         raise NotImplementedError(p)
 
@@ -1664,43 +1664,43 @@ class Parser(object):
         raise NotImplementedError(p)
 
     @pg.production("function_call : namespace_name "
-                   "H_LB function_call_parameter_list H_RB")
+                   "( function_call_parameter_list )")
     def function_call_namespace_name_function_call_parameter_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("function_call : T_NAMESPACE T_NS_SEPARATOR namespace_name "
-                   "H_LB function_call_parameter_list H_RB")
+                   "( function_call_parameter_list )")
     def function_call_ns_sep_ns_name_function_call_parameter_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("function_call : class_name T_PAAMAYIM_NEKUDOTAYIM "
-                   "T_STRING H_LB function_call_parameter_list H_RB")
+                   "T_STRING ( function_call_parameter_list )")
     def function_call_cn_t_paamayim_string_f_call_p_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("function_call : variable_class_name "
                    "T_PAAMAYIM_NEKUDOTAYIM "
-                   "T_STRING H_LB function_call_parameter_list H_RB")
+                   "T_STRING ( function_call_parameter_list )")
     def function_call_vcn_t_paamayim_string_f_call_p_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("function_call : variable_class_name "
                    "T_PAAMAYIM_NEKUDOTAYIM "
                    "variable_without_objects "
-                   "H_LB function_call_parameter_list H_RB")
+                   "( function_call_parameter_list )")
     def function_call_vcn_t_paamayim_variable_wo_f_call_p_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("function_call : "
                    "T_PAAMAYIM_NEKUDOTAYIM "
                    "variable_without_objects "
-                   "H_LB function_call_parameter_list H_RB")
+                   "( function_call_parameter_list )")
     def function_call_t_paamayim_variable_wo_f_call_p_list(self, p):
         raise NotImplementedError(p)
 
     @pg.production("function_call : class_name "
                    "variable_without_objects "
-                   "H_LB function_call_parameter_list H_RB")
+                   "( function_call_parameter_list )")
     def function_call_cn_t_paamayim_variable_wo_f_call_p_list(self, p):
         raise NotImplementedError(p)
 

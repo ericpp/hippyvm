@@ -1,12 +1,6 @@
 import re
 from rply import Token
 RULES = [
-    ('\(',              'H_LB'),
-    ('\)',              'H_RB'),
-    # ('[ \t\n]|(//[^\n]*\n)|(#[^\n]*\n)|(/\*([^\*]|\*[^/])*\*/)', 'IGNORE'),
-    # ("[a-zA-Z_][a-zA-Z0-9_]*", 'NAME'),
-    # ("\+|\-", 'ADD_OPER'),
-
     ("include", 'T_INCLUDE'),
     ("include_once", 'T_INCLUDE_ONCE'),
     ("eval", 'T_EVAL'),
@@ -161,6 +155,8 @@ RULES = [
     ("\!", '!'),
     ("\[", '['),
     ("\]", ']'),
+    ('\(', '('),
+    ('\)', ')'),
     ("\{", '{'),
     ("\}", '}'),
     ("\~", '~'),

@@ -167,8 +167,8 @@ RULES = [
     ("\^", 'H_DASH'),
     ("\@", 'H_AT'),
     ("\$", 'H_DOLLAR'),
-
-    ("\s+", None),
+    ("\\n", 'H_NEW_LINE'),
+    (" ", 'H_WHITESPACE'),
 
     ]
 
@@ -247,6 +247,7 @@ class Lexer(object):
         """
         self.buf = buf
         self.pos = 0
+        self.lineno = 0
 
     def token(self):
         """ Return the next token (a Token object) found in the
@@ -261,7 +262,6 @@ class Lexer(object):
         else:
             if self.skip_whitespace:
                 m = self.re_ws_skip.search(self.buf[self.pos:])
-
                 if m:
                     self.pos += m.start()
                 else:
@@ -269,10 +269,11 @@ class Lexer(object):
 
             for token_regex, token_type in self.rules:
                 m = token_regex.match(self.buf[self.pos:])
-
                 if m:
+                    if token_type == 'H_NEW_LINE':
+                        self.lineno += 1
                     value = self.buf[self.pos + m.start():self.pos + m.end()]
-                    tok = Token(token_type, value, self.pos)
+                    tok = Token(token_type, value, self.lineno)
                     self.pos += m.end()
                     return tok
 
@@ -286,13 +287,14 @@ class Lexer(object):
             tok = self.token()
             if tok is None:
                 break
+            while tok.name in ('H_NEW_LINE', 'H_WHITESPACE'):
+                tok = self.token()
             yield tok
 
 
 if __name__ == '__main__':
-    lx = Lexer(RULES, skip_whitespace=True)
+    lx = Lexer(RULES, skip_whitespace=False)
     lx.input('1 * 2 - $x;')
-
     try:
         for tok in lx.tokens():
             print tok

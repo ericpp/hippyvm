@@ -9,7 +9,6 @@ class Node(object):
     __metaclass__ = extendabletype
 
     lineno = 0
-
     _attrs_ = ()
 
     # those classes are extended with compile() methods in compiler.py
@@ -1825,15 +1824,18 @@ class Parser(object):
     @pg.error
     def error_handler(self, token):
         raise ValueError("Ran into a %s where it "
-                     "wasn't expected at pos(%s)" %
-                     (token.gettokentype(), token.getsourcepos())
-                      )
+                     "wasn't expected at line(%s)" %
+                         (token.gettokentype(),
+                          token.getsourcepos())
+                         )
 
     parser = pg.build()
 
 
 def parse(_source):
-    lx = Lexer(RULES, skip_whitespace=True)
+    lx = Lexer(RULES, skip_whitespace=False)
     lx.input(_source)
+    # for r in lx.tokens():
+    #     print r
     parser = Parser(lx.tokens())
     return parser.parse()

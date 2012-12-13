@@ -706,7 +706,7 @@ class Transformer(object):
                 return Cast(node.children[1].additional_info,
                             self.visit_expr(node.children[3]))
             return self.visit_paren(node)
-        elif node.children[0].symbol == 'ADD_OPER':
+        elif node.children[0].symbol in ('PLUSMINUS', 'UNARYONLY'):
             return PrefixOp(node.children[0].additional_info,
                             self.visit_primary(node.children[1]))
         raise NotImplementedError

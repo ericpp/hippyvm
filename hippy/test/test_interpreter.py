@@ -312,8 +312,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [i.boolval for i in output] == [False, True]
 
     def test_references(self):
-        py.test.skip("XXX FIXME")
-
         output = self.run('''
         $a = 3;      // [Int(3), None]
         $b = &$a;    // [r, r]  with r == Ref(Int(3),c=2)

@@ -1,12 +1,6 @@
 import re
 from rply import Token
 RULES = [
-    ('\(',              'H_LB'),
-    ('\)',              'H_RB'),
-    # ('[ \t\n]|(//[^\n]*\n)|(#[^\n]*\n)|(/\*([^\*]|\*[^/])*\*/)', 'IGNORE'),
-    # ("[a-zA-Z_][a-zA-Z0-9_]*", 'NAME'),
-    # ("\+|\-", 'ADD_OPER'),
-
     ("include", 'T_INCLUDE'),
     ("include_once", 'T_INCLUDE_ONCE'),
     ("eval", 'T_EVAL'),
@@ -48,6 +42,7 @@ RULES = [
     ("\(array\)", 'T_ARRAY_CAST'),
     ("\(object\)", 'T_OBJECT_CAST'),
     ("\(bool\)", 'T_BOOL_CAST'),
+    ("\(boolean\)", 'T_BOOL_CAST'),
     ("\(unset\)", 'T_UNSET_CAST'),
     ("\(binary\)", 'T_BINARY_CAST'),
     ("\(unicode\)", 'T_UNICODE_CAST'),
@@ -68,7 +63,7 @@ RULES = [
     ("(\"[^\"]*\")|('[^']*')", 'T_STRING'),
     ("(\"[^\"]*\")|('[^']*')", 'T_CONSTANT_ENCAPSED_STRING'),
 
-    ("\$[a-zA-Z]*", 'T_VARIABLE'),
+    ("\$[a-zA-Z]+", 'T_VARIABLE'),
     ("\$\{[a-zA-Z]*\}", 'T_STRING_VARNAME'),
 
     ("do", 'T_DO'),
@@ -140,34 +135,35 @@ RULES = [
     ("\\\\", 'T_NS_SEPARATOR'),
     ("\_\_halt_compiler", 'T_HALT_COMPILER'),
 
-    ("\&", 'H_REFERENCE'),
+    ("\&", '&'),
     ("\,", ','),
-    ("\;", 'H_END_STMT'),
-    ("\:", 'H_COLON'),
-    ("\=", 'H_EQUAL'),
-    ("\?", 'H_QUESTION'),
-    ("\|", 'H_PIPE'),
-    ("\^", 'H_CARET'),
-    ("\<", 'H_LT'),
-    ("\>", 'H_GT'),
+    ("\;", ';'),
+    ("\:", ':'),
+    ("\=", '='),
+    ("\?", '?'),
+    ("\|", '|'),
+    ("\^", '^'),
+    ("\<", '<'),
+    ("\>", '>'),
 
-    ("\+", 'H_PLUS'),
-    ("\-", 'H_MINUS'),
-    ("\.", 'H_DOT'),
-    ("\*", 'H_STAR'),
-    ("\/", 'H_SLASH'),
-    ("\%", 'H_PERCENT'),
-    ("\!", 'H_EXCLAMATION'),
-    ("\[", 'H_L_SB'),
-    ("\]", 'H_R_SB'),
-    ("\{", 'H_L_CB'),
-    ("\}", 'H_R_CB'),
-    ("\~", 'H_TILDE'),
-    ("\^", 'H_DASH'),
-    ("\@", 'H_AT'),
-    ("\$", 'H_DOLLAR'),
-
-    ("\s+", None),
+    ("\+", '+'),
+    ("\-", '-'),
+    ("\.", '.'),
+    ("\*", '*'),
+    ("\/", '/'),
+    ("\%", '%'),
+    ("\!", '!'),
+    ("\[", '['),
+    ("\]", ']'),
+    ('\(', '('),
+    ('\)', ')'),
+    ("\{", '{'),
+    ("\}", '}'),
+    ("\~", '~'),
+    ("\@", '@'),
+    ("\$", '$'),
+    ("\\n", 'H_NEW_LINE'),
+    (" ", 'H_WHITESPACE'),
 
     ]
 
@@ -184,18 +180,18 @@ PRECEDENCES = [
     ("left", ["QUESTION", "COLON", "PIPE", "CARET", "REFERENCE"]),
     ("nonassoc", ["T_IS_EQUAL", "T_IS_NOT_EQUAL",
                   "T_IS_IDENTICAL", "T_IS_NOT_IDENTICAL"]),
-    ("nonassoc", ["H_LT", "H_GT", "T_IS_SMALLER_OR_EQUAL",
+    ("nonassoc", ["<", ">", "T_IS_SMALLER_OR_EQUAL",
                   "T_IS_GREATER_OR_EQUAL"]),
     ("left", ["T_SL", "T_SR"]),
-    ("left", ["H_PLUS", "H_MINUS", "H_DOT", "H_STAR", "H_SLASH", "H_PERCENT"]),
-    ("right", ["EXCLAMATION"]),
+    ("left", ["+", "-", ".", "*", "/", "%"]),
+    ("right", ["!"]),
     ("nonassoc", ["T_INSTANCEOF"]),
-    ("right", ["TILDE", "T_INC", "T_DEC", "T_INT_CAST",
+    ("right", ["~", "T_INC", "T_DEC", "T_INT_CAST",
                "T_DOUBLE_CAST", "T_STRING_CAST",
                "T_ARRAY_CAST", "T_OBJECT_CAST",
                "T_BINARY_CAST", "T_UNICODE_CAST",
                "T_BOOL_CAST", "T_UNSET_CAST", "AT"]),
-    ("right", ["LEFT_SQR,BRACKET"]),
+    ("right", ["[",]),
     ("nonassoc", ["T_NEW", "T_CLONE"]),
     ("left", ["T_ELSEIF", "T_ELSE", "T_ENDIF"]),
     ("right", ["T_STATIC", "T_ABSTRACT", "T_FINAL",
@@ -246,6 +242,7 @@ class Lexer(object):
         """
         self.buf = buf
         self.pos = 0
+        self.lineno = 0
 
     def token(self):
         """ Return the next token (a Token object) found in the
@@ -260,7 +257,6 @@ class Lexer(object):
         else:
             if self.skip_whitespace:
                 m = self.re_ws_skip.search(self.buf[self.pos:])
-
                 if m:
                     self.pos += m.start()
                 else:
@@ -268,10 +264,11 @@ class Lexer(object):
 
             for token_regex, token_type in self.rules:
                 m = token_regex.match(self.buf[self.pos:])
-
                 if m:
+                    if token_type == 'H_NEW_LINE':
+                        self.lineno += 1
                     value = self.buf[self.pos + m.start():self.pos + m.end()]
-                    tok = Token(token_type, value, self.pos)
+                    tok = Token(token_type, value, self.lineno)
                     self.pos += m.end()
                     return tok
 
@@ -285,13 +282,16 @@ class Lexer(object):
             tok = self.token()
             if tok is None:
                 break
+            while tok.name in ('H_NEW_LINE', 'H_WHITESPACE'):
+                tok = self.token()
+                if tok is None:
+                    break
             yield tok
 
 
 if __name__ == '__main__':
-    lx = Lexer(RULES, skip_whitespace=True)
+    lx = Lexer(RULES, skip_whitespace=False)
     lx.input('1 * 2 - $x;')
-
     try:
         for tok in lx.tokens():
             print tok

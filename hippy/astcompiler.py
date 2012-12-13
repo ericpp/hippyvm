@@ -18,8 +18,9 @@ from hippy.bytecode import ByteCode
 from hippy.function import Function
 from pypy.rlib.rsre.rsre_re import compile
 
-def compile_ast(mainnode, space, extra_offset=0, print_exprs=False):
-    c = CompilerContext(0, space, extra_offset=extra_offset,
+def compile_ast(source, mainnode, space, extra_offset=0,
+                print_exprs=False):
+    c = CompilerContext(source.split("\n"), 0, space, extra_offset=extra_offset,
                         print_exprs=print_exprs)
     mainnode.compile(c)
     c.emit(consts.RETURN_NULL)
@@ -41,8 +42,9 @@ SUPERGLOBALS = ['GLOBALS']
 class CompilerContext(object):
     """ Context for compiling a piece of bytecode. It'll store the necessary
     """
-    def __init__(self, startlineno, space, name='<main>', is_main=True,
-                 extra_offset=0, print_exprs=False):
+    def __init__(self, sourcelines, startlineno, space, name='<main>',
+                 is_main=True, extra_offset=0, print_exprs=False):
+        self.sourcelines = sourcelines
         self.space = space
         self.data = []
         self.consts = []
@@ -183,7 +185,7 @@ class CompilerContext(object):
     def create_bytecode(self):
         return ByteCode("".join(self.data), self.consts[:], self.names[:],
                         self.varnames[:], self.functions, self.static_vars,
-                        self.startlineno,
+                        self.sourcelines, self.startlineno,
                         self.lineno_map, self.name, self.uses_GLOBALS,
                         is_main=self.is_main)
 
@@ -437,7 +439,8 @@ class __extend__(Array):
 
 class __extend__(FunctionDecl):
     def compile(self, ctx):
-        new_context = CompilerContext(self.lineno, ctx.space, self.name,
+        new_context = CompilerContext(ctx.sourcelines,
+                                      self.lineno, ctx.space, self.name,
                                       is_main=False,
                                       extra_offset=ctx.extra_offset)
         self.body.compile(new_context)

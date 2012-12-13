@@ -1,10 +1,9 @@
 
-import py
+import py, sys
 from hippy.interpreter import Interpreter, Frame
 from hippy.objspace import ObjSpace
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
-from hippy.error import InterpreterError
 from hippy.conftest import option
 from hippy.logger import Logger, FatalError
 from hippy.test.directrunner import run_source
@@ -13,9 +12,14 @@ class MockLogger(Logger):
     """ Like the logger, but instead of printing, records stuff
     """
     def __init__(self):
+        Logger.__init__(self)
         self.msgs = []
+        self.tb = []
+
+    def _log_traceback(self, filename, line, source):
+        self.tb.append((filename, line, source))
     
-    def log(self, level, msg):
+    def _log(self, level, msg):
         self.msgs.append((level, msg))
 
 class MockInterpreter(Interpreter):
@@ -31,12 +35,23 @@ class MockInterpreter(Interpreter):
 
 class BaseTestInterpreter(object):
     def run(self, source):
+        # preparse the source a bit so traceback starts with the
+        # correct number of whitespaces
+        lines = source.splitlines()
+        prefix = sys.maxint
+        for line in lines:
+            stripped = line.lstrip()
+            if stripped:
+                prefix = min(len(line) - len(stripped), prefix)
+        for i, line in enumerate(lines):
+            lines[i] = lines[i][prefix:]
+        source = "\n".join(lines)
         self.space = ObjSpace()
         if option.runappdirect:
             return run_source(self.space, source)
         interp = MockInterpreter(self.space)
         self.space.ec.writestr = interp.output.append
-        bc = compile_ast(parse(source), self.space)
+        bc = compile_ast(source, parse(source), self.space)
         self.interp = interp
         interp.interpret(self.space, Frame(self.space, bc), bc)
         return interp.output
@@ -292,6 +307,17 @@ class TestInterpreter(BaseTestInterpreter):
         echo g();
         ''')
         assert self.space.int_w(output[0]) == 1
+
+    def test_undeclared_traceback(self):
+        py.test.raises(FatalError, self.run, '''
+        function f() {
+           g();
+        }
+        f();
+        ''')
+        assert self.interp.logger.msgs == [('FATAL', 'undefined function g')]
+        assert self.interp.logger.tb == [('<main>', 4, 'f();'),
+                                         ('f', 2, '   g();')]
 
     def test_recursion(self):
         output = self.run('''

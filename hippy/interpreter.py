@@ -30,7 +30,8 @@ class Frame(object):
     """ Frame implementation. Note that vars_w store references, while
     stack stores values (also references)
     """
-    _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos', 'f_backref']
+    _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos', 'f_backref',
+                        'next_instr']
 
     @jit.unroll_safe
     def __init__(self, space, code):
@@ -38,6 +39,7 @@ class Frame(object):
         self.stack = [None] * code.stackdepth
         self.stackpos = 0
         self.bytecode = code # for the debugging
+        self.next_instr = 0
         if code.uses_dict:
             # we use dict in case of:
             # * dynamic var access
@@ -185,7 +187,7 @@ class Interpreter(object):
         try:
             return self.functions[name.lower()]
         except KeyError:
-            self.logger.fatal("undefined function %s" % name)
+            self.logger.fatal(self, "undefined function %s" % name)
 
     def interpret(self, space, frame, bytecode):
         bytecode.setup_functions(self, space)
@@ -197,6 +199,7 @@ class Interpreter(object):
                                        pc=pc, self=self)
                 code = bytecode.code
                 next_instr = ord(code[pc])
+                frame.next_instr = pc
                 # XXX change this to range check
                 numargs = BYTECODE_NUM_ARGS[next_instr]
                 pc += 1
@@ -240,6 +243,12 @@ class Interpreter(object):
     def enter(self, frame):
         frame.f_backref = self.topframeref
         self.topframeref = jit.virtual_ref(frame)
+
+    def gather_traceback(self, callback, arg):
+        frame = self.topframeref()
+        while frame is not None:
+            callback(arg, frame)
+            frame = frame.f_backref()
 
     def leave(self, frame):
         jit.virtual_ref_finish(self.topframeref, frame)

@@ -66,7 +66,7 @@ def entry_point(argv):
     extra_offset = data[:start].count("\n") + 1
     data = data[start:end]
     space = getspace()
-    bc = compile_ast(parse(data), space, extra_offset)
+    bc = compile_ast(data, parse(data), space, extra_offset)
     interp = Interpreter(space, Logger())
     frame = Frame(space, bc)
     if not we_are_translated():

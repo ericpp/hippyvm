@@ -35,8 +35,9 @@ class Node(object):
 
 
 class Block(Node):
-    def __init__(self, stmts):
+    def __init__(self, stmts, lineno=0):
         self.stmts = stmts
+        self.lineno = lineno
 
     def repr(self):
         return "Block(" + ", ".join([i.repr() for i in self.stmts]) + ")"
@@ -542,6 +543,7 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
+        print p
         return Block(p[0])
 
     @pg.production("top_statement_list : top_statement_list top_statement")
@@ -575,17 +577,13 @@ class Parser(object):
             return p[1]
         return [p[0], p[1]]
 
+    @pg.production("inner_statement_list : empty")
+    def inner_statement_list_empty(self, p):
+        return p[0]
+
     @pg.production("inner_statement : statement")
     def inner_statement_statement(self, p):
         return p[0]
-
-    @pg.production("is_reference : &")
-    def is_reference_reference(self, p):
-        raise NotImplementedError(p)
-
-    @pg.production("is_reference : empty")
-    def is_reference_empty(self, p):
-        raise NotImplementedError(p)
 
     @pg.production("statement : unticked_statement")
     def statement(self, p):
@@ -597,8 +595,7 @@ class Parser(object):
 
     @pg.production("unticked_statement : { inner_statement_list }")
     def unticked_statement_inner_statement_list(self, p):
-        return Block(p[1])
-
+        return Block([p[1]], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : ;")
     def unticked_statement_empty_statement(self, p):
@@ -676,10 +673,6 @@ class Parser(object):
             return ConstantFloat(float(p[0].getstr()), lineno=lineno)
         raise Exception("Not implemented yet!")
 
-    @pg.production("static_scalar : common_scalar")
-    def static_scalar(self, p):
-        return p[0]
-
     @pg.production("variable : base_variable_with_function_calls")
     def variable_base_variable_with_function_calls(self, p):
         return p[0]
@@ -708,10 +701,6 @@ class Parser(object):
     @pg.production("rw_variable : variable")
     def variable_rw_variable(self, p):
         return p[0]
-
-    @pg.production("w_variable : variable")
-    def variable_w_variable(self, p):
-        raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_ECHO echo_expr_list ;")
     def unticked_statement_t_echo_expr_list(self, p):
@@ -761,14 +750,18 @@ class Parser(object):
     def unticked_statement_if_inner_statement_elseif_else_single(self, p):
         raise NotImplementedError(p)
 
-    @pg.production("elseif_list : elseif_list "
-                   "T_ELSEIF ( expr ) statement")
-    def elseif_list_elseif_list(self, p):
-        raise NotImplementedError(p)
-
     @pg.production("elseif_list : empty")
     def elseif_list_empty(self, p):
         return p[0]
+
+    @pg.production("elseif_list : elseif_list T_ELSEIF ( expr ) statement")
+    def elseif_list_elseif_list(self, p):
+        if isinstance(p[0], list):
+            _if = If(p[3], p[5], lineno=p[1].getsourcepos())
+            p[0].append(_if)
+            return p[0]
+        if p[0] is None:
+            return [If(p[3], p[5], lineno=p[1].getsourcepos())]
 
     @pg.production("new_elseif_list : new_elseif_list "
                    "T_ELSEIF ( expr ) : inner_statement_list")
@@ -781,7 +774,7 @@ class Parser(object):
 
     @pg.production("else_single : T_ELSE statement")
     def else_single_t_else_statement(self, p):
-        raise NotImplementedError(p)
+        return p[1]
 
     @pg.production("else_single : empty")
     def else_single_empty(self, p):

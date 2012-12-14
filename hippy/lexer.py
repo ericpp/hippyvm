@@ -51,8 +51,8 @@ RULES = [
     ("clone", 'T_CLONE'),
     ("exit", 'T_EXIT'),
     ("if", 'T_IF'),
-    ("else", 'T_ELSE'),
     ("elseif", 'T_ELSEIF'),
+    ("else", 'T_ELSE'),
     ("endif", 'T_ENDIF'),
 
     ("-?[0-9]*\.[0-9]*", 'T_DNUMBER'),
@@ -168,6 +168,11 @@ RULES = [
     ]
 
 PRECEDENCES = [
+    ("left", [",",]),
+    # ("left", ["T_ELSEIF",]),
+    # ("left", ["T_ELSE",]),
+    # ("left", ["T_ENDIF",]),
+
     ("left", ["+", "-"]),
     ("left", ["*", "/"]),
     ("right", ['~', 'T_INC', 'T_DEC', 'T_INT_CAST', 'T_DOUBLE_CAST', 'T_STRING_CAST',

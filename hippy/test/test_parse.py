@@ -10,6 +10,13 @@ from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
 
 
 class TestParser(object):
+
+    def test_top_statement(self):
+        r = parse("1;")
+        assert r == Block([Stmt(ConstantInt(1))])
+        r = parse("{1;}")
+        assert r == Block([Block([Stmt(ConstantInt(1))])])
+
     def test_assign(self):
         r = parse("$x = 3;")
         assert r == Block([Stmt(Assignment(Variable(ConstantStr('x')),
@@ -174,6 +181,16 @@ class TestParser(object):
 
         assert r == expected
 
+    def test_if_else_if_oneline(self):
+        r = parse("""if ($x) $y; elseif ($z) 3; else 4;""")
+        expected = Block([If(Variable(ConstantStr("x")),
+                             Stmt(Variable(ConstantStr("y"))),
+                             [If(Variable(ConstantStr("z")),
+                                 Stmt(ConstantInt(3)))],
+                             Stmt(ConstantInt(4)))])
+
+        assert r == expected
+
     def test_if_else_if(self):
         r = parse("""
         if ($x)
@@ -183,13 +200,21 @@ class TestParser(object):
         else
           4;
         """)
-        expected = Block([If(Variable(ConstantStr("x")),
-                             Stmt(Variable(ConstantStr("y")), 2),
-                             [If(Variable(ConstantStr("z")),
-                                 Stmt(ConstantInt(3), 4),
-                                 lineno=3)],
-                             Stmt(ConstantInt(4), 6),
-                             lineno=1)])
+        expected = Block([
+                If(
+                    Variable(ConstantStr("x", 1), 1),
+                    Stmt(
+                        Variable(
+                            ConstantStr("y", 2), 2), 2),
+                             [
+                        If(
+                            Variable(
+                                ConstantStr("z", 3), 3),
+                            Stmt(
+                                ConstantInt(3, 4), 4),
+                            lineno=3)],
+                    Stmt(ConstantInt(4, 6), 6),
+                    lineno=1)])
 
         assert r == expected
 
@@ -204,15 +229,16 @@ class TestParser(object):
         else
           8;
         """)
-        assert r == Block([If(Variable(ConstantStr("x")),
-                              Stmt(Variable(ConstantStr("y")), 2),
-                          [If(Variable(ConstantStr("z")),
-                              Stmt(ConstantInt(3), 4),
+        assert r == Block([
+                If(Variable(ConstantStr("x", 1), 1),
+                              Stmt(Variable(ConstantStr("y", 2), 2), 2),
+                          [If(Variable(ConstantStr("z", 3), 3),
+                              Stmt(ConstantInt(3, 4), 4),
                               lineno=3),
-                           If(Variable(ConstantStr("y")),
-                              Stmt(ConstantInt(7), 6),
+                           If(Variable(ConstantStr("y", 5), 5),
+                              Stmt(ConstantInt(7, 6), 6),
                               lineno=5)],
-                              Stmt(ConstantInt(8), 8),
+                              Stmt(ConstantInt(8, 8), 8),
                               lineno=1)])
 
     def test_if_else_if_3(self):
@@ -224,13 +250,13 @@ class TestParser(object):
         elseif($y)
           7;
         """)
-        assert r == Block([If(Variable(ConstantStr("x")),
-                              Stmt(Variable(ConstantStr("y")), 2),
-                          [If(Variable(ConstantStr("z")),
-                              Stmt(ConstantInt(3), 4),
+        assert r == Block([If(Variable(ConstantStr("x", 1), 1),
+                              Stmt(Variable(ConstantStr("y", 2), 2), 2),
+                          [If(Variable(ConstantStr("z", 3), 3),
+                              Stmt(ConstantInt(3, 4), 4),
                               lineno=3),
-                           If(Variable(ConstantStr("y")),
-                              Stmt(ConstantInt(7), 6),
+                           If(Variable(ConstantStr("y", 5), 5),
+                              Stmt(ConstantInt(7, 6), 6),
                               lineno=5)],
                               lineno=1)])
 

@@ -185,9 +185,6 @@ class Echo(Node):
 
 class Return(Stmt):
 
-    def __init__(self, lineno=0):
-        self.lineno = lineno
-
     def repr(self):
         if self.expr is None:
             return "return;"
@@ -739,11 +736,27 @@ class Parser(object):
 
     @pg.production("unticked_statement : T_RETURN ;")
     def unticked_statement_t_return(self, p):
-        return Return(None, p[0].getsourcepos())
+        return Return(None, lineno=p[0].getsourcepos())
 
-    @pg.production("unticked_statement : T_RETURN expr_without_variable")
+    @pg.production("unticked_statement : T_RETURN expr_without_variable ;")
     def unticked_statement_t_return_expr_wo_variable(self, p):
-        return Return(p[1], p[0].getsourcepos())
+        return Return(p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_RETURN variable ;")
+    def unticked_statement_t_return_variable(self, p):
+        return Return(p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("expr_without_variable : rw_variable T_INC")
+    @pg.production("expr_without_variable : rw_variable T_DEC")
+    def expr_without_variable_variable_rw_var_t_inc_dec(self, p):
+        raise NotImplementedError(p)
+        #return SuffixOp(p[1].getstr(), p[0], lineno=p[1].getsourcepos())
+
+    @pg.production("expr_without_variable : T_INC rw_variable")
+    @pg.production("expr_without_variable : T_DEC rw_variable")
+    def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
+        raise NotImplementedError(p)
+        # return PrefixOp(p[0].getstr(), p[1], lineno=p[0].getsourcepos())
 
 
     @pg.production("empty :")

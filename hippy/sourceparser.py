@@ -54,19 +54,23 @@ class Stmt(Node):
 class Assignment(Node):
     """ Simple assignment to statically named variable
     """
-    def __init__(self, var, expr):
+    def __init__(self, var, expr, lineno=0):
         self.var = var
         self.expr = expr
+        self.lineno = lineno
 
     def repr(self):
-        return "Assign(%s, %s)" % (self.var.repr(), self.expr.repr())
+        return "Assign(%s, %s, %d)" % (self.var.repr(),
+                                       self.expr.repr(),
+                                       self.lineno)
 
 
 class InplaceOp(Node):
-    def __init__(self, op, var, expr):
+    def __init__(self, op, var, expr, lineno=0):
         self.op = op
         self.var = var
         self.expr = expr
+        self.lineno = 0
 
     def repr(self):
         return "InplaceOp(%s, %s, %s)" % (self.op, self.var.repr(),
@@ -79,24 +83,27 @@ class Const(Node):
 
 
 class ConstantInt(Const):
-    def __init__(self, intval):
+    def __init__(self, intval, lineno=0):
         self.intval = intval
+        self.lineno = lineno
 
     def repr(self):
-        return str(self.intval)
+        return "ConstantInt(%d, %d)" % (self.intval, self.lineno)
 
 
 class ConstantStr(Const):
-    def __init__(self, strval):
+    def __init__(self, strval, lineno=0):
         self.strval = strval
+        self.lineno = lineno
 
     def repr(self):
-        return '"' + self.strval + '"'
+        return "ConstantStr(%s, %d)" % (self.strval, self.lineno)
 
 
 class ConstantFloat(Const):
-    def __init__(self, floatval):
+    def __init__(self, floatval, lineno=0):
         self.floatval = floatval
+        self.lineno = lineno
 
     def repr(self):
         return str(self.floatval)
@@ -109,53 +116,59 @@ class ConstantAppend(Const):
 
 
 class BinOp(Node):
-    def __init__(self, op, left, right):
+    def __init__(self, op, left, right, lineno=0):
         self.op = op
         self.left = left
         self.right = right
+        self.lineno = 0
 
     def repr(self):
         return "BinOp(%s %s %s)" % (self.left.repr(), self.op, self.right.repr())
 
 
 class PrefixOp(Node):
-    def __init__(self, op, val):
+    def __init__(self, op, val, lineno=0):
         self.op = op
         self.val = val
+        self.lineno = lineno
 
     def repr(self):
         return "%s%s" % (self.op, self.val.repr())
 
 
 class SuffixOp(Node):
-    def __init__(self, op, val):
+    def __init__(self, op, val, lineno=0):
         self.op = op
         self.val = val
+        self.lineno = lineno
 
     def repr(self):
         return "%s%s" % (self.val.repr(), self.op)
 
 
 class Variable(Node):
-    def __init__(self, node):
+    def __init__(self, node, lineno=0):
         self.node = node
+        self.lineno = lineno
 
     def repr(self):
-        return "$" + self.node.repr()
+        return "Variable(%s, %d)" % (self.node.repr(), self.lineno)
 
 
 class UninitializedVariable(Node):
-    def __init__(self, name):
+    def __init__(self, name, lineno=0):
         self.name = name
+        self.lineno = lineno
 
     def repr(self):
         return "$" + self.name
 
 
 class InitializedVariable(Node):
-    def __init__(self, name, expr):
+    def __init__(self, name, expr, lineno=0):
         self.name = name
         self.expr = expr
+        self.lineno = lineno
 
     def repr(self):
         return "$" + self.name + " = " + self.expr.repr()
@@ -171,6 +184,10 @@ class Echo(Node):
 
 
 class Return(Stmt):
+
+    def __init__(self, lineno=0):
+        self.lineno = lineno
+
     def repr(self):
         if self.expr is None:
             return "return;"
@@ -234,9 +251,10 @@ class If(Node):
 
 
 class SimpleCall(Node):
-    def __init__(self, name, args):
+    def __init__(self, name, args, lineno=0):
         self.name = name
         self.args = args
+        self.lineno = lineno
 
     def repr(self):
         argrepr = ", ".join([i.repr() for i in self.args])
@@ -244,9 +262,10 @@ class SimpleCall(Node):
 
 
 class DynamicCall(Node):
-    def __init__(self, node, args):
+    def __init__(self, node, args, lineno=0):
         self.node = node
         self.args = args
+        self.lineno = lineno
 
     def repr(self):
         argrepr = ", ".join([i.repr() for i in self.args])
@@ -267,34 +286,41 @@ class FunctionDecl(Node):
 
 
 class Argument(Node):
-    def __init__(self, name):
+    def __init__(self, name, lineno=0):
         self.name = name
+        self.lineno = lineno
 
     def repr(self):
         return self.name
 
 
 class ReferenceArgument(Node):
-    def __init__(self, name):
+    def __init__(self, name, lineno=0):
         self.name = name
+        self.lineno = lineno
+
 
     def repr(self):
         return "&" + self.name
 
 
 class DefaultArgument(Node):
-    def __init__(self, name, value):
+    def __init__(self, name, value, lineno=0):
         self.name = name
         self.value = value
+        self.lineno = lineno
+
 
     def repr(self):
         return "%s = %s" % (self.name, self.value.repr())
 
 
 class GetItem(Node):
-    def __init__(self, node, item):
+    def __init__(self, node, item, lineno=0):
         self.node = node
         self.item = item
+        self.lineno = lineno
+
 
     def repr(self):
         return 'GetItem(%s, %s)' % (self.node.repr(), self.item.repr())
@@ -305,10 +331,12 @@ class GetItemReference(GetItem):
 
 
 class SetItem(Node):
-    def __init__(self, node, item, value):
+    def __init__(self, node, item, value, lineno=0):
         self.node = node
         self.item = item
         self.value = value
+        self.lineno = lineno
+
 
     def repr(self):
         return 'SetItem(%s, %s, %s)' % (self.node.repr(), self.item.repr(),
@@ -316,11 +344,12 @@ class SetItem(Node):
 
 
 class InplaceSetItem(Node):
-    def __init__(self, op, node, item, value):
+    def __init__(self, op, node, item, value, lineno=0):
         self.op = op
         self.node = node
         self.item = item
         self.value = value
+        self.lineno = lineno
 
     def repr(self):
         return 'InplaceSetItem(%s, %s, %s, %s)' % (self.op, self.node.repr(),
@@ -329,16 +358,19 @@ class InplaceSetItem(Node):
 
 
 class Array(Node):
-    def __init__(self, initializers):
+    def __init__(self, initializers, lineno=0):
         self.initializers = initializers
+        self.lineno = lineno
 
     def repr(self):
         return 'Array([%s])' % ', '.join([i.repr() for i in self.initializers])
 
 
 class Hash(Node):
-    def __init__(self, initializers):
+    def __init__(self, initializers, lineno=0):
         self.initializers = initializers
+        self.lineno = lineno
+
 
     def repr(self):
         return 'Hash([%s])' % ', '.join([
@@ -347,27 +379,33 @@ class Hash(Node):
 
 
 class Append(Node):
-    def __init__(self, node, expr):
+    def __init__(self, node, expr, lineno=0):
         self.node = node
         self.expr = expr
+        self.lineno = lineno
+
 
     def repr(self):
         return 'Append(%s, %s)' % (self.node.repr(), self.expr.repr())
 
 
 class And(Node):
-    def __init__(self, left, right):
+    def __init__(self, left, right, lineno=0):
         self.left = left
         self.right = right
+        self.lineno = lineno
+
 
     def repr(self):
         return 'And(%s, %s)' % (self.left.repr(), self.right.repr())
 
 
 class Or(Node):
-    def __init__(self, left, right):
+    def __init__(self, left, right, lineno=0):
         self.left = left
         self.right = right
+        self.lineno = lineno
+
 
     def repr(self):
         return 'Or(%s, %s)' % (self.left.repr(), self.right.repr())
@@ -392,8 +430,9 @@ class StaticDecl(Node):
 
 
 class NamedConstant(Node):
-    def __init__(self, name):
+    def __init__(self, name, lineno=0):
         self.name = name
+        self.lineno = lineno
 
     def is_constant(self):
         # only prebuilt ones
@@ -406,8 +445,9 @@ class NamedConstant(Node):
 
 
 class Reference(Node):
-    def __init__(self, item):
+    def __init__(self, item, lineno=0):
         self.item = item
+        self.lineno = lineno
 
     def repr(self):
         return 'Reference(%s)' % self.item.repr()
@@ -430,10 +470,12 @@ class Continue(Node):
 
 
 class IfExpr(Node):
-    def __init__(self, cond, left, right):
+    def __init__(self, cond, left, right, lineno=0):
         self.cond = cond
         self.left = left
         self.right = right
+        self.lineno = lineno
+
 
     def repr(self):
         return "IfExpr(%s, %s, %s)" % (self.cond.repr(), self.left.repr(),
@@ -466,11 +508,12 @@ class ForEachKey(Node):
                                                self.valname.repr(),
                                                self.body.repr())
 
-
 class Cast(Node):
-    def __init__(self, to, expr):
+    def __init__(self, to, expr, lineno=0):
         self.to = to
         self.expr = expr
+        self.lineno = lineno
+
 
     def repr(self):
         return 'Cast(%s, %s)' % (self.to, self.expr.repr())
@@ -553,7 +596,7 @@ class Parser(object):
 
     @pg.production("unticked_statement : expr ;")
     def unticked_statement_expr(self, p):
-        return Stmt(p[0])
+        return Stmt(p[0], lineno=p[0].lineno)
 
     @pg.production("unticked_statement : { inner_statement_list }")
     def unticked_statement_inner_statement_list(self, p):
@@ -578,31 +621,29 @@ class Parser(object):
 
     @pg.production("expr_without_variable : variable = expr")
     def expr_without_variable_variable_eq_expr(self, p):
-        return Assignment(p[0], p[2])
+        return Assignment(p[0], p[2], lineno=p[0].lineno)
 
     @pg.production("expr_without_variable : rw_variable T_INC")
     @pg.production("expr_without_variable : rw_variable T_DEC")
     def expr_without_variable_variable_rw_var_t_inc_dec(self, p):
-        return SuffixOp(p[1].getstr(), p[0])
+        return SuffixOp(p[1].getstr(), p[0], lineno=p[1].getsourcepos())
 
     @pg.production("expr_without_variable : T_INC rw_variable")
     @pg.production("expr_without_variable : T_DEC rw_variable")
     def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
-        return PrefixOp(p[0].getstr(), p[1])
+        return PrefixOp(p[0].getstr(), p[1], lineno=p[0].getsourcepos())
 
     @pg.production("expr : expr + expr")
     @pg.production("expr : expr - expr")
     @pg.production("expr : expr * expr")
     @pg.production("expr : expr / expr")
     def expr_oper_expr(self, p):
-        print p
-        # return p[0], p[2]
-        return BinOp(p[1].getstr(), p[0], p[2])
+        return BinOp(p[1].getstr(), p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("expr : - expr", precedence="T_DEC")
     @pg.production("expr : + expr", precedence="T_INC")
     def expr_h_minus_expr(self, p):
-        return PrefixOp(p[0].getstr(), p[1])
+        return PrefixOp(p[0].getstr(), p[1], lineno=p[0].getsourcepos())
 
     @pg.production("expr : ( expr )")
     def expr_bracket_expr_bracket(self, p):
@@ -631,10 +672,11 @@ class Parser(object):
     @pg.production("common_scalar : T_FUNC_C")
     @pg.production("common_scalar : T_NS_C")
     def common_scalar_lnumber(self, p):
+        linenp = lineno=p[0].getsourcepos()
         if p[0].gettokentype() == 'T_LNUMBER':
-            return ConstantInt(int(p[0].getstr()))
+            return ConstantInt(int(p[0].getstr()), lineno=lineno)
         if p[0].gettokentype() == 'T_DNUMBER':
-            return ConstantFloat(float(p[0].getstr()))
+            return ConstantFloat(float(p[0].getstr()), lineno=lineno)
         raise Exception("Not implemented yet!")
 
     @pg.production("static_scalar : common_scalar")
@@ -659,7 +701,8 @@ class Parser(object):
 
     @pg.production("compound_variable : T_VARIABLE")
     def compound_variable_t_variable(self, p):
-        return Variable(ConstantStr(p[0].getstr()[1:]))
+        lineno = p[0].getsourcepos()
+        return Variable(ConstantStr(p[0].getstr()[1:], lineno=lineno), lineno=lineno)
 
     @pg.production("r_variable : variable")
     def variable_r_variable(self, p):
@@ -672,6 +715,7 @@ class Parser(object):
     @pg.production("w_variable : variable")
     def variable_w_variable(self, p):
         raise NotImplementedError(p)
+
     @pg.production("empty :")
     def empty(self, p):
         return None

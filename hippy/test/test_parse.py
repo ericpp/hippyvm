@@ -103,11 +103,29 @@ class TestParser(object):
         $y = 4;
         $z;
         """)
-        assert r == Block([Stmt(Assignment(Variable(ConstantStr("x")),
-                            ConstantInt(3)), 1),
-                          Stmt(Assignment(Variable(ConstantStr("y")),
-                             ConstantInt(4)), 2),
-                          Stmt(Variable(ConstantStr("z")), 3)])
+        assert r == Block([
+                Stmt(
+                    Assignment(
+                        Variable(
+                            ConstantStr("x", 1),
+                            1),
+                        ConstantInt(3, 1),
+                        1),
+                    1),
+                Stmt(
+                    Assignment(
+                        Variable(
+                            ConstantStr("y", 2),
+                            2),
+                        ConstantInt(4, 2),
+                        2),
+                    2),
+                Stmt(
+                    Variable(
+                        ConstantStr("z", 3), 3
+                        ),
+                    3)
+                ])
 
     def test_echo(self):
         r = parse("echo $x;")

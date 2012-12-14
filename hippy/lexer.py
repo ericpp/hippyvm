@@ -168,6 +168,8 @@ RULES = [
     ]
 
 PRECEDENCES = [
+    ("left", ["+", "-"]),
+    ("left", ["*", "/"]),
 ]
 
 

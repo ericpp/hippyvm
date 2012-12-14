@@ -590,26 +590,13 @@ class Parser(object):
     def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
         return PrefixOp(p[0].getstr(), p[1])
 
-    @pg.production("expr : expr T_BOOLEAN_OR expr")
-    @pg.production("expr : expr T_BOOLEAN_AND expr")
-    @pg.production("expr : expr T_LOGICAL_OR expr")
-    @pg.production("expr : expr T_LOGICAL_XOR expr")
-    @pg.production("expr : expr T_LOGICAL_AND expr")
-    @pg.production("expr : expr | expr")
-    @pg.production("expr : expr & expr")
-    @pg.production("expr : expr ^ expr")
-    @pg.production("expr : expr op expr") # "%", "/", "*", ".", "+", "-"
-    @pg.production("expr : expr T_SL expr")
-    @pg.production("expr : expr T_SR expr")
-    @pg.production("expr : expr T_IS_IDENTICAL expr")
-    @pg.production("expr : expr T_IS_NOT_IDENTICAL expr")
-    @pg.production("expr : expr T_IS_EQUAL expr")
-    @pg.production("expr : expr T_IS_NOT_EQUAL expr")
-    @pg.production("expr : expr < expr")
-    @pg.production("expr : expr T_IS_SMALLER_OR_EQUAL expr")
-    @pg.production("expr : expr > expr")
-    @pg.production("expr : expr T_IS_GREATER_OR_EQUAL expr")
+    @pg.production("expr : expr + expr")
+    @pg.production("expr : expr - expr")
+    @pg.production("expr : expr * expr")
+    @pg.production("expr : expr / expr")
     def expr_oper_expr(self, p):
+        print p
+        # return p[0], p[2]
         return BinOp(p[1].getstr(), p[0], p[2])
 
     @pg.production("op : *")

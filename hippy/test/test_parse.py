@@ -22,6 +22,22 @@ class TestParser(object):
         r = parse("3 + 1;")
         assert r == Block([Stmt(BinOp("+", ConstantInt(3), ConstantInt(1)))])
 
+    def test_add2(self):
+        r = parse("3 + 1 + 5;")
+        assert r == Block([Stmt(
+                    BinOp("+", BinOp("+", ConstantInt(3), ConstantInt(1)), ConstantInt(5)))])
+
+    def test_minus2(self):
+        r = parse("1 - 2 - 3;")
+        assert r == Block([Stmt(
+                    BinOp("-", BinOp("-", ConstantInt(1), ConstantInt(2)), ConstantInt(3)))])
+
+    def test_add_minus(self):
+        r = parse("3 - 1 + 5;")
+        assert r == Block([Stmt(
+                    BinOp("+", BinOp("-", ConstantInt(3), ConstantInt(1)), ConstantInt(5)))])
+
+
     def test_operation_precedence(self):
         r = parse("5 + 1 * 3;")
         assert r == Block([Stmt(

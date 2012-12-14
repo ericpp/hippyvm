@@ -1,5 +1,6 @@
 import py
-from hippy.parser import parse, Block, Stmt, Assignment, ConstantInt,\
+from py.test import raises
+from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
      Variable, Echo, Return, If, PrefixOp, SuffixOp, While, For, ConstantStr,\
      SimpleCall, DynamicCall, FunctionDecl, Argument, BinOp, ConstantFloat,\
      GetItem, SetItem, Array, Append, And, Or, InplaceOp, Global,\
@@ -14,9 +15,42 @@ class TestParser(object):
         assert r == Block([Stmt(Assignment(Variable(ConstantStr('x')),
                                            ConstantInt(3)))])
 
+    def test_assign_error(self):
+        raises(ValueError, lambda : parse("$x$ = 3;"))
+
     def test_add(self):
         r = parse("3 + 1;")
         assert r == Block([Stmt(BinOp("+", ConstantInt(3), ConstantInt(1)))])
+
+    def test_operation_precedence(self):
+        r = parse("5 + 1 * 3;")
+        assert r == Block([Stmt(
+                    BinOp("+", ConstantInt(5), BinOp("*", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 - 1 * 3;")
+        assert r == Block([Stmt(
+                    BinOp("-", ConstantInt(5), BinOp("*", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 + 1 / 3;")
+        assert r == Block([Stmt(
+                    BinOp("+", ConstantInt(5), BinOp("/", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 - 1 / 3;")
+        assert r == Block([Stmt(
+                    BinOp("-", ConstantInt(5), BinOp("/", ConstantInt(1), ConstantInt(3))))])
+        r = parse("(5 + 1) * 3;")
+        assert r == Block([Stmt(
+                    BinOp("*", BinOp("+", ConstantInt(5), ConstantInt(1)), ConstantInt(3)))])
+        r = parse("(5 + 1) / 3;")
+        assert r == Block([Stmt(
+                    BinOp("/", BinOp("+", ConstantInt(5), ConstantInt(1)), ConstantInt(3)))])
+        r = parse("5 * (1 + 3);")
+        assert r == Block([Stmt(
+                    BinOp("*", ConstantInt(5), BinOp("+", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 / (1 + 3);")
+        assert r == Block([Stmt(
+                    BinOp("/", ConstantInt(5), BinOp("+", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 * 1 + 3;")
+        assert r == Block([Stmt(
+                    BinOp("+", BinOp("*", ConstantInt(5), ConstantInt(1)), ConstantInt(3)))])
+
 
     def test_multi(self):
         r = parse("1 * 2 - $x;")

@@ -746,19 +746,6 @@ class Parser(object):
     def unticked_statement_t_return_variable(self, p):
         return Return(p[1], lineno=p[0].getsourcepos())
 
-    @pg.production("expr_without_variable : rw_variable T_INC")
-    @pg.production("expr_without_variable : rw_variable T_DEC")
-    def expr_without_variable_variable_rw_var_t_inc_dec(self, p):
-        raise NotImplementedError(p)
-        #return SuffixOp(p[1].getstr(), p[0], lineno=p[1].getsourcepos())
-
-    @pg.production("expr_without_variable : T_INC rw_variable")
-    @pg.production("expr_without_variable : T_DEC rw_variable")
-    def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
-        raise NotImplementedError(p)
-        # return PrefixOp(p[0].getstr(), p[1], lineno=p[0].getsourcepos())
-
-
     @pg.production("empty :")
     def empty(self, p):
         return None

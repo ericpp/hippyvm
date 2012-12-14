@@ -595,6 +595,8 @@ class Parser(object):
 
     @pg.production("unticked_statement : { inner_statement_list }")
     def unticked_statement_inner_statement_list(self, p):
+        if p[1] is None:
+            return Block([], lineno=p[0].getsourcepos())
         return Block([p[1]], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : ;")
@@ -631,6 +633,8 @@ class Parser(object):
     @pg.production("expr : expr - expr")
     @pg.production("expr : expr * expr")
     @pg.production("expr : expr / expr")
+    @pg.production("expr : expr > expr")
+    @pg.production("expr : expr < expr")
     def expr_oper_expr(self, p):
         return BinOp(p[1].getstr(), p[0], p[2], lineno=p[1].getsourcepos())
 
@@ -787,6 +791,52 @@ class Parser(object):
     @pg.production("new_else_single : empty")
     def new_else_single_empty(self, p):
         return p[0]
+
+
+    @pg.production("unticked_statement : T_WHILE "
+                   "( expr ) while_statement")
+    def unticked_statement_t_while(self, p):
+        return While(p[2], p[4], lineno=p[0].getsourcepos())
+
+    @pg.production("while_statement : statement")
+    def while_stmt_stmt(self, p):
+        return p[0]
+
+    @pg.production("while_statement : "
+                   ": inner_statement_list T_ENDWHILE ;")
+    def while_stmt_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_FOR "
+                   "( for_expr ; "
+                   "for_expr ; for_expr ) for_statement")
+    def unticked_statement_t_for(self, p):
+        return For(p[2], p[4], p[6], p[8])
+
+    @pg.production("for_expr : non_empty_for_expr")
+    def for_expr_non_empty_for_expr(self, p):
+        return p[0]
+
+    @pg.production("for_expr : empty")
+    def for_expr_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_for_expr : non_empty_for_expr , expr")
+    def non_empty_for_expr_non_empty_for_expr_expr(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_for_expr : expr")
+    def non_empty_for_expr_expr(self, p):
+        return p[0]
+
+    @pg.production("for_statement : statement")
+    def for_stmt_stmt(self, p):
+        return p[0]
+
+    @pg.production("for_statement : "
+                   ": inner_statement_list T_ENDFOR ;")
+    def for_stmt_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
 
     @pg.production("empty :")
     def empty(self, p):

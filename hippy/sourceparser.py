@@ -599,29 +599,10 @@ class Parser(object):
         # return p[0], p[2]
         return BinOp(p[1].getstr(), p[0], p[2])
 
-    @pg.production("op : *")
-    def binop_mul(self, p):
-        return p[0]
-
-    @pg.production("op : /")
-    def binop_div(self, p):
-        return p[0]
-
-    @pg.production("op : +")
-    def binop_plus(self, p):
-        return p[0]
-
-    @pg.production("op : -")
-    def binop_minus(self, p):
-        return p[0]
-
-    @pg.production("op : %")
-    def binop_mod(self, p):
-        return p[0]
-
-    @pg.production("op : .")
-    def binop_dot(self, p):
-        return p[0]
+    @pg.production("expr : - expr", precedence="T_DEC")
+    @pg.production("expr : + expr", precedence="T_INC")
+    def expr_h_minus_expr(self, p):
+        return PrefixOp(p[0].getstr(), p[1])
 
     @pg.production("expr : ( expr )")
     def expr_bracket_expr_bracket(self, p):

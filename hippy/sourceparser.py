@@ -502,8 +502,6 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
-        # XXX : remove print!!
-        print p[0]
         return Block(p[0])
 
     @pg.production("top_statement_list : top_statement_list top_statement")

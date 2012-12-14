@@ -149,9 +149,17 @@ class TestParser(object):
         if ($x)
            return $y;
         """)
-        assert r == Block([If(Variable(ConstantStr("x")),
-                              Return(Variable(ConstantStr("y")), 2),
-                              lineno=1)])
+        assert r == Block([
+                If(
+                    Variable(
+                        ConstantStr("x", 1),
+                        1),
+                    Return(
+                        Variable(
+                            ConstantStr("y", 2),
+                            2),
+                        2),
+                    lineno=1)])
 
     def test_if_brackets(self):
         r = parse("if ($x) { return $y; }")

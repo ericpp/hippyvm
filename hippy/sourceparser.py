@@ -243,8 +243,8 @@ class If(Node):
             elseclause = ", " + self.elseclause.repr()
         else:
             elseclause = ""
-        return "If(%s, %s%s%s)" % (self.cond.repr(), self.body.repr(),
-                                       elseif, elseclause)
+        return "If(%s, %s%s%s, %d)" % (self.cond.repr(), self.body.repr(),
+                                       elseif, elseclause, self.lineno)
 
 
 class SimpleCall(Node):
@@ -745,6 +745,55 @@ class Parser(object):
     @pg.production("unticked_statement : T_RETURN variable ;")
     def unticked_statement_t_return_variable(self, p):
         return Return(p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_IF ( expr ) "
+                   "statement elseif_list else_single")
+    def unticked_statement_if_statement_elseif_else_single(self, p):
+        return If(p[2],
+                  p[4],
+                  elseiflist=p[5],
+                  elseclause=p[6],
+                  lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_IF ( expr ) : "
+                   "inner_statement_list new_elseif_list "
+                   "new_else_single T_ENDIF ;")
+    def unticked_statement_if_inner_statement_elseif_else_single(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("elseif_list : elseif_list "
+                   "T_ELSEIF ( expr ) statement")
+    def elseif_list_elseif_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("elseif_list : empty")
+    def elseif_list_empty(self, p):
+        return p[0]
+
+    @pg.production("new_elseif_list : new_elseif_list "
+                   "T_ELSEIF ( expr ) : inner_statement_list")
+    def new_elseif_list_new_elseif_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("new_elseif_list : empty")
+    def new_elseif_list_empty(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("else_single : T_ELSE statement")
+    def else_single_t_else_statement(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("else_single : empty")
+    def else_single_empty(self, p):
+        return p[0]
+
+    @pg.production("new_else_single : T_ELSE : inner_statement_list")
+    def new_else_single_t_else(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("new_else_single : empty")
+    def new_else_single_empty(self, p):
+        return p[0]
 
     @pg.production("empty :")
     def empty(self, p):

@@ -1,20 +1,15 @@
-
-import py
-from hippy import hippydir
-from pypy.rlib.parsing.ebnfparse import parse_ebnf, make_parse_function
+import sys
+from rply import ParserGenerator
+from hippy.lexer import RULES
+from hippy.lexer import PRECEDENCES
+from hippy.lexer import Lexer
 from pypy.tool.pairtype import extendabletype
-grammar = py.path.local(hippydir).join('grammar.txt').read("rt")
-regexs, rules, ToAST = parse_ebnf(grammar)
-_parse = make_parse_function(regexs, rules, eof=True)
 
-class ParserError(Exception):
-    pass
 
 class Node(object):
     __metaclass__ = extendabletype
 
     lineno = 0
-
     _attrs_ = ()
 
     # those classes are extended with compile() methods in compiler.py
@@ -38,12 +33,14 @@ class Node(object):
     def compile(self, ctx):
         raise NotImplementedError("abstract base class")
 
+
 class Block(Node):
     def __init__(self, stmts):
         self.stmts = stmts
 
     def repr(self):
         return "Block(" + ", ".join([i.repr() for i in self.stmts]) + ")"
+
 
 class Stmt(Node):
     def __init__(self, expr, lineno=0):
@@ -52,6 +49,7 @@ class Stmt(Node):
 
     def repr(self):
         return "Stmt(%s)" % self.expr.repr()
+
 
 class Assignment(Node):
     """ Simple assignment to statically named variable
@@ -63,6 +61,7 @@ class Assignment(Node):
     def repr(self):
         return "Assign(%s, %s)" % (self.var.repr(), self.expr.repr())
 
+
 class InplaceOp(Node):
     def __init__(self, op, var, expr):
         self.op = op
@@ -73,9 +72,11 @@ class InplaceOp(Node):
         return "InplaceOp(%s, %s, %s)" % (self.op, self.var.repr(),
                                           self.expr.repr())
 
+
 class Const(Node):
     def is_constant(self):
         return True
+
 
 class ConstantInt(Const):
     def __init__(self, intval):
@@ -84,12 +85,14 @@ class ConstantInt(Const):
     def repr(self):
         return str(self.intval)
 
+
 class ConstantStr(Const):
     def __init__(self, strval):
         self.strval = strval
 
     def repr(self):
         return '"' + self.strval + '"'
+
 
 class ConstantFloat(Const):
     def __init__(self, floatval):
@@ -98,10 +101,12 @@ class ConstantFloat(Const):
     def repr(self):
         return str(self.floatval)
 
+
 class ConstantAppend(Const):
 
     def repr(self):
         return 'fake_index'
+
 
 class BinOp(Node):
     def __init__(self, op, left, right):
@@ -110,7 +115,8 @@ class BinOp(Node):
         self.right = right
 
     def repr(self):
-        return "%s %s %s" % (self.left.repr(), self.op, self.right.repr())
+        return "BinOp(%s %s %s)" % (self.left.repr(), self.op, self.right.repr())
+
 
 class PrefixOp(Node):
     def __init__(self, op, val):
@@ -120,6 +126,7 @@ class PrefixOp(Node):
     def repr(self):
         return "%s%s" % (self.op, self.val.repr())
 
+
 class SuffixOp(Node):
     def __init__(self, op, val):
         self.op = op
@@ -128,6 +135,7 @@ class SuffixOp(Node):
     def repr(self):
         return "%s%s" % (self.val.repr(), self.op)
 
+
 class Variable(Node):
     def __init__(self, node):
         self.node = node
@@ -135,12 +143,14 @@ class Variable(Node):
     def repr(self):
         return "$" + self.node.repr()
 
+
 class UninitializedVariable(Node):
     def __init__(self, name):
         self.name = name
 
     def repr(self):
         return "$" + self.name
+
 
 class InitializedVariable(Node):
     def __init__(self, name, expr):
@@ -150,6 +160,7 @@ class InitializedVariable(Node):
     def repr(self):
         return "$" + self.name + " = " + self.expr.repr()
 
+
 class Echo(Node):
     def __init__(self, exprlist, lineno=0):
         self.exprlist = exprlist
@@ -158,11 +169,13 @@ class Echo(Node):
     def repr(self):
         return "Echo(%s)" % ", ".join([i.repr() for i in self.exprlist])
 
+
 class Return(Stmt):
     def repr(self):
         if self.expr is None:
             return "return;"
         return "return " + self.expr.repr() + ";"
+
 
 class While(Node):
     def __init__(self, expr, body, lineno=0):
@@ -173,6 +186,7 @@ class While(Node):
     def repr(self):
         return "While(%s, %s)" % (self.expr.repr(), self.body.repr())
 
+
 class DoWhile(Node):
     def __init__(self, body, expr, lineno=0):
         self.expr = expr
@@ -182,17 +196,19 @@ class DoWhile(Node):
     def repr(self):
         return "DoWhile(%s, %s)" % (self.body.repr(), self.expr.repr())
 
+
 class For(Node):
     def __init__(self, start, cond, step, body, lineno=0):
         self.start = start
-        self.cond  = cond
-        self.step  = step
-        self.body  = body
+        self.cond = cond
+        self.step = step
+        self.body = body
         self.lineno = lineno
 
     def repr(self):
         return "For(%s, %s, %s, %s)" % (self.start.repr(), self.cond.repr(),
                                         self.step.repr(), self.body.repr())
+
 
 class If(Node):
     def __init__(self, cond, body, elseiflist=None, elseclause=None,
@@ -205,7 +221,8 @@ class If(Node):
 
     def repr(self):
         if self.elseiflist is not None:
-            elseif = ", [" + ", ".join([i.repr() for i in self.elseiflist]) + "]"
+            elseif = ", [" + ", ".join(
+                [i.repr() for i in self.elseiflist]) + "]"
         else:
             elseif = ""
         if self.elseclause is not None:
@@ -214,6 +231,7 @@ class If(Node):
             elseclause = ""
         return "If(%s, %s%s%s)" % (self.cond.repr(), self.body.repr(),
                                        elseif, elseclause)
+
 
 class SimpleCall(Node):
     def __init__(self, name, args):
@@ -224,6 +242,7 @@ class SimpleCall(Node):
         argrepr = ", ".join([i.repr() for i in self.args])
         return "SimpleCall(%s, %s)" % (self.name, argrepr)
 
+
 class DynamicCall(Node):
     def __init__(self, node, args):
         self.node = node
@@ -232,6 +251,7 @@ class DynamicCall(Node):
     def repr(self):
         argrepr = ", ".join([i.repr() for i in self.args])
         return "DynamicCall(%s, %s)" % (self.node.repr(), argrepr)
+
 
 class FunctionDecl(Node):
     def __init__(self, name, argdecls, body, lineno):
@@ -245,6 +265,7 @@ class FunctionDecl(Node):
         return "FunctionDecl(%s, %s, %s)" % (self.name, argsrepr,
                                              self.body.repr())
 
+
 class Argument(Node):
     def __init__(self, name):
         self.name = name
@@ -252,12 +273,14 @@ class Argument(Node):
     def repr(self):
         return self.name
 
+
 class ReferenceArgument(Node):
     def __init__(self, name):
         self.name = name
 
     def repr(self):
         return "&" + self.name
+
 
 class DefaultArgument(Node):
     def __init__(self, name, value):
@@ -267,6 +290,7 @@ class DefaultArgument(Node):
     def repr(self):
         return "%s = %s" % (self.name, self.value.repr())
 
+
 class GetItem(Node):
     def __init__(self, node, item):
         self.node = node
@@ -275,8 +299,10 @@ class GetItem(Node):
     def repr(self):
         return 'GetItem(%s, %s)' % (self.node.repr(), self.item.repr())
 
+
 class GetItemReference(GetItem):
     pass
+
 
 class SetItem(Node):
     def __init__(self, node, item, value):
@@ -287,6 +313,7 @@ class SetItem(Node):
     def repr(self):
         return 'SetItem(%s, %s, %s)' % (self.node.repr(), self.item.repr(),
                                         self.value.repr())
+
 
 class InplaceSetItem(Node):
     def __init__(self, op, node, item, value):
@@ -300,6 +327,7 @@ class InplaceSetItem(Node):
                                                    self.item.repr(),
                                                    self.value.repr())
 
+
 class Array(Node):
     def __init__(self, initializers):
         self.initializers = initializers
@@ -307,12 +335,16 @@ class Array(Node):
     def repr(self):
         return 'Array([%s])' % ', '.join([i.repr() for i in self.initializers])
 
+
 class Hash(Node):
     def __init__(self, initializers):
         self.initializers = initializers
 
     def repr(self):
-        return 'Hash([%s])' % ', '.join(["(%s => %s)" % (k.repr(), v.repr()) for k, v in self.initializers])
+        return 'Hash([%s])' % ', '.join([
+                "(%s => %s)" %
+                (k.repr(), v.repr()) for k, v in self.initializers])
+
 
 class Append(Node):
     def __init__(self, node, expr):
@@ -322,6 +354,7 @@ class Append(Node):
     def repr(self):
         return 'Append(%s, %s)' % (self.node.repr(), self.expr.repr())
 
+
 class And(Node):
     def __init__(self, left, right):
         self.left = left
@@ -329,6 +362,7 @@ class And(Node):
 
     def repr(self):
         return 'And(%s, %s)' % (self.left.repr(), self.right.repr())
+
 
 class Or(Node):
     def __init__(self, left, right):
@@ -338,6 +372,7 @@ class Or(Node):
     def repr(self):
         return 'Or(%s, %s)' % (self.left.repr(), self.right.repr())
 
+
 class Global(Node):
     def __init__(self, names, lineno=0):
         self.names = names
@@ -346,6 +381,7 @@ class Global(Node):
     def repr(self):
         return 'Global(%s)' % ', '.join(self.names)
 
+
 class StaticDecl(Node):
     def __init__(self, vars, lineno=0):
         self.vars = vars
@@ -353,6 +389,7 @@ class StaticDecl(Node):
 
     def repr(self):
         return 'StaticDecl([%s])' % ', '.join([v.repr() for v in self.vars])
+
 
 class NamedConstant(Node):
     def __init__(self, name):
@@ -367,12 +404,14 @@ class NamedConstant(Node):
     def repr(self):
         return 'NamedConstant(%s)' % self.name
 
+
 class Reference(Node):
     def __init__(self, item):
         self.item = item
 
     def repr(self):
         return 'Reference(%s)' % self.item.repr()
+
 
 class Break(Node):
     def __init__(self, lineno=0):
@@ -381,12 +420,14 @@ class Break(Node):
     def repr(self):
         return "Break"
 
+
 class Continue(Node):
     def __init__(self, lineno=0):
         self.lineno = lineno
 
     def repr(self):
         return "Continue"
+
 
 class IfExpr(Node):
     def __init__(self, cond, left, right):
@@ -398,6 +439,7 @@ class IfExpr(Node):
         return "IfExpr(%s, %s, %s)" % (self.cond.repr(), self.left.repr(),
                                        self.right.repr())
 
+
 class ForEach(Node):
     def __init__(self, expr, varname, body, lineno=0):
         self.expr = expr
@@ -408,6 +450,7 @@ class ForEach(Node):
     def repr(self):
         return 'ForEach(%s, %s, %s)' % (self.expr.repr(), self.varname.repr(),
                                         self.body.repr())
+
 
 class ForEachKey(Node):
     def __init__(self, expr, keyname, valname, body, lineno=0):
@@ -423,6 +466,7 @@ class ForEachKey(Node):
                                                self.valname.repr(),
                                                self.body.repr())
 
+
 class Cast(Node):
     def __init__(self, to, expr):
         self.to = to
@@ -431,393 +475,253 @@ class Cast(Node):
     def repr(self):
         return 'Cast(%s, %s)' % (self.to, self.expr.repr())
 
-class Transformer(object):
-    def visit_main(self, node):
-        return self.visit_block(node.children[0])
 
-    def visit_block(self, nextnode):
-        stmts = []
-        while True:
-            stmts.append(self.visit_stmt(nextnode.children[0]))
-            if len(nextnode.children) == 1:
-                break
-            nextnode = nextnode.children[1]
-        return Block(stmts)
+class LexerWrapper(object):
+    def __init__(self, lexer):
+        self.lexer = lexer
 
-    def visit_stmt(self, node):
-        lineno = node.getsourcepos().lineno
-        if node.children[0].symbol == 'expr':
-            return Stmt(self.visit_expr(node.children[0]), lineno)
-        elif node.children[0].symbol == 'function_decl':
-            return self.visit_function_decl(node.children[0])
-        info = node.children[0].additional_info
-        if node.children[0].symbol == 'ECHO':
-            args = [self.visit_expr(node.children[1])]
-            if len(node.children) == 4:
-                argnode = node.children[2]
-                while len(argnode.children) == 3:
-                    args.append(self.visit_expr(argnode.children[1]))
-                    argnode = argnode.children[2]
-                args.append(self.visit_expr(argnode.children[1]))
-            return Echo(args, lineno)
-        elif info == 'return':
-            if len(node.children) == 2:
-                return Return(None, lineno)
-            return Return(self.visit_expr(node.children[1]), lineno)
-        elif info == 'if':
-            return self.visit_if(node)
-        elif info == "{":
-            if len(node.children) == 2:
-                return Block([])
-            return self.visit_block(node.children[1])
-        elif info == "while":
-            return self.visit_while(node, lineno)
-        elif info == "do":
-            return self.visit_do_while(node, lineno)
-        elif info == "for":
-            return self.visit_for(node, lineno)
-        elif info == "global":
-            return self.visit_global(node, lineno)
-        elif info == "static":
-            return self.visit_static(node, lineno)
-        elif info == "break":
-            return Break(lineno)
-        elif info == "continue":
-            return Continue(lineno)
-        elif info == "foreach":
-            return self.visit_foreach(node)
-        raise NotImplementedError
+    def next(self):
+        try:
+            return self.lexer.next()
+        except StopIteration:
+            return None
 
-    def visit_static_var(self, node):
-        varname = node.children[2].additional_info
-        if len(node.children) == 5:
-            rest = node.children[4]
-            expr = self.visit_expr(node.children[3].children[1])
-            return InitializedVariable(varname, expr), rest
-        return (UninitializedVariable(varname),
-                node.children[3])
 
-    def visit_static(self, node, lineno):
-        vars = []
-        while True:
-            var, node = self.visit_static_var(node)
-            vars.append(var)
-            if ';' not in node.symbol and node.children:
-                node = node.children[0]
-            else:
-                break
-        return StaticDecl(vars, lineno)
+class Parser(object):
 
-    def visit_var_assign(self, node):
-        if len(node.children) == 3:
-            if node.children[0].symbol == 'REFERENCE':
-                return ReferenceArgument(node.children[2].additional_info)
-            if node.children[2].children[0].additional_info != '=':
-                raise ParserError("Wrong assignemnt symbol")
-            expr = self.visit_expr(node.children[2].children[1])
-            assert expr.is_constant()
-            return DefaultArgument(node.children[1].additional_info,
-                                   expr)
-        return Argument(node.children[1].additional_info)
+    def __init__(self, lexer):
+        self.lexer = lexer
 
-    def visit_foreach(self, node):
-        lineno = node.getsourcepos().lineno
-        if len(node.children) == 7:
-            return ForEach(self.visit_expr(node.children[2]),
-                           self.visit_var_assign(node.children[4]),
-                           self.visit_stmt(node.children[6]),
-                           lineno)
-        return ForEachKey(self.visit_expr(node.children[2]),
-                          self.visit_var_assign(node.children[4]),
-                          self.visit_var_assign(node.children[6]),
-                          self.visit_stmt(node.children[8]),
-                          lineno)
+    def parse(self):
+        l = LexerWrapper(self.lexer)
+        return self.parser.parse(l, state=self)
 
-    def visit_global(self, node, lineno):
-        names = [node.children[2].additional_info]
-        if len(node.children) == 5:
-            nextnode = node.children[3]
-            while len(nextnode.children) == 4:
-                names.append(nextnode.children[2].additional_info)
-                nextnode = nextnode.children[3]
-            names.append(nextnode.children[2].additional_info)
-        return Global(names, lineno)
+    pg = ParserGenerator([d for (r, d) in RULES],
+                         precedence=PRECEDENCES,
+                         cache_id="hippy")
 
-    def visit_if(self, node):
-        cond = self.visit_expr(node.children[2])
-        body = self.visit_stmt(node.children[4])
-        lineno = node.getsourcepos().lineno
-        if not node.children[5].children:
-            # simple if
-            return If(cond, body, lineno=lineno)
+    @pg.production("main : top_statement_list")
+    def main_top_statement_list(self, p):
+        # XXX : remove print!!
+        print p[0]
+        return Block(p[0])
 
-        if 'star' in node.children[5].symbol:
-            if len(node.children) == 7 and node.children[6].children:
-                elseclause = self.visit_stmt(node.children[6].children[0].children[1])
-            else:
-                elseclause = None
-            item = node.children[5]
-            elseiflist = []
-            while 'star' in item.symbol:
-                expr = self.visit_expr(item.children[2])
-                subbody = self.visit_stmt(item.children[4])
-                curlineno = item.getsourcepos().lineno
-                elseiflist.append(If(expr, subbody, lineno=curlineno))
-                item = item.children[-1]
-        else:
-            elseiflist = None
-            elseclause = self.visit_stmt(node.children[5].children[0].children[1])
-        return If(cond, body, elseiflist, elseclause, lineno=lineno)
+    @pg.production("top_statement_list : top_statement_list top_statement")
+    def top_statement_list_top_statement(self, p):
+        if isinstance(p[0], list):
+            if p[1]:
+                p[0].append(p[1])
+                return p[0]
+            return p[0]
+        return [p[0], p[1]]
 
-    def visit_while(self, node, lineno):
-        return While(self.visit_expr(node.children[2]),
-                     self.visit_stmt(node.children[4]),
-                     lineno)
+    @pg.production("top_statement_list : top_statement")
+    def top_statatement_list(self, p):
+        return [p[0]]
 
-    def visit_do_while(self, node, lineno):
-        return DoWhile(self.visit_block(node.children[2]),
-                       self.visit_expr(node.children[6]),
-                       lineno)
+    @pg.production("top_statement : statement")
+    def top_statement(self, p):
+        return p[0]
 
-    def visit_for(self, node, lineno):
-        return For(self.visit_expr(node.children[2]),
-                   self.visit_expr(node.children[4]),
-                   self.visit_expr(node.children[6]),
-                   self.visit_stmt(node.children[8]),
-                   lineno)
+    @pg.production("inner_statement_list : "
+                   "inner_statement_list inner_statement")
+    def inner_statement_list_inner_statement_list_inner_statement(self, p):
+        if isinstance(p[0], list):
+            if p[1]:
+                if p[0] is None:
+                    return p[1]
+                p[0].append(p[1])
+                return p[0]
+            return p[0]
+        if p[0] is None:
+            return p[1]
+        return [p[0], p[1]]
 
-    def visit_expr(self, node, is_func_arg=False):
-        if node.symbol == 'expr':
-            if len(node.children) == 1:
-                node = node.children[0]
-            elif len(node.children) == 5:
-                return IfExpr(self.visit_expr(node.children[0]),
-                              self.visit_expr(node.children[2]),
-                              self.visit_expr(node.children[4]))
-            else:
-                raise NotImplementedError
-        symname = node.symbol
-        if symname == 'assignment':
-            return self.visit_assignment(node)
-        elif symname == 'and':
-            if len(node.children) == 1:
-                return self.visit_expr(node.children[0],
-                                       is_func_arg=is_func_arg)
-            return And(self.visit_expr(node.children[0]),
-                       self.visit_expr(node.children[2]))
-        elif symname == 'or':
-            if len(node.children) == 1:
-                return self.visit_expr(node.children[0],
-                                       is_func_arg=is_func_arg)
-            return Or(self.visit_expr(node.children[0]),
-                       self.visit_expr(node.children[2]))
-        elif symname in ['additive', 'multitive', 'comparison']:
-            return self.visit_subexpr(node, is_func_arg=is_func_arg)
-        elif symname == 'primary':
-            return self.visit_primary(node, is_func_arg=is_func_arg)
-        raise NotImplementedError
+    @pg.production("inner_statement : statement")
+    def inner_statement_statement(self, p):
+        return p[0]
 
-    def visit_funccall(self, node):
-        if node.children[0].children[0].symbol == 'NAME':
-            # a simple call
-            return SimpleCall(node.children[0].children[0].additional_info,
-                              self.parse_args(node))
-        return DynamicCall(self.visit_atom(node.children[0]),
-                           self.parse_args(node))
+    @pg.production("is_reference : &")
+    def is_reference_reference(self, p):
+        raise NotImplementedError(p)
 
-    def parse_args(self, node):
-        if len(node.children) == 3:
-            # no args
-            return []
-        arglist = node.children[2]
-        args = []
-        while len(arglist.children) == 3:
-            args.append(self.visit_expr(arglist.children[0], is_func_arg=True))
-            arglist = arglist.children[2]
-        args.append(self.visit_expr(arglist.children[0], is_func_arg=True))
-        return args
+    @pg.production("is_reference : empty")
+    def is_reference_empty(self, p):
+        raise NotImplementedError(p)
 
-    def visit_array_pair(self, node, arr_args, params):
-        if node.symbol == 'array_pair':
-            if len(node.children) == 2:
-                arr_args.append((
-                        self.visit_expr(node.children[0]),
-                        self.visit_expr(node.children[1].children[1])
-                        ))
-                params['is_hash'] = True
-            if len(node.children) == 1:
-                arr_args.append((
-                        ConstantAppend(),
-                        self.visit_expr(node.children[0])
-                        ))
-                params['p_iter'] += 1
+    @pg.production("statement : unticked_statement")
+    def statement(self, p):
+        return p[0]
 
-    def visit_nonempty_array(self, node):
-        array_pairs = []
-        params = {'p_iter': 0,
-                  'is_hash': False}
-        if len(node.children) == 1:
-            self.visit_array_pair(
-                node.children[0],
-                array_pairs, params)
-        else:
-            first_pair = node.children[0]
-            self.visit_array_pair(
-                first_pair,
-                array_pairs, params)
-            rest = node.children[1]
-            while len(rest.children) == 3:
-                pair = rest.children[1]
-                self.visit_array_pair(pair, array_pairs,
-                                      params)
-                rest = rest.children[2]
-            self.visit_array_pair(rest.children[1], array_pairs,
-                                  params)
-        if params['is_hash']:
-            return Hash(array_pairs)
-        return Array([val for _, val in array_pairs])
+    @pg.production("unticked_statement : expr ;")
+    def unticked_statement_expr(self, p):
+        return Stmt(p[0])
 
-    def visit_primary(self, node, is_func_arg=False):
-        if node.children[0].symbol == 'function_call':
-            return self.visit_funccall(node.children[0])
-        elif node.children[0].symbol == 'ARRAY':
-            if len(node.children) == 3:
-                return Array([])
-            else:
-                return self.visit_nonempty_array(node.children[2])
-        elif len(node.children) == 1:
-            if node.children[0].symbol == 'NAME':
-                return NamedConstant(node.children[0].additional_info)
-            return self.visit_atom(node.children[0])
-        elif node.children[0].symbol == 'INOP':
-            return PrefixOp(node.children[0].additional_info,
-                            self.visit_atom(node.children[1]))
-        elif node.children[1].symbol == 'INOP':
-            return SuffixOp(node.children[1].additional_info,
-                            self.visit_atom(node.children[0]))
-        elif node.children[0].symbol == 'atom':
-            # getitem
-            atom = self.visit_atom(node.children[0])
-            return self.parse_getitem(atom, node.children[1],
-                                      is_func_arg=is_func_arg)
-        elif node.children[0].additional_info == '(':
-            if len(node.children) == 4:
-                return Cast(node.children[1].additional_info,
-                            self.visit_expr(node.children[3]))
-            return self.visit_paren(node)
-        elif node.children[0].symbol == 'ADD_OPER':
-            return PrefixOp(node.children[0].additional_info,
-                            self.visit_primary(node.children[1]))
-        raise NotImplementedError
+    @pg.production("unticked_statement : { inner_statement_list }")
+    def unticked_statement_inner_statement_list(self, p):
+        return Block(p[1])
 
-    def parse_getitem(self, atom, rest, is_func_arg=False):
-        if is_func_arg:
-            cls = GetItemReference
-        else:
-            cls = GetItem
-        if len(rest.children) == 3:
-            return cls(atom, self.visit_expr(rest.children[1]))
-        atom = cls(atom, self.visit_expr(rest.children[1]))
-        return self.parse_getitem(atom, rest.children[3], is_func_arg=is_func_arg)
 
-    def visit_atom(self, node):
-        symname = node.children[0].symbol
-        if symname == 'DECIMAL':
-            return ConstantInt(int(node.children[0].additional_info))
-        if symname == 'HEXADECIMAL':
-            return ConstantInt(int(node.children[0].additional_info, 16))
-        if symname == 'EXPONENT':
-            return ConstantFloat(float(node.children[0].additional_info))
-        if symname == 'OCTAL':
-            o = node.children[0].additional_info
-            if o.find('8') > 0:
-                o = o[:o.find('8')]
-            if o.find('9') > 0:
-                o = o[:o.find('9')]
-            return ConstantInt(int(o, 8))
-        if symname == 'STR':
-            info = node.children[0].additional_info
-            end = len(info) - 1
-            assert end >= 0
-            return ConstantStr(info[1:end])
-        if symname == 'FLOAT':
-            return ConstantFloat(float(node.children[0].additional_info))
-        elif symname == 'NAME':
-            return ConstantStr(node.children[0].additional_info)
-        elif '$' in symname:
-            if len(node.children) == 2:
-                return Variable(self.visit_atom(node.children[1]))
-            return Variable(self.visit_expr(node.children[2]))
-        elif symname == 'REFERENCE':
-            return Reference(self.visit_atom(node.children[1]))
-        raise NotImplementedError
+    @pg.production("unticked_statement : ;")
+    def unticked_statement_empty_statement(self, p):
+        return None
 
-    def visit_subexpr(self, node, is_func_arg=False):
-        if len(node.children) == 1:
-            return self.visit_expr(node.children[0], is_func_arg=is_func_arg)
-        return BinOp(node.children[1].additional_info,
-                     self.visit_expr(node.children[0]),
-                     self.visit_expr(node.children[2]))
+    @pg.production("expr : r_variable")
+    def expr_expr_r_variable(self, p):
+        return p[0]
 
-    def visit_assignment(self, node):
-        if len(node.children) == 5:
-            oper = node.children[3].additional_info
-            atom = Variable(self.visit_atom(node.children[1]))
-            getitem = self.parse_getitem(atom, node.children[2])
-            if oper != '=':
-                return InplaceSetItem(oper, getitem.node, getitem.item,
-                                      self.visit_expr(node.children[4]))
-            return SetItem(getitem.node, getitem.item,
-                           self.visit_expr(node.children[4]))
-        elif len(node.children) == 6:
-            if node.children[4].additional_info != '=':
-                raise ParserError
-            return Append(Variable(self.visit_atom(node.children[1])),
-                          self.visit_expr(node.children[5]))
-        elif len(node.children) == 7:
-            atom = Variable(self.visit_atom(node.children[1]))
-            getitem = self.parse_getitem(atom, node.children[2])
-            if node.children[5].additional_info != '=':
-                raise ParserError
-            return Append(getitem, self.visit_expr(node.children[6]))
-        if node.children[2].additional_info == '=':
-            return Assignment(Variable(self.visit_atom(node.children[1])),
-                              self.visit_expr(node.children[3]))
-        return InplaceOp(node.children[2].additional_info,
-                         Variable(self.visit_atom(node.children[1])),
-                         self.visit_expr(node.children[3]))
+    @pg.production("expr : expr_without_variable")
+    def expr_expr_without_variable(self, p):
+        return p[0]
 
-    def visit_paren(self, node):
-        return self.visit_expr(node.children[1])
+    @pg.production("expr_without_variable : scalar")
+    def expr_expr_without_variable_scalar(self, p):
+        return p[0]
 
-    def visit_function_decl(self, node):
-        funcname = node.children[1].additional_info
-        args = self.parse_argdecls(node.children[2])
-        if len(node.children) == 5:
-            body = Block([])
-        else:
-            stmts = []
-            stmt = node.children[4]
-            while len(stmt.children) == 2:
-                stmts.append(self.visit_stmt(stmt.children[0]))
-                stmt = stmt.children[1]
-            stmts.append(self.visit_stmt(stmt.children[0]))
-            body = Block(stmts)
-        lineno = node.getsourcepos().lineno
-        return FunctionDecl(funcname, args, body, lineno)
+    @pg.production("expr_without_variable : variable = expr")
+    def expr_without_variable_variable_eq_expr(self, p):
+        return Assignment(p[0], p[2])
 
-    def parse_argdecls(self, node):
-        if len(node.children) == 2:
-            return []
-        argdecls = node.children[1]
-        args = []
-        while len(argdecls.children) > 1:
-            args.append(self.visit_var_assign(argdecls.children[0]))
-            argdecls = argdecls.children[2]
-        args.append(self.visit_var_assign(argdecls.children[0]))
-        return args
+    @pg.production("expr_without_variable : rw_variable T_INC")
+    @pg.production("expr_without_variable : rw_variable T_DEC")
+    def expr_without_variable_variable_rw_var_t_inc_dec(self, p):
+        return SuffixOp(p[1].getstr(), p[0])
 
-transformer = Transformer()
+    @pg.production("expr_without_variable : T_INC rw_variable")
+    @pg.production("expr_without_variable : T_DEC rw_variable")
+    def expr_without_variable_variable_t_inc_dec_rw_var(self, p):
+        return PrefixOp(p[0].getstr(), p[1])
 
-def parse(source):
-    return transformer.visit_main(_parse(source))
+    @pg.production("expr : expr T_BOOLEAN_OR expr")
+    @pg.production("expr : expr T_BOOLEAN_AND expr")
+    @pg.production("expr : expr T_LOGICAL_OR expr")
+    @pg.production("expr : expr T_LOGICAL_XOR expr")
+    @pg.production("expr : expr T_LOGICAL_AND expr")
+    @pg.production("expr : expr | expr")
+    @pg.production("expr : expr & expr")
+    @pg.production("expr : expr ^ expr")
+    @pg.production("expr : expr op expr") # "%", "/", "*", ".", "+", "-"
+    @pg.production("expr : expr T_SL expr")
+    @pg.production("expr : expr T_SR expr")
+    @pg.production("expr : expr T_IS_IDENTICAL expr")
+    @pg.production("expr : expr T_IS_NOT_IDENTICAL expr")
+    @pg.production("expr : expr T_IS_EQUAL expr")
+    @pg.production("expr : expr T_IS_NOT_EQUAL expr")
+    @pg.production("expr : expr < expr")
+    @pg.production("expr : expr T_IS_SMALLER_OR_EQUAL expr")
+    @pg.production("expr : expr > expr")
+    @pg.production("expr : expr T_IS_GREATER_OR_EQUAL expr")
+    def expr_oper_expr(self, p):
+        return BinOp(p[1].getstr(), p[0], p[2])
+
+    @pg.production("op : *")
+    def binop_mul(self, p):
+        return p[0]
+
+    @pg.production("op : /")
+    def binop_div(self, p):
+        return p[0]
+
+    @pg.production("op : +")
+    def binop_plus(self, p):
+        return p[0]
+
+    @pg.production("op : -")
+    def binop_minus(self, p):
+        return p[0]
+
+    @pg.production("op : %")
+    def binop_mod(self, p):
+        return p[0]
+
+    @pg.production("op : .")
+    def binop_dot(self, p):
+        return p[0]
+
+    @pg.production("expr : ( expr )")
+    def expr_bracket_expr_bracket(self, p):
+        return p[1]
+
+    @pg.production("expr : scalar")
+    def expr_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("scalar : T_STRING_VARNAME")
+    def scalar_t_string_varname(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("scalar : common_scalar")
+    def scalar_common_scalar(self, p):
+        return p[0]
+
+    @pg.production("common_scalar : T_LNUMBER")
+    @pg.production("common_scalar : T_DNUMBER")
+    @pg.production("common_scalar : T_CONSTANT_ENCAPSED_STRING")
+    @pg.production("common_scalar : T_LINE")
+    @pg.production("common_scalar : T_FILE")
+    @pg.production("common_scalar : T_DIR")
+    @pg.production("common_scalar : T_TRAIT_C")
+    @pg.production("common_scalar : T_METHOD_C")
+    @pg.production("common_scalar : T_FUNC_C")
+    @pg.production("common_scalar : T_NS_C")
+    def common_scalar_lnumber(self, p):
+        if p[0].gettokentype() == 'T_LNUMBER':
+            return ConstantInt(int(p[0].getstr()))
+        if p[0].gettokentype() == 'T_DNUMBER':
+            return ConstantFloat(float(p[0].getstr()))
+        raise Exception("Not implemented yet!")
+
+    @pg.production("static_scalar : common_scalar")
+    def static_scalar(self, p):
+        return p[0]
+
+    @pg.production("variable : base_variable_with_function_calls")
+    def variable_base_variable_with_function_calls(self, p):
+        return p[0]
+
+    @pg.production("base_variable_with_function_calls : base_variable")
+    def base_variable_with_function_calls_base_variable(self, p):
+        return p[0]
+
+    @pg.production("base_variable : reference_variable")
+    def base_variable_reference_variable(self, p):
+        return p[0]
+
+    @pg.production("reference_variable : compound_variable")
+    def reference_variable_compound_variable(self, p):
+        return p[0]
+
+    @pg.production("compound_variable : T_VARIABLE")
+    def compound_variable_t_variable(self, p):
+        return Variable(ConstantStr(p[0].getstr()[1:]))
+
+    @pg.production("r_variable : variable")
+    def variable_r_variable(self, p):
+        return p[0]
+
+    @pg.production("rw_variable : variable")
+    def variable_rw_variable(self, p):
+        return p[0]
+
+    @pg.production("w_variable : variable")
+    def variable_w_variable(self, p):
+        raise NotImplementedError(p)
+    @pg.production("empty :")
+    def empty(self, p):
+        return None
+
+    @pg.error
+    def error_handler(self, token):
+        raise ValueError("syntax error, unexpected \'%s\' line(%s)" %
+                         (token.gettokentype(),
+                          token.getsourcepos())
+                         )
+
+    parser = pg.build()
+
+
+def parse(_source):
+    lx = Lexer(RULES, skip_whitespace=False)
+    lx.input(_source)
+    parser = Parser(lx.tokens())
+    return parser.parse()

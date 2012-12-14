@@ -716,6 +716,36 @@ class Parser(object):
     def variable_w_variable(self, p):
         raise NotImplementedError(p)
 
+    @pg.production("unticked_statement : T_ECHO echo_expr_list ;")
+    def unticked_statement_t_echo_expr_list(self, p):
+        return Echo(p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("echo_expr_list : echo_expr_list , expr")
+    def echo_expr_list_echo_expr_list_expr(self, p):
+        if isinstance(p[0], list):
+            if p[2]:
+                if p[0] is None:
+                    return p[2]
+                p[0].append(p[2])
+                return p[0]
+            return p[0]
+        if p[0] is None:
+            return p[2]
+        return [p[0], p[2]]
+
+    @pg.production("echo_expr_list : expr")
+    def echo_expr_list_expr(self, p):
+        return [p[0]]
+
+    @pg.production("unticked_statement : T_RETURN ;")
+    def unticked_statement_t_return(self, p):
+        return Return(None, p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_RETURN expr_without_variable")
+    def unticked_statement_t_return_expr_wo_variable(self, p):
+        return Return(p[1], p[0].getsourcepos())
+
+
     @pg.production("empty :")
     def empty(self, p):
         return None

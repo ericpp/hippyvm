@@ -131,6 +131,15 @@ class TestParser(object):
         r = parse("echo $x;")
         assert r == Block([Echo([Variable(ConstantStr("x"))])])
 
+    def test_echo_list(self):
+        r = parse("echo $x, 2, 3, 4;")
+        assert r == Block([Echo([
+                        Variable(ConstantStr("x")),
+                        ConstantInt(2),
+                        ConstantInt(3),
+                        ConstantInt(4),
+                        ])])
+
     def test_return(self):
         r = parse("return $y;")
         assert r == Block([Return(Variable(ConstantStr("y")))])

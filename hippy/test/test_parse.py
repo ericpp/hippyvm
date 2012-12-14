@@ -77,8 +77,8 @@ class TestParser(object):
     def test_float_const(self):
         r = parse("$x = 3.5 + .2 + 2.;");
         assert r == Block([Stmt(Assignment(Variable(ConstantStr("x")),
-                               BinOp("+", ConstantFloat(3.5),
-                       BinOp("+", ConstantFloat(.2), ConstantFloat(2.)))))])
+                               BinOp("+", BinOp("+", ConstantFloat(3.5), ConstantFloat(.2)),
+                                     ConstantFloat(2.))))])
 
     def test_paren_multi(self):
         r = parse("($x - 3) * 2;")

@@ -604,12 +604,29 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert self.space.is_w(output[0], self.space.newint(50))
 
+    def test_array_obscure1_2(self):
+        output = self.run('''
+        $a = array(10);
+        $b = 5;
+        echo $a[0] * ($a[0]=&$b);
+        ''')
+        assert self.space.is_w(output[0], self.space.newint(50))
+
     def test_evaluation_order_int(self):
         # same test as above, but using $v instead of $a[0], gives
         # different results
         output = self.run('''
         $v = 10;
         echo $v * ($v=5);
+        ''')
+        assert self.space.is_w(output[0], self.space.newint(25))
+
+    def test_reference_array_obscure0(self):
+        output = self.run('''
+        $a = array(10);
+        $b = 10;
+        $a[0] = &$b;
+        echo $a[0] * ($a[0]=5);
         ''')
         assert self.space.is_w(output[0], self.space.newint(25))
 

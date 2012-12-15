@@ -41,7 +41,7 @@ SUPERGLOBALS = ['GLOBALS']
 class CompilerContext(object):
     """ Context for compiling a piece of bytecode. It'll store the necessary
     """
-    def __init__(self, startlineno, space, name='<main>', is_main=True,
+    def __init__(self, startlineno, space, name='<main>',
                  extra_offset=0, print_exprs=False):
         self.space = space
         self.data = []
@@ -61,15 +61,12 @@ class CompilerContext(object):
         self.cur_lineno = startlineno
         self.lineno_map = []
         self.name = name
-        self.uses_GLOBALS = False
-        self.is_main = is_main
         self.extra_offset = extra_offset
         self.print_exprs = print_exprs
         self.static_vars = {}
 
     def register_superglobal(self, name):
         assert name == 'GLOBALS' # not supporting anything else for now
-        self.uses_GLOBALS = True
 
     def set_lineno(self, lineno):
         self.cur_lineno = lineno
@@ -184,8 +181,7 @@ class CompilerContext(object):
         return ByteCode("".join(self.data), self.consts[:], self.names[:],
                         self.varnames[:], self.functions, self.static_vars,
                         self.startlineno,
-                        self.lineno_map, self.name, self.uses_GLOBALS,
-                        is_main=self.is_main)
+                        self.lineno_map, self.name)
 
     def preprocess_str(self, s):
         i = 0
@@ -314,11 +310,8 @@ class __extend__(Variable):
         # interpreter
         node = self.node
         if isinstance(node, ConstantStr):
-            if ctx.is_main:
-                ctx.emit(consts.LOAD_VAR_NAME, ctx.create_var_name(node.strval))
-            else:
-                ctx.emit(consts.LOAD_FAST, ctx.create_var_name(node.strval))
-                return # fast path
+            ctx.emit(consts.LOAD_FAST, ctx.create_var_name(node.strval))
+            return # fast path
         else:
             self.node.compile(ctx)
         ctx.emit(consts.LOAD_VAR)
@@ -438,7 +431,6 @@ class __extend__(Array):
 class __extend__(FunctionDecl):
     def compile(self, ctx):
         new_context = CompilerContext(self.lineno, ctx.space, self.name,
-                                      is_main=False,
                                       extra_offset=ctx.extra_offset)
         self.body.compile(new_context)
         new_context.emit(consts.RETURN_NULL) # optimization! or lack of

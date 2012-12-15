@@ -36,19 +36,19 @@ class W_Reference(W_Root):
     """ This is a reference got by &$stuff. It changes semantics of writing
     to a variable. Note that a reference to arrayitem is different
     """
-    def __init__(self, v):
-        #assert isinstance(v, W_Cell)
-        self.v = v
+    def __init__(self, w_value):
+        assert not isinstance(w_value, W_Reference)
+        self.w_value = w_value
 
-    def store_var(self, space, w_value):
-        # we ignore args
-        self.v.store_var(space, w_value)
+    def store(self, w_value):
+        if isinstance(w_value, W_Reference):
+            xxx
+        else:
+            self.w_value = w_value
+            return self
 
-    def deref_for_store(self):
-        return self
-    
     def deref(self):
-        return self.v.deref() # can be nested
+        return self.w_value
 
     def copy(self, space):
         return self

@@ -5,7 +5,7 @@ from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
 from hippy.builtin import setup_builtin_functions
 from hippy import array_funcs     # site-effect of registering functions
 from hippy.error import InterpreterError
-from hippy.objects.reference import W_Variable, W_Cell, W_Reference
+from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 #from hippy.objects.strobject import W_StrInterpolation
 from hippy.objects.arrayiter import BaseArrayIterator
@@ -40,23 +40,7 @@ class Frame(object):
         self.stack = [None] * code.stackdepth
         self.stackpos = 0
         self.bytecode = code # for the debugging
-        if code.uses_dict:
-            # we use dict in case of:
-            # * dynamic var access
-            # * global namespace
-            self.vars_dict = RDict(W_Root)
-            for v in code.varnames:
-                self.vars_dict[v] = W_Cell(space.w_Null)
-            # create a global dict on the interpreter
-            if code.is_main:
-                space.ec.interpreter.setup_globals(space, self.vars_dict)
-            if code.uses_GLOBALS:
-                self.vars_dict['GLOBALS'] = space.get_globals_wrapper()
-            self.vars_w = []
-        else:
-            self.vars_w = [space.w_Null for v in code.varnames]
-            if code.uses_GLOBALS:
-                self.vars_w[code.lookup_var_pos('GLOBALS')] = space.get_globals_wrapper()
+        self.vars_w = [W_Reference(space.w_Null) for v in code.varnames]
 
     def push(self, w_v):
         stackpos = jit.hint(self.stackpos, promote=True)
@@ -75,6 +59,7 @@ class Frame(object):
 
     @jit.unroll_safe
     def clean(self, bytecode):
+        return # XXX
         if not bytecode.uses_dict:
             for i in range(len(bytecode.varnames)):
                 self.vars_w[i].mark_invalid()
@@ -101,10 +86,13 @@ class Frame(object):
             return w_copy
 
     def store_var(self, space, w_v, w_value):
-        if isinstance(w_v, W_Variable):
-            self.simple_store_var(space, w_v.pos, w_value)
+        if not isinstance(w_v, W_Reference):
+            raise InterpreterError(
+                "Reference to something that's not a variable")
+        elif isinstance(w_value, W_Reference):
+            XXX
         else:
-            w_v.store_var(space, w_value)
+            w_v.w_value = w_value
 
     @jit.elidable
     def lookup_var_pos(self, name):
@@ -120,10 +108,7 @@ class Frame(object):
         return W_Variable(self, pos)
 
     def load_fast(self, space, bytecode, no):
-        w_v = self.vars_w[no]
-        if w_v.tp == space.tp_cell:
-            return w_v
-        return W_Variable(self, no)
+        return self.vars_w[no]
 
     def upgrade_to_cell(self, w_var):
         if self.bytecode.uses_dict:

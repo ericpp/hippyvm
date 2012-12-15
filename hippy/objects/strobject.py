@@ -27,6 +27,9 @@ class W_StringObject(W_Root):
     def newconststr(s):
         return W_ConstStringObject(s)
 
+    def copy(self, space):
+        return self     # XXX KILL ME
+
     def as_string(self, space):
         return self
 

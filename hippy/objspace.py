@@ -41,13 +41,11 @@ class ObjSpace(object):
     """ This implements all the operations on the object. Since this is
     prebuilt, it should not contain any state
     """
-    (tp_int, tp_float, tp_str, tp_array,
-     tp_cell, tp_null, tp_reference, tp_bool, tp_fakeindex) = range(9)
+    (tp_int, tp_float, tp_str, tp_array, tp_null, tp_bool) = range(6)
 
     # in the same order as the types above
     TYPENAMES = ["integer", "double", "string", "array",
-                 "unknown type", "NULL", "unknown type",
-                 "boolean", "unknown type"]
+                 "NULL", "boolean"]
 
     def __init__(self):
         self.w_True = W_BoolObject(True)
@@ -262,7 +260,4 @@ W_BoolObject.tp = ObjSpace.tp_bool
 W_IntObject.tp = ObjSpace.tp_int
 W_StringObject.tp = ObjSpace.tp_str
 W_ArrayObject.tp = ObjSpace.tp_array
-W_Cell.tp = ObjSpace.tp_cell
 W_NullObject.tp = ObjSpace.tp_null
-W_Reference.tp = ObjSpace.tp_reference
-W_FakeIndex.tp = ObjSpace.tp_fakeindex

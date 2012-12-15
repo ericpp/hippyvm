@@ -670,7 +670,7 @@ class Parser(object):
     @pg.production("common_scalar : T_FUNC_C")
     @pg.production("common_scalar : T_NS_C")
     def common_scalar_lnumber(self, p):
-        linenp = lineno=p[0].getsourcepos()
+        lineno = p[0].getsourcepos()
         if p[0].gettokentype() == 'T_LNUMBER':
             return ConstantInt(int(p[0].getstr()), lineno=lineno)
         if p[0].gettokentype() == 'T_DNUMBER':

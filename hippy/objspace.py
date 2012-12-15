@@ -96,11 +96,10 @@ class ObjSpace(object):
     @specialize.argtype(1)
     def newstr(self, v):
         if isinstance(v, str):
-            return W_StringObject.newstr(list(v))
-        return W_StringObject.newstr(v)
+            return W_StringObject.newconststr(v)
+        return W_StringObject.newliststr(v)
 
-    def newstrconst(self, v):
-        return W_StringObject(v)
+    newstrconst = newstr
 
     def conststr_w(self, w_v):
         return self.as_string(w_v).conststr_w(self)

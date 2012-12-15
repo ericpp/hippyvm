@@ -5,7 +5,6 @@ from hippy.interpreter import Interpreter, Frame
 from hippy.objspace import ObjSpace
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
-from hippy.error import InterpreterError
 from hippy.conftest import option
 from hippy.test.directrunner import run_source
 
@@ -54,6 +53,9 @@ class MockInterpreter(Interpreter):
 
 
 class BaseTestInterpreter(object):
+
+    XXX # this is copied from test_interpreter, it should reuse it not
+        # copy
 
     def run(self, source):
         self.space = ObjSpace()

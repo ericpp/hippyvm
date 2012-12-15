@@ -689,6 +689,10 @@ class Parser(object):
     def base_variable_reference_variable(self, p):
         return p[0]
 
+    @pg.production("base_variable : simple_indirect_reference reference_variable")
+    def base_variable_reference_variable(self, p):
+        return Variable(p[1], lineno=p[1].lineno)
+
     @pg.production("reference_variable : compound_variable")
     def reference_variable_compound_variable(self, p):
         return p[0]
@@ -697,6 +701,10 @@ class Parser(object):
     def compound_variable_t_variable(self, p):
         lineno = p[0].getsourcepos()
         return Variable(ConstantStr(p[0].getstr()[1:], lineno=lineno), lineno=lineno)
+
+    @pg.production("compound_variable : $ { expr }")
+    def compound_variable_expr(self, p):
+        raise NotImplementedError(p)
 
     @pg.production("r_variable : variable")
     def variable_r_variable(self, p):
@@ -836,6 +844,16 @@ class Parser(object):
     @pg.production("for_statement : "
                    ": inner_statement_list T_ENDFOR ;")
     def for_stmt_inner_stmt_list(self, p):
+        raise NotImplementedError(p)
+
+
+    @pg.production("simple_indirect_reference : $")
+    def simple_indirect_reference(self, p):
+        return p[0]
+
+    @pg.production("simple_indirect_reference : "
+                   "simple_indirect_reference $")
+    def simple_indirect_reference_simple_indirect_reference(self, p):
         raise NotImplementedError(p)
 
     @pg.production("empty :")

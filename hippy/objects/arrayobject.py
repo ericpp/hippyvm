@@ -485,7 +485,7 @@ class W_ArrayObject(W_Root):
         return space.wrap(1)
 
     def is_true(self, space):
-        return True
+        return self.arraylen(space) > 0
 
     def promote_to_hash(self, space):
         new_strat = get_strategy(HashStrategy)

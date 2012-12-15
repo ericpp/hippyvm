@@ -232,6 +232,12 @@ class TestParser(object):
         assert r == Block([Stmt(SetItem(Variable(ConstantStr("x")),
                                         ConstantInt(1), ConstantInt(3)))])
 
+    def test_inplacesetitem(self):
+        r = parse("$x[1] += 3;")
+        assert r == Block([Stmt(InplaceSetItem('+=',
+                                        Variable(ConstantStr("x")),
+                                        ConstantInt(1), ConstantInt(3)))])
+
     def test_array(self):
         r = parse("array();")
         assert r == Block([Stmt(Array([]))])

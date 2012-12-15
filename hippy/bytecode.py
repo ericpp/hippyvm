@@ -13,10 +13,11 @@ class ByteCode(object):
                           'is_main', 'uses_dict']
     
     def __init__(self, code, consts, names, varnames, user_functions,
-                 static_vars, sourcelines,
+                 static_vars, filename, sourcelines,
                  startlineno=0, bc_mapping=None, name='<main>',
                  uses_GLOBALS=False, is_main=False):
         self.code = code
+        self.filename = filename
         self.sourcelines = sourcelines
         self.consts = consts
         self.names = names

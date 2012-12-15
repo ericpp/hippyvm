@@ -14,7 +14,7 @@ def test_preprocess_string():
         else:
             return ctx.consts[no]
 
-    ctx = CompilerContext([], 0, None)
+    ctx = CompilerContext('fname', [], 0, None)
     assert prepr('\\\\') == '\\'
     assert prepr('\\n') == '\n'
     assert prepr('\\\'') == '\''
@@ -28,7 +28,7 @@ def test_preprocess_string():
 class TestCompiler(object):
     def check_compile(self, source, expected=None, **kwds):
         self.space = ObjSpace()
-        bc = compile_ast(source, parse(source), self.space, **kwds)
+        bc = compile_ast('<input>', source, parse(source), self.space, **kwds)
         if expected is not None:
             self.compare(bc, expected)
         return bc
@@ -319,7 +319,7 @@ class TestCompiler(object):
             source.append("$j = 1;")
         source.append("}")
         source = "".join(source)
-        compile_ast(source, parse(source), None)
+        compile_ast('<input>', source, parse(source), None)
         # assert did not crash
 
     def test_constant_str(self):

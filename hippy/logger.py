@@ -1,7 +1,10 @@
 
-import sys
+import sys, os
 
-class FatalError(Exception):
+class InterpreterError(Exception):
+    pass
+
+class FatalError(InterpreterError):
     pass
 
 class Logger(object):    
@@ -9,19 +12,22 @@ class Logger(object):
         tb = []
         interp.gather_traceback(self.log_traceback, tb)
         tb.reverse()
-        for fname, line, source in tb:
-            self._log_traceback(fname, line, source)
+        for filename, funcname, line, source in tb:
+            self._log_traceback(filename, funcname, line, source)
         self._log(level, msg)
 
     def log_traceback(self, tb, frame):
         code = frame.bytecode
-        fname = code.name
+        funcname = code.name
+        filename = code.filename
         line = code.bc_mapping[frame.next_instr]
-        source = code.sourcelines[line]
-        tb.append((fname, line, source))
+        source = code.sourcelines[line - 1]
+        tb.append((filename, funcname, line, source))
 
-    def _log_traceback(self, fname, line, source):
-        print >>sys.stderr, fname, line, source
+    def _log_traceback(self, filename, funcname, line, source):
+        os.write(2, "In function %s, file %s, line %d\n" %
+                 (funcname, filename, line))
+        os.write(2, "  " + source + "\n")
 
     def _log(self, level, msg):
         print >>sys.stderr, level, msg

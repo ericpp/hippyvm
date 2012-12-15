@@ -16,8 +16,8 @@ class MockLogger(Logger):
         self.msgs = []
         self.tb = []
 
-    def _log_traceback(self, filename, line, source):
-        self.tb.append((filename, line, source))
+    def _log_traceback(self, filename, funcname, line, source):
+        self.tb.append((filename, funcname, line, source))
     
     def _log(self, level, msg):
         self.msgs.append((level, msg))
@@ -51,7 +51,7 @@ class BaseTestInterpreter(object):
             return run_source(self.space, source)
         interp = MockInterpreter(self.space)
         self.space.ec.writestr = interp.output.append
-        bc = compile_ast(source, parse(source), self.space)
+        bc = compile_ast('<input>', source, parse(source), self.space)
         self.interp = interp
         interp.interpret(self.space, Frame(self.space, bc), bc)
         return interp.output
@@ -316,8 +316,8 @@ class TestInterpreter(BaseTestInterpreter):
         f();
         ''')
         assert self.interp.logger.msgs == [('FATAL', 'undefined function g')]
-        assert self.interp.logger.tb == [('<main>', 4, 'f();'),
-                                         ('f', 2, '   g();')]
+        assert self.interp.logger.tb == [('<input>', '<main>', 4, 'f();'),
+                                         ('<input>', 'f', 2, '   g();')]
 
     def test_recursion(self):
         output = self.run('''

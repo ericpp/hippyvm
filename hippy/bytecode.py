@@ -86,8 +86,12 @@ class ByteCode(object):
         i = 0
         lines = []
         while i < len(self.code):
+            if i == self._marker:   # not translated
+                line = ' ===> '
+            else:
+                line = '%4d  ' % (i,)
             c = ord(self.code[i])
-            line = BYTECODE_NAMES[c]
+            line += BYTECODE_NAMES[c]
             i += 1
             for k in range(BYTECODE_NUM_ARGS[c]):
                 line += " %s" % (ord(self.code[i]) +
@@ -95,3 +99,6 @@ class ByteCode(object):
                 i += 2
             lines.append(line)
         return "\n".join(lines)
+
+    def show(self):
+        print self.dump()

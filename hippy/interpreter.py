@@ -195,6 +195,8 @@ class Interpreter(object):
                 driver.jit_merge_point(bytecode=bytecode, frame=frame,
                                        pc=pc, self=self)
                 code = bytecode.code
+                if not we_are_translated():
+                    bytecode._marker = pc
                 next_instr = ord(code[pc])
                 # XXX change this to range check
                 numargs = BYTECODE_NUM_ARGS[next_instr]
@@ -422,7 +424,8 @@ class Interpreter(object):
     def BINARY_IS(self, bytecode, frame, space, arg, arg2, pc):
         w_right = frame.pop().deref()
         w_left = frame.pop().deref()
-        if w_left.tp != w_right.tp:
+        XXX - space.is_w(w_left, w_right)
+        if w_t.tp != w_right.tp:
             frame.push(space.w_False)
         else:
             frame.push(space.eq(w_left, w_right))
@@ -431,6 +434,7 @@ class Interpreter(object):
     def BINARY_ISNOT(self, bytecode, frame, space, arg, arg2, pc):
         w_right = frame.pop().deref()
         w_left = frame.pop().deref()
+        XXX - space.is_w(w_left, w_right)
         if w_left.tp != w_right.tp:
             frame.push(space.w_True)
         else:

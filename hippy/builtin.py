@@ -73,6 +73,8 @@ class BuiltinFunction(AbstractFunction):
 BUILTIN_FUNCTIONS = []
 
 def wrap(signature, name=None, aliases=()):
+    assert name is None or isinstance(name, str)
+    assert isinstance(aliases, (tuple, list))
     def inner(function):
         res = BuiltinFunction(signature, function)
         BUILTIN_FUNCTIONS.append((name or function.func_name, res))

@@ -67,6 +67,9 @@ class ObjSpace(object):
     def int_w(self, w_obj):
         return w_obj.deref().int_w(self)
 
+    def is_w(self, w_a, w_b):
+        return w_a.tp == w_b.tp and w_a.eq_w(self, w_b)
+
     def is_valid_number(self, w_obj):
         return w_obj.deref().is_valid_number(self)
 

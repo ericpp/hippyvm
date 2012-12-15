@@ -28,13 +28,13 @@ class BaseTestInterpreter(object):
         interp = MockInterpreter(self.space)
         self.space.ec.writestr = interp.output.append
         bc = compile_ast(parse(source), self.space)
-        old = strobject._new_mutable_string
+        #old = strobject._new_mutable_string
         try:
-            self.new_mutable_strings = []
-            strobject._new_mutable_string = self._new_mutable_string
+            #self.new_mutable_strings = []
+            #strobject._new_mutable_string = self._new_mutable_string
             interp.interpret(self.space, Frame(self.space, bc), bc)
         finally:
-            strobject._new_mutable_string = old
+            pass #strobject._new_mutable_string = old
         return interp.output
 
     @property

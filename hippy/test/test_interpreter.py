@@ -688,6 +688,15 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.is_w(output[0], self.space.newbool(True))
         assert self.space.is_w(output[1], self.space.newint(3))
 
+    def test_array_of_array_2(self):
+        output = self.run('''
+        $a = array(array(42));
+        $b = $a;
+        $a[0][0] = 50;
+        echo $b[0][0];
+        ''')
+        assert self.space.is_w(output[0], self.space.newint(42))
+
     def test_inplace_concat(self):
         py.test.skip("XXX REDO")
         output = self.run('''

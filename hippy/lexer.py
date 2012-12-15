@@ -60,8 +60,8 @@ RULES = [
     ("-?0|[1-9][0-9]*", 'T_LNUMBER'),
     ("-?0[0-9]*", 'T_LNUMBER'),
     ("-?0x([0-9]|[a-fA-F])*", 'T_LNUMBER'),
-    ("(\"[^\"]*\")|('[^']*')", 'T_STRING'),
     ("(\"[^\"]*\")|('[^']*')", 'T_CONSTANT_ENCAPSED_STRING'),
+    ("(\"[^\"]*\")|('[^']*')", 'T_STRING'),
 
     ("\$[a-zA-Z]+", 'T_VARIABLE'),
     ("\$\{[a-zA-Z]*\}", 'T_STRING_VARNAME'),
@@ -126,7 +126,7 @@ RULES = [
     ("whitespace", 'T_WHITESPACE'),
     ("heredoc start", 'T_START_HEREDOC'),
     ("heredoc end", 'T_END_HEREDOC'),
-    ("\$\{", 'T_DOLLAR_OPEN_CURLY_BRACES'),
+    #("\$\{", 'T_DOLLAR_OPEN_CURLY_BRACES'),
     ("\{\$", 'T_CURLY_OPEN'),
     ("\:\:", 'T_PAAMAYIM_NEKUDOTAYIM'),
     ("namespace", 'T_NAMESPACE'),
@@ -162,6 +162,7 @@ RULES = [
     ("\~", '~'),
     ("\@", '@'),
     ("\$", '$'),
+    ("\"", '"'),
     ("\\n", 'H_NEW_LINE'),
     (" ", 'H_WHITESPACE'),
 
@@ -273,7 +274,7 @@ class Lexer(object):
 
 if __name__ == '__main__':
     lx = Lexer(RULES, skip_whitespace=False)
-    lx.input('1 * 2 - $x;')
+    lx.input('$$x;')
     try:
         for tok in lx.tokens():
             print tok

@@ -543,7 +543,7 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
-        print p
+        print "Block(%s)" % p
         return Block(p[0])
 
     @pg.production("top_statement_list : top_statement_list top_statement")
@@ -675,6 +675,8 @@ class Parser(object):
             return ConstantInt(int(p[0].getstr()), lineno=lineno)
         if p[0].gettokentype() == 'T_DNUMBER':
             return ConstantFloat(float(p[0].getstr()), lineno=lineno)
+        if p[0].gettokentype() == 'T_CONSTANT_ENCAPSED_STRING':
+            return ConstantStr(p[0].getstr().strip("\""), lineno=lineno)
         raise Exception("Not implemented yet!")
 
     @pg.production("variable : base_variable_with_function_calls")
@@ -704,7 +706,7 @@ class Parser(object):
 
     @pg.production("compound_variable : $ { expr }")
     def compound_variable_expr(self, p):
-        raise NotImplementedError(p)
+        return Variable(p[2], lineno=p[0].getsourcepos())
 
     @pg.production("r_variable : variable")
     def variable_r_variable(self, p):

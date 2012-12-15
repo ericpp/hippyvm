@@ -89,10 +89,8 @@ class Frame(object):
         if not isinstance(w_v, W_Reference):
             raise InterpreterError(
                 "Reference to something that's not a variable")
-        elif isinstance(w_value, W_Reference):
-            XXX
         else:
-            w_v.w_value = w_value
+            w_v.w_value = w_value.deref()
 
     @jit.elidable
     def lookup_var_pos(self, name):

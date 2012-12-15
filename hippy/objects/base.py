@@ -19,9 +19,6 @@ class W_Root(object):
     def str_w(self, space): 
         raise InterpreterError("TypeError: casting to string of wrong type")
 
-    def conststr_w(self, space):
-        raise InterpreterError("TypeError: casting to string of wrong type")
-
     def getchar(self, space):
         raise InterpreterError("TypeError: casting to string of wrong type")
         # XXX cast to string, get first char

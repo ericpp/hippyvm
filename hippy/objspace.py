@@ -101,9 +101,6 @@ class ObjSpace(object):
 
     newstrconst = newstr
 
-    def conststr_w(self, w_v):
-        return self.as_string(w_v).conststr_w(self)
-
     def str_w(self, w_v):
         return self.as_string(w_v).str_w(self)
 

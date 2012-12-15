@@ -242,7 +242,7 @@ class Interpreter(object):
 
     def echo(self, space, v):
         # XXX extra copy of the string if mutable
-        space.ec.writestr(space.conststr_w(space.as_string(v)))
+        space.ec.writestr(space.str_w(space.as_string(v)))
 
     def ILLEGAL(self, bytecode, frame, space, arg, arg2, pc):
         raise IllegalInstruction()
@@ -294,7 +294,7 @@ class Interpreter(object):
         return pc
 
     def LOAD_VAR(self, bytecode, frame, space, arg, arg2, pc):
-        name = space.conststr_w(frame.pop())
+        name = space.str_w(frame.pop())
         frame.push(frame.load_var(space, bytecode, name))
         return pc
 

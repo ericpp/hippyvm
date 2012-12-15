@@ -346,7 +346,7 @@ def _print_r(space, w_x, indent, recursion, builder):
         builder.append('\n%s)\n' % indent)
         del recursion[w_x]
     else:
-        builder.append(space.conststr_w(space.as_string(w_x)))
+        builder.append(space.str_w(space.as_string(w_x)))
 
 @wrap(['space', 'args_w'])
 def print_r(space, args_w):

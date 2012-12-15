@@ -630,15 +630,6 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert self.space.is_w(output[0], self.space.newint(25))
 
-    def test_reference_array_obscure0(self):
-        output = self.run('''
-        $a = array(10);
-        $b = 10;
-        $a[0] = &$b;
-        echo $a[0] * ($a[0]=5);
-        ''')
-        assert self.space.is_w(output[0], self.space.newint(25))
-
     def test_reference_array_obscure1(self):
         py.test.skip("XXX fix me")
         # just like test_array_obscure1, but because $a[0] is a reference,

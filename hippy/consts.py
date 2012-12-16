@@ -13,7 +13,6 @@ BYTECODES = [
     ('ROT_AND_DISCARD', 0, -1),
     ('STORE', 1, ARGVAL),
     ('LOAD_CONST', 1, +1),
-    ('LOAD_MUTABLE_CONST', 1, 1),
     ('LOAD_CONST_INTERPOLATE', 1, +1),
     ('LOAD_NAMED_CONSTANT', 1, +1),
     ('LOAD_NAME', 1, 1),

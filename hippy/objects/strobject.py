@@ -24,9 +24,6 @@ class W_StringObject(W_Root):
     def newconststr(s):
         return W_ConstStringObject(s)
 
-    def copy(self, space):
-        return self     # XXX KILL ME
-
     def hash(self, space):
         # XXX improve
         return compute_hash(self.str_w(space))
@@ -212,9 +209,9 @@ class W_ListStringObject(StringMixin, W_StringObject):
         self._chars[index] = c
 
     def as_unique_strlist(self):
-        if self._refcount == 1:
-            return self
-        assert self._refcount > 1
+        #if self._refcount == 1:
+        #    return self
+        #assert self._refcount > 1
         return W_ListStringObject(self._chars[:], flag=2)
 
     def incref(self):

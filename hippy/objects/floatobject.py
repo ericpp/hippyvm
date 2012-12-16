@@ -12,9 +12,6 @@ class W_FloatObject(W_Root):
     def _truncate(self, space):
         return space.wrap(int(self.floatval))
 
-    def copy(self, space):
-        return self # immutable object
-
     def as_number(self, space):
         return self
 

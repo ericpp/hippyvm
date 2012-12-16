@@ -87,22 +87,6 @@ class Frame(object):
         assert stackpos >= 0
         self.stack[stackpos] = w_obj
 
-    def store_var_by_name(self, space, bc, name, w_value):
-        if bc.uses_dict:
-            self.vars_dict[name].store_var(space, w_value)
-        else:
-            pos = bc.lookup_var_pos(name)
-            return self.simple_store_var(space, pos, w_value)
-
-    def simple_store_var(self, space, pos, w_value):
-        pos = jit.hint(pos, promote=True)
-        if isinstance(w_value, W_Reference):
-            self.vars_w[pos] = W_Cell(w_value)
-        else:
-            w_copy = w_value.deref_for_store().copy(space)
-            self.vars_w[pos] = w_copy
-            return w_copy
-
     def store_var(self, space, w_v, w_value):
         if not isinstance(w_v, W_Reference):
             raise InterpreterError(
@@ -114,32 +98,9 @@ class Frame(object):
     def lookup_var_pos(self, name):
         return self.vars_dict[name]
 
-    def load_var(self, space, bytecode, name):
-        if bytecode.uses_dict:
-            return self.lookup_var_pos(name)
-        pos = jit.hint(bytecode.lookup_var_pos(name), promote=True)
-        w_v = self.vars_w[pos]
-        if w_v.tp == space.tp_cell:
-            return w_v
-        return W_Variable(self, pos)
-
     def load_fast(self, space, bytecode, no):
         return self.vars_w[no]
 
-    def upgrade_to_cell(self, w_var):
-        if self.bytecode.uses_dict:
-            return w_var
-        if isinstance(w_var, W_Reference):
-            w_var = w_var.deref()
-        elif isinstance(w_var, W_Cell):
-            return w_var
-        elif not isinstance(w_var, W_Variable):
-            raise InterpreterError("Reference to something that's not a variable")
-        assert isinstance(w_var, W_Variable)
-        new_var = W_Cell(w_var.deref())
-        pos = jit.hint(w_var.pos, promote=True)
-        self.vars_w[pos] = new_var
-        return new_var
 
 class IllegalInstruction(InterpreterError):
     pass
@@ -242,7 +203,6 @@ class Interpreter(object):
             raise
 
     def echo(self, space, v):
-        # XXX extra copy of the string if mutable
         space.ec.writestr(space.str_w(space.as_string(v)))
 
     def ILLEGAL(self, bytecode, frame, space, arg, arg2, pc):
@@ -253,10 +213,6 @@ class Interpreter(object):
 
     def LOAD_CONST(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(bytecode.consts[arg])
-        return pc
-
-    def LOAD_MUTABLE_CONST(self, bytecode, frame, space, arg, arg2, pc):
-        frame.push(bytecode.consts[arg].copy(space))
         return pc
 
     def LOAD_CONST_INTERPOLATE(self, bytecode, frame, space, arg, arg2, pc):
@@ -353,28 +309,28 @@ class Interpreter(object):
 
     def SUFFIX_PLUSPLUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.push(w_var.deref().copy(space))
+        frame.push(w_var.deref())
         frame.store_var(space, w_var, space.uplusplus(w_var))
         return pc
 
     def SUFFIX_MINUSMINUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.push(w_var.deref().copy(space))
+        frame.push(w_var.deref())
         frame.store_var(space, w_var, space.uminusminus(w_var))
         return pc
 
     def PREFIX_PLUSPLUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.store_var(space, w_var,
-                        space.uplusplus(w_var.deref().copy(space)))
-        frame.push(w_var.deref())
+        w_newval = space.uplusplus(w_var.deref())
+        frame.store_var(space, w_var, w_newval)
+        frame.push(w_newval)
         return pc
 
     def PREFIX_MINUSMINUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.store_var(space, w_var,
-                        space.uminusminus(w_var.deref().copy(space)))
-        frame.push(w_var.deref())
+        w_newval = space.uminusminus(w_var.deref())
+        frame.store_var(space, w_var, w_newval)
+        frame.push(w_newval)
         return pc
 
     def UNARY_PLUS(self, bytecode, frame, space, arg, arg2, pc):

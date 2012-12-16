@@ -92,9 +92,6 @@ class W_Root(object):
         space.ec.writestr('%s%r\n' % (indent, self))
 
 class W_NullObject(W_Root):
-    def copy(self, space):
-        return self
-
     def is_true(self, space):
         return False
 

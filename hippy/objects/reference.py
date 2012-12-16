@@ -40,18 +40,8 @@ class W_Reference(W_Root):
         assert not isinstance(w_value, W_Reference)
         self.w_value = w_value
 
-    def store(self, w_value):
-        if isinstance(w_value, W_Reference):
-            xxx
-        else:
-            self.w_value = w_value
-            return self
-
     def deref(self):
         return self.w_value
-
-    def copy(self, space):
-        return self
 
 class W_BaseContainerReference(W_Reference):
     pass

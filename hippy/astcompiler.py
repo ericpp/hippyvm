@@ -345,8 +345,8 @@ class __extend__(Assignment):
     # LOAD_FAST $b       [ 7, 8, NULL, Ref$b ]
     # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7] ]
     # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7], Array$b[7][8] ]
-    # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7], Array$b[7][8] ]
-    # STOREITEM 3        [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
+    # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7] ]
+    # STOREITEM_REF 3    [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
     # STORE 3            [ NewRef ]
     #
@@ -550,7 +550,7 @@ class __extend__(GetItem):
         ctx.emit(consts.LOAD_NULL)
         self.compile_assignment_fetch(ctx, depth)
         ctx.emit(consts.MAKE_REF, depth + 1)
-        self.compile_assignment_store(ctx, depth)
+        self.compile_assignment_store_ref(ctx, depth)
 
 class __extend__(Array):
     def compile(self, ctx):

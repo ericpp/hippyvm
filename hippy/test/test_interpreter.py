@@ -420,7 +420,7 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [5, 5]
 
-    def test_references_left_array(self):
+    def test_references_left_array_1(self):
         output = self.run('''
         $a = 3;
         $b = array(0);
@@ -432,7 +432,19 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [5, 7]
 
-    def test_references_right_array(self):
+    def test_references_left_array_2(self):
+        output = self.run('''
+        $a = 3;
+        $b = array(array(0));
+        $b[0][0] = & $a;
+        $a = 5;
+        echo $b[0][0];
+        $b[0][0] = 7;
+        echo $a;
+        ''')
+        assert [self.space.int_w(i) for i in output] == [5, 7]
+
+    def test_references_right_array_1(self):
         output = self.run('''
         $b = array(0);
         $a = & $b[0];
@@ -442,6 +454,17 @@ class TestInterpreter(BaseTestInterpreter):
         echo $a;
         ''')
         assert [self.space.int_w(i) for i in output] == [15, 17]
+
+    def test_references_right_array_2(self):
+        output = self.run('''
+        $b = array(array(0));
+        $a = & $b[0][0];
+        $a = 12;
+        echo $b[0][0];
+        $b[0][0] = 13;
+        echo $a;
+        ''')
+        assert [self.space.int_w(i) for i in output] == [12, 13]
 
     def test_references_plusplus_1(self):
         output = self.run("$x = 1; $y =& $x; echo ++$x; echo ++$x; echo $y;")

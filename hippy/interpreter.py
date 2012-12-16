@@ -399,11 +399,10 @@ class Interpreter(object):
         return pc
 
     def MAKE_REF(self, bytecode, frame, space, arg, arg2, pc):
-        w_obj = frame.peek()
+        w_obj = frame.pop()
         if not isinstance(w_obj, W_Reference):
             w_obj = W_Reference(w_obj)
-        import pdb; pdb.set_trace()
-        frame.poke_nth(arg, w_obj)
+        frame.poke_nth(arg - 1, w_obj)
         return pc
 
     def BINARY_CONCAT(self, bytecode, frame, space, arg, arg2, pc):

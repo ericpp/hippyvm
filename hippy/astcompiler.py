@@ -256,45 +256,90 @@ class __extend__(Echo):
         ctx.emit(consts.ECHO, len(self.exprlist))
 
 class __extend__(Assignment):
+    # A simple assignment like "$a = 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 42      [ 42 ]
+    # LOAD_FAST $a       [ 42, Ref$a ]
+    # STORE 1            [ 42 ]
+    #
+    # The 'STORE 1' pops the reference Ref$a, and store into it the
+    # next value from the stack.  The argument to the STORE is always 1
+    # in simple assignments, but see below.
+    #
+    # An expression like "$a[5][6] = 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_CONST 6       [ 5, 6 ]
+    # LOAD_CONST 42      [ 5, 6, 42 ]
+    # LOAD_FAST $a       [ 5, 6, 42, Ref$a ]
+    # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5] ]
+    # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5], OldValue$a[5][6] ]
+    # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
+    # STORE 3            [ 42 ]
+    #
+    # In more details, 'FETCHITEM N' fetches from the array at position 0
+    # the item at position N, and pushes the result without popping any
+    # argument.
+    #
+    # 'STOREITEM N' depends on four stack arguments, at position 0, 1, N
+    # and N+1.  In the first case above:
+    #
+    #  - OldValue$a[5][6] is checked for being a reference.
+    #
+    #  - If it is not, then its value is ignored, and we compute
+    #    NewArray1 = Array$a[5] with the 6th item replaced with 42.
+    #
+    #  - If it is, then 42 is stored into this existing reference
+    #    and NewArray1 is just Array$a[5].
+    #
+    #  - NewArray1 is put back in the stack at position N+1, and
+    #    finally the stack item 0 is popped.
+    #
+    # 'STORE N' has also strange stack effects: it stores the item at
+    # position N into the reference at position 0, then kill the item
+    # at position 0 and all items at positions 2 to N inclusive.
+    # Above, it leaves 42 untouched, which (although not used by STORE)
+    # is the result of the whole expression.
+    #
     def compile(self, ctx):
-        # An expression like "$a[5][6] = 42" becomes this:
-        #                 stack:
-        # LOAD_CONST 5       [ 5 ]
-        # LOAD_CONST 6       [ 5, 6 ]
-        # LOAD_CONST 42      [ 5, 6, 42 ]
-        # LOAD_FAST $a       [ 5, 6, 42, Ref$a ]
-        # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5] ]
-        # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5], OldValue$a[5][6] ]
-        # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
-        # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
-        # STORE 3            [ 42 ]
-        #
-        # In more details, 'FETCHITEM N' fetches from the array at position 0
-        # the item at position N, and pushes the result without popping any
-        # argument.
-        #
-        # 'STOREITEM N' depends on four stack arguments, at position 0, 1, N
-        # and N+1.  In the first case above:
-        #
-        #  - OldValue$a[5][6] is checked for being a reference.
-        #
-        #  - If it is not, then its value is ignored, and we compute
-        #    NewArray1 = Array$a[5] with the 6th item replaced with 42.
-        #
-        #  - If it is, then 42 is stored into this existing reference
-        #    and NewArray1 is just Array$a[5].
-        #
-        #  - NewArray1 is put back in the stack at position N+1, and
-        #    finally the stack item 0 is popped.
-        #
-        # 'STORE N' has also strange stack effects: it stores the item at
-        # position N into the reference at position 0, then kill the item
-        # at position 0 and all items at positions 2 to N inclusive.
-        #
         depth = self.var.compile_assignment_prepare(ctx)
         self.expr.compile(ctx)
         self.var.compile_assignment_fetch(ctx, depth)
         self.var.compile_assignment_store(ctx, depth)
+
+#class __extend__(AssignmentReference):
+    # A simple assignment like '$a =& $b' becomes this:
+    #                 stack:
+    # LOAD_FAST $b       [ Ref$b ]
+    # STORE_REF $a       [ Ref$b ]
+    #
+    # If the expression on the left is more complex, like '$a[5][6][7] =& $b':
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_CONST 6       [ 5, 6 ]
+    # LOAD_CONST 7       [ 5, 6, 7 ]
+    # LOAD_FAST $b       [ 5, 6, 7, Ref$b ]
+    # LOAD_FAST $a       [ 5, 6, 7, Ref$b, Ref$a ]
+    # FETCHITEM 4        [ 5, 6, 7, Ref$b, Ref$a, Array$a[5] ]
+    # FETCHITEM 4        [ 5, 6, 7, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
+    # STOREITEM_REF 4    [ 5, 6, NA1, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
+    # STOREITEM 4        [ 5, NA2, NA1, Ref$b, Ref$a, Array$a[5] ]
+    # STOREITEM 4        [ NA3, NA2, NA1, Ref$b, Ref$a ]
+    # POPN 4             [ NA3 ]
+    # STORE_REF $a       [ NA3 ]           # "NA" = "NewArray"
+    #
+    # If the expression of the right is more complex than just '$b',
+    # then we use the fact that this code:
+    #
+    #     $a =& $b[5][6];
+    #
+    # is equivalent to:
+    #
+    #     $tmp = $b[5][6];
+    #     $b[5][6] =& $tmp;
+    #     $a =& $tmp;
+    #
 
 class __extend__(ConstantInt):
     def compile(self, ctx):

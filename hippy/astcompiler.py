@@ -257,6 +257,13 @@ class __extend__(Echo):
         ctx.emit(consts.ECHO, len(self.exprlist))
 
 class __extend__(Assignment):
+    def compile(self, ctx):
+        expr = self.expr
+        if isinstance(expr, Reference):
+            self._compile_assign_reference(ctx, expr.item)
+        else:
+            self._compile_assign_regular(ctx)
+
     # A simple assignment like "$a = 42" becomes this:
     #                 stack:
     # LOAD_CONST 42      [ 42 ]
@@ -303,17 +310,16 @@ class __extend__(Assignment):
     # Above, it leaves 42 untouched, which (although not used by STORE)
     # is the result of the whole expression.
     #
-    def compile(self, ctx):
+    def _compile_assign_regular(self, ctx):
         depth = self.var.compile_assignment_prepare(ctx)
         self.expr.compile(ctx)
         self.var.compile_assignment_fetch(ctx, depth)
         self.var.compile_assignment_store(ctx, depth)
 
-#class __extend__(AssignmentReference):
     # A simple assignment like '$a =& $b' becomes this:
     #                 stack:
     # LOAD_FAST $b       [ Ref$b ]
-    # STORE_REF $a       [ Ref$b ]
+    # STORE_FAST_REF $a  [ Ref$b ]
     #
     # If the expression on the left is more complex, like '$a[5][6][7] =& $b':
     #                 stack:
@@ -335,10 +341,10 @@ class __extend__(Assignment):
     #
     # LOAD_CONST 7       [ 7 ]
     # LOAD_CONST 8       [ 7, 8 ]
-    # LOAD_NONE          [ 7, 8, None ]
-    # LOAD_FAST $b       [ 7, 8, None, Ref$b ]
-    # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7] ]
-    # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7], Array$b[7][8] ]
+    # LOAD_NULL          [ 7, 8, NULL ]
+    # LOAD_FAST $b       [ 7, 8, NULL, Ref$b ]
+    # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7] ]
+    # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7], Array$b[7][8] ]
     # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7], Array$b[7][8] ]
     # STOREITEM 3        [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
@@ -352,6 +358,11 @@ class __extend__(Assignment):
     # MAKE_REF 1         [ Ref$b, Ref$b ]     # already a ref
     # STORE 1            [ Ref$b ]            # stores $b in $b, no-op
     #
+    def _compile_assign_reference(self, ctx, source):
+        depth = self.var.compile_assignment_prepare(ctx)
+        source.compile_reference(ctx)
+        self.var.compile_assignment_fetch_ref(ctx, depth)
+        self.var.compile_assignment_store_ref(ctx, depth)
 
 class __extend__(ConstantInt):
     def compile(self, ctx):
@@ -408,6 +419,9 @@ class __extend__(Variable):
             self.node.compile(ctx)
         ctx.emit(consts.LOAD_VAR)
 
+    def compile_reference(self, ctx):
+        self.compile(ctx)
+
     def compile_assignment_prepare(self, ctx):
         return 0
 
@@ -416,6 +430,16 @@ class __extend__(Variable):
 
     def compile_assignment_store(self, ctx, depth):
         ctx.emit(consts.STORE, depth + 1)
+
+    def compile_assignment_fetch_ref(self, ctx, depth):
+        pass
+
+    def compile_assignment_store_ref(self, ctx, depth):
+        node = self.node
+        if isinstance(node, ConstantStr):
+            ctx.emit(consts.STORE_FAST_REF, ctx.create_var_name(node.strval))
+            return # fast path
+        raise NotImplementedError
 
 class __extend__(SuffixOp):
     def compile(self, ctx):
@@ -616,11 +640,6 @@ class __extend__(DoWhile):
         self.expr.compile(ctx)
         ctx.emit(consts.JUMP_BACK_IF_TRUE, jmp_pos)
         ctx.pop_label(lbl)
-
-class __extend__(Reference):
-    def compile(self, ctx):
-        self.item.compile(ctx)
-        ctx.emit(consts.REFERENCE)
 
 class __extend__(Break):
     def compile(self, ctx):

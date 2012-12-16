@@ -98,8 +98,12 @@ class Frame(object):
     def lookup_var_pos(self, name):
         return self.vars_dict[name]
 
-    def load_fast(self, space, bytecode, no):
+    def load_fast(self, no):
         return self.vars_w[no]
+
+    def store_fast(self, no, w_ref):
+        assert isinstance(w_ref, W_Reference)
+        self.vars_w[no] = w_ref
 
 
 class IllegalInstruction(InterpreterError):
@@ -257,7 +261,12 @@ class Interpreter(object):
         return pc
 
     def LOAD_FAST(self, bytecode, frame, space, arg, arg2, pc):
-        frame.push(frame.load_fast(space, bytecode, arg))
+        frame.push(frame.load_fast(arg))
+        return pc
+
+    def STORE_FAST_REF(self, bytecode, frame, space, arg, arg2, pc):
+        w_ref = frame.peek()
+        frame.store_fast(arg, w_ref)
         return pc
 
     @jit.unroll_safe

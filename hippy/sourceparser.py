@@ -776,6 +776,11 @@ class Parser(object):
     def unticked_statement_t_echo_expr_list(self, p):
         return Echo(p[1], lineno=p[0].getsourcepos())
 
+    @pg.production("unticked_statement : T_DO statement "
+                   "T_WHILE ( expr ) ;")
+    def unticked_statement_t_do(self, p):
+        return DoWhile(p[1], p[4], lineno=p[0].getsourcepos())
+
     @pg.production("echo_expr_list : echo_expr_list , expr")
     def echo_expr_list_echo_expr_list_expr(self, p):
         if isinstance(p[0], list):
@@ -1183,6 +1188,7 @@ class Parser(object):
                    "static_scalar T_DOUBLE_ARROW static_scalar")
     def non_empty_array_pair_list_list_scalar_assign_scalar(self, p):
         raise NotImplementedError(p)
+
 
     @pg.production("possible_comma : empty")
     def possible_comma_empty(self, p):

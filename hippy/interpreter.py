@@ -379,11 +379,22 @@ class Interpreter(object):
         # strange stack effects, matching the usage of this opcode
         w_value = frame.peek_nth(arg)
         w_target = frame.pop()
-        if isinstance(w_target, W_Reference):
-            xxx
         w_item = frame.peek_nth(arg)
         w_obj = frame.peek()
-        w_newvalue = space.setitem(w_obj, w_item, w_value)
+        if isinstance(w_target, W_Reference):
+            w_target.w_value = w_value.deref()
+            w_newobj = w_obj
+        else:
+            w_newobj = space.setitem(w_obj, w_item, w_value)
+        frame.poke_nth(arg, w_newobj)
+        return pc
+
+    def STOREITEM_REF(self, bytecode, frame, space, arg, arg2, pc):
+        w_ref = frame.peek_nth(arg - 1)
+        assert isinstance(w_ref, W_Reference)
+        w_item = frame.peek_nth(arg)
+        w_obj = frame.peek()
+        w_newvalue = space.setitem_ref(w_obj, w_item, w_ref)
         frame.poke_nth(arg, w_newvalue)
         return pc
 

@@ -127,12 +127,11 @@ class ObjSpace(object):
     def getitem(self, w_obj, w_item):
         return w_obj.deref().getitem(self, w_item.deref())
 
-    def itemreference(self, w_obj, w_item):
-        return w_obj.deref().itemreference(self, w_item.deref())
-
     def setitem(self, w_obj, w_item, w_value):
-        return w_obj.deref().setitem(self, w_item.deref(),
-                                     w_value.deref_for_store())
+        return w_obj.deref().setitem(self, w_item.deref(), w_value.deref())
+
+    def setitem_ref(self, w_obj, w_item, w_ref):
+        return w_obj.deref().setitem_ref(self, w_item.deref(), w_ref)
 
     def concat(self, w_left, w_right):
         return self.as_string(w_left).strconcat(self, self.as_string(w_right))

@@ -41,6 +41,11 @@ class ArrayMixin(object):
         res._inplace_setitem(space, w_index, w_value)
         return res
 
+    def setitem_ref(self, space, w_index, w_ref):
+        res = self.as_unique_arraylist()
+        res._inplace_setitem_ref(space, w_index, w_ref)
+        return res
+
     def as_unique_arraylist(self):
         lst_w = [self.w_item(i) for i in range(self.arraylen())]
         return W_ListArrayObject(lst_w)
@@ -80,7 +85,6 @@ class W_ListArrayObject(ArrayMixin, W_ArrayObject):
         assert 0 <= index < self.arraylen()
         lst_w = self._lst_w
         w_old = lst_w[index]
-        w_value = w_value.deref()
         if isinstance(w_old, W_Reference):
             w_old.w_value = w_value
         else:

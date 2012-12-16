@@ -84,7 +84,7 @@ class W_Root(object):
     def create_iter(self, space):
         raise InterpreterError("unsupported create_iter")
 
-    def hash(self):
+    def hash(self, space):
         raise InterpreterError("unsupported hash")
 
     def var_dump(self, space, indent, recursion):

@@ -9,7 +9,7 @@ from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 #from hippy.objects.strobject import W_StrInterpolation
 from hippy.objects.arrayiter import BaseArrayIterator
-from hippy.objects.arrayobject import new_globals_wrapper
+#from hippy.objects.arrayobject import new_globals_wrapper
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -137,7 +137,7 @@ class Interpreter(object):
 
     def setup_globals(self, space, dct):
         self.globals = dct
-        self.globals_wrapper = new_globals_wrapper(space, dct)
+        #self.globals_wrapper = new_globals_wrapper(space, dct)
 
     def __init__(self, space):
         self.functions = {}

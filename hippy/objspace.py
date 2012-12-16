@@ -9,8 +9,7 @@ from hippy.objects.base import W_NullObject
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject
-from hippy.objects.arrayobject import new_array_from_list, W_ArrayObject,\
-     new_array_from_pairs, new_map_from_pairs, W_FakeIndex
+from hippy.objects.arrayobject import W_ArrayObject, new_array_from_list
 
 
 @specialize.memo()

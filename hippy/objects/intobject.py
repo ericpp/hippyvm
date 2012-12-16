@@ -94,7 +94,7 @@ class W_IntObject(W_Root):
         assert isinstance(w_other, W_IntObject)
         return self.intval == w_other.intval
 
-    def hash(self):
+    def hash(self, space):
         return hash_int(self.intval)
 
     def __repr__(self):

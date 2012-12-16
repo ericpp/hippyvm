@@ -1,15 +1,12 @@
 
 import weakref
 from pypy.rlib.rerased import new_erasing_pair
-from pypy.rlib.objectmodel import instantiate, specialize, compute_hash,\
-     _hash_string
+from pypy.rlib.objectmodel import instantiate, specialize, compute_hash
 from pypy.rlib import jit, rfloat, debug
 from pypy.rlib.rstring import StringBuilder
 from pypy.tool.sourcetools import func_with_new_name
 from hippy.objects.base import W_Root
 from hippy.objects.convert import convert_string_to_number
-
-hash_string = jit.elidable(func_with_new_name(_hash_string, 'hash_string'))
 
 
 class W_StringObject(W_Root):
@@ -29,6 +26,10 @@ class W_StringObject(W_Root):
 
     def copy(self, space):
         return self     # XXX KILL ME
+
+    def hash(self, space):
+        # XXX improve
+        return compute_hash(self.str_w(space))
 
     def as_string(self, space):
         return self

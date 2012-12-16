@@ -22,7 +22,8 @@ def compile_ast(mainnode, space, extra_offset=0, print_exprs=False):
     c = CompilerContext(0, space, extra_offset=extra_offset,
                         print_exprs=print_exprs)
     mainnode.compile(c)
-    c.emit(consts.RETURN_NULL)
+    c.emit(consts.LOAD_NULL)
+    c.emit(consts.RETURN)
     return c.create_bytecode()
 
 class CompilerError(InterpreterError):
@@ -243,10 +244,10 @@ class __extend__(Stmt):
 class __extend__(Return):
     def compile(self, ctx):
         if self.expr is None:
-            ctx.emit(consts.RETURN_NULL)
+            ctx.emit(consts.LOAD_NULL)
         else:
             self.expr.compile(ctx)
-            ctx.emit(consts.RETURN)
+        ctx.emit(consts.RETURN)
 
 class __extend__(Echo):
     def compile(self, ctx):
@@ -524,7 +525,8 @@ class __extend__(FunctionDecl):
         new_context = CompilerContext(self.lineno, ctx.space, self.name,
                                       extra_offset=ctx.extra_offset)
         self.body.compile(new_context)
-        new_context.emit(consts.RETURN_NULL) # optimization! or lack of
+        new_context.emit(consts.LOAD_NULL)
+        new_context.emit(consts.RETURN)
         args = []
         for arg in self.argdecls:
             if isinstance(arg, Argument):

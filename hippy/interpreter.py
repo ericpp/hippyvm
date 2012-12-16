@@ -1,6 +1,6 @@
 
 from hippy.rpython.rdict import RDict
-from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
+from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES,\
      BINOP_LIST, RETURN, INPLACE_LIST
 from hippy.builtin import setup_builtin_functions
 from hippy import array_funcs     # site-effect of registering functions
@@ -176,11 +176,7 @@ class Interpreter(object):
                     arg2 = 0
                 assert arg >= 0
                 assert arg2 >= 0
-                if next_instr == RETURN_NULL:
-                    assert frame.stackpos == 0
-                    frame.clean(bytecode)
-                    return None
-                elif next_instr == RETURN:
+                if next_instr == RETURN:
                     assert frame.stackpos == 1
                     res = frame.stack[0].deref()
                     frame.clean(bytecode)
@@ -208,8 +204,11 @@ class Interpreter(object):
     def ILLEGAL(self, bytecode, frame, space, arg, arg2, pc):
         raise IllegalInstruction()
 
-    RETURN_NULL = ILLEGAL # handled separately
     RETURN = ILLEGAL      # handled separately
+
+    def LOAD_NULL(self, bytecode, frame, space, arg, arg2, pc):
+        frame.push(space.w_Null)
+        return pc
 
     def LOAD_CONST(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(bytecode.consts[arg])

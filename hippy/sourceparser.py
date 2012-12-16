@@ -40,8 +40,7 @@ class Block(Node):
         self.lineno = lineno
 
     def repr(self):
-        return "Block(" + ", ".join([i.repr() for i in self.stmts]) + ")"
-
+        return "Block(" + ", ".join([i.repr() for i in self.stmts]) + ", %d)" % self.lineno
 
 class Stmt(Node):
     def __init__(self, expr, lineno=0):
@@ -256,7 +255,7 @@ class SimpleCall(Node):
 
     def repr(self):
         argrepr = ", ".join([i.repr() for i in self.args])
-        return "SimpleCall(%s, %s)" % (self.name, argrepr)
+        return "SimpleCall(%s, %s, %d)" % (self.name, argrepr, self.lineno)
 
 
 class DynamicCall(Node):
@@ -267,7 +266,7 @@ class DynamicCall(Node):
 
     def repr(self):
         argrepr = ", ".join([i.repr() for i in self.args])
-        return "DynamicCall(%s, %s)" % (self.node.repr(), argrepr)
+        return "DynamicCall(%s, %s, %d)" % (self.node.repr(), argrepr, self.lineno)
 
 
 class FunctionDecl(Node):
@@ -279,9 +278,9 @@ class FunctionDecl(Node):
 
     def repr(self):
         argsrepr = "[" + ", ".join([i.repr() for i in self.argdecls]) + "]"
-        return "FunctionDecl(%s, %s, %s)" % (self.name, argsrepr,
-                                             self.body.repr())
-
+        return "FunctionDecl(%s, %s, %s, %d)" % (self.name, argsrepr,
+                                                 self.body.repr(),
+                                                 self.lineno)
 
 class Argument(Node):
     def __init__(self, name, lineno=0):
@@ -563,6 +562,10 @@ class Parser(object):
     def top_statement(self, p):
         return p[0]
 
+    @pg.production("top_statement : function_declaration_statement")
+    def top_statement_function_declaration_statement(self, p):
+        return p[0]
+
     @pg.production("inner_statement_list : "
                    "inner_statement_list inner_statement")
     def inner_statement_list_inner_statement_list_inner_statement(self, p):
@@ -651,6 +654,10 @@ class Parser(object):
     def expr_scalar(self, p):
         raise NotImplementedError(p)
 
+    @pg.production("expr : T_PRINT expr")
+    def expr_t_print_expr(self, p):
+        return Echo(p[1], lineno=p[0].getsourcepos())
+
     @pg.production("scalar : T_STRING_VARNAME")
     def scalar_t_string_varname(self, p):
         raise NotImplementedError(p)
@@ -679,12 +686,21 @@ class Parser(object):
             return ConstantStr(p[0].getstr().strip("\""), lineno=lineno)
         raise Exception("Not implemented yet!")
 
+    @pg.production("static_scalar : common_scalar")
+    def static_scalar(self, p):
+        return p[0]
+
     @pg.production("variable : base_variable_with_function_calls")
     def variable_base_variable_with_function_calls(self, p):
         return p[0]
 
     @pg.production("base_variable_with_function_calls : base_variable")
     def base_variable_with_function_calls_base_variable(self, p):
+        return p[0]
+
+
+    @pg.production("base_variable_with_function_calls : function_call")
+    def base_variable_with_function_calls_function_call(self, p):
         return p[0]
 
     @pg.production("base_variable : reference_variable")
@@ -713,6 +729,10 @@ class Parser(object):
         return p[0]
 
     @pg.production("rw_variable : variable")
+    def variable_rw_variable(self, p):
+        return p[0]
+
+    @pg.production("w_variable : variable")
     def variable_rw_variable(self, p):
         return p[0]
 
@@ -821,7 +841,7 @@ class Parser(object):
                    "( for_expr ; "
                    "for_expr ; for_expr ) for_statement")
     def unticked_statement_t_for(self, p):
-        return For(p[2], p[4], p[6], p[8])
+        return For(p[2], p[4], p[6], p[8], lineno=p[0].getsourcepos())
 
     @pg.production("for_expr : non_empty_for_expr")
     def for_expr_non_empty_for_expr(self, p):
@@ -857,6 +877,200 @@ class Parser(object):
                    "simple_indirect_reference $")
     def simple_indirect_reference_simple_indirect_reference(self, p):
         raise NotImplementedError(p)
+
+
+    @pg.production("function_call : "
+                   "namespace_name "
+                   "( function_call_parameter_list )")
+    def function_call_cn_t_paamayim_variable_wo_f_call_p_list(self, p):
+        return SimpleCall(p[0].getstr(), p[2], lineno=p[0].getsourcepos())
+
+    @pg.production("function_call : "
+                   "variable_without_objects "
+                   "( function_call_parameter_list )")
+    def function_call_cn_t_paamayim_variable_wo_f_call_p_list(self, p):
+        return DynamicCall(p[0], p[2], lineno=p[1].getsourcepos())
+
+    @pg.production("variable_without_objects : reference_variable")
+    def variable_without_objects_reference_variable(self, p):
+        return p[0]
+
+    @pg.production("variable_without_objects : "
+                   "simple_indirect_reference reference_variable")
+    def variable_without_objects_simple_i_ref_reference_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("namespace_name : T_STRING")
+    def namespace_name_t_string(self, p):
+        return p[0]
+
+    @pg.production("namespace_name :  namespace_name T_NS_SEPARATOR T_STRING")
+    def namespace_name_namespace_name_t_ns_sep_t_string(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("function_call_parameter_list : "
+                   "non_empty_function_call_parameter_list")
+    def function_call_parameter_list_non_empty_function(self, p):
+        return p[0]
+
+    @pg.production("function_call_parameter_list : empty")
+    def function_call_parameter_list_empty(self, p):
+        return []
+
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "expr_without_variable")
+    def non_empty_function_call_parameter_list_expr_wo_variable(self, p):
+        return [p[0]]
+
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "variable")
+    def non_empty_function_call_parameter_list_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "& w_variable")
+    def non_empty_function_call_parameter_list_reference_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "non_empty_function_call_parameter_list , "
+                   "expr_without_variable")
+    def non_empty_function_call_parameter_list_list_expr_wo_variable(self, p):
+        if p[0] is not None:
+            if isinstance(p[0], list):
+                p[0].append(p[2])
+                return p[0]
+            return [p[0], p[2]]
+
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "non_empty_function_call_parameter_list , variable")
+    def non_empty_function_call_parameter_list_list_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "non_empty_function_call_parameter_list , "
+                   "& w_variable")
+    def non_empty_function_call_parameter_list_list_ref_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("function : T_FUNCTION")
+    def function_t_function(self, p):
+        return p[0]
+
+    @pg.production("function_declaration_statement : "
+                   "unticked_function_declaration_statement")
+    def function_declaration_statement_unticked_f_decl_stmt(self, p):
+        return p[0]
+
+    @pg.production("unticked_function_declaration_statement : "
+               "function is_reference T_STRING ( parameter_list ) "
+                " { inner_statement_list }")
+    def unticked_func_decl_stmt_f_is_ref_param_list_inner_stmt_lst(self, p):
+        ist = p[7]
+        if ist is None:
+            ist = Block([], lineno=p[6].getsourcepos())
+        else:
+            ist = Block(p[7], lineno=p[6].getsourcepos())
+        return FunctionDecl(p[2].getstr(), p[4], ist, lineno=p[0].getsourcepos())
+
+    @pg.production("is_reference : &")
+    def is_reference_reference(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("is_reference : empty")
+    def is_reference_empty(self, p):
+        return p[0]
+
+
+    @pg.production("parameter_list : non_empty_parameter_list")
+    def parameter_list_non_empty_parameter_list(self, p):
+        return p[0]
+
+    @pg.production("parameter_list : empty")
+    def parameter_list_empty(self, p):
+        return []
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type T_VARIABLE")
+    def nepl_optional_class_type_t_var(self, p):
+        if p[0] is None:
+            lineno = p[1].getsourcepos()
+            return [Argument(p[1].getstr()[1:], lineno=lineno)]
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "non_empty_parameter_list , optional_class_type T_VARIABLE")
+    def nepl_nepl_optional_class_type_t_var(self, p):
+        print p
+        lineno = p[3].getsourcepos()
+        tvar = Argument(p[3].getstr()[1:], lineno=lineno)
+
+        if p[2] is not None:
+            raise NotImplementedError(p)
+        if p[0] is not None:
+            if isinstance(p[0], list):
+                p[0].append(tvar)
+                return p[0]
+            return [p[0], tvar]
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type & T_VARIABLE")
+    def nepl_optional_class_type_h_ref_t_var(self, p):
+        if p[0] is None:
+            lineno = p[2].getsourcepos()
+            return [ReferenceArgument(p[2].getstr()[1:], lineno=lineno)]
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "non_empty_parameter_list , "
+                   "optional_class_type & T_VARIABLE")
+    def nepl_nepl_optional_class_type_h_ref_t_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type T_VARIABLE = static_scalar")
+    def nepl_optional_class_type_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "non_empty_parameter_list , optional_class_type"
+                   " T_VARIABLE = static_scalar")
+    def nepl_nepl_optional_class_type_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_parameter_list : "
+                   "optional_class_type "
+                   "& T_VARIABLE = static_scalar")
+    def nepl_optional_class_type_h_ref_t_var_static_scalar(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("optional_class_type : fully_qualified_class_name")
+    def optional_class_type_fqcn(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("optional_class_type : T_ARRAY")
+    def optional_class_type_t_array(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("optional_class_type : empty")
+    def optional_class_type_empty(self, p):
+        return p[0]
+
+    @pg.production("fully_qualified_class_name : namespace_name")
+    def fqcn_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("fully_qualified_class_name : "
+                   "T_NAMESPACE T_NS_SEPARATOR namespace_name")
+    def fqcn_t_namespace_t_ns_sep_namespace_name(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("fully_qualified_class_name : "
+                   "T_NS_SEPARATOR namespace_name")
+    def fqcn_t_ns_sep_namespace_name(self, p):
+        raise NotImplementedError(p)
+
 
     @pg.production("empty :")
     def empty(self, p):

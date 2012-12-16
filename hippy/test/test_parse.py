@@ -307,11 +307,17 @@ class TestParser(object):
         f();
         """)
         assert r == Block([
-            FunctionDecl("f", [], Block([]), 1),
-            Stmt(SimpleCall("f", []), 2)])
+            FunctionDecl("f", [], Block([], 1), 1),
+            Stmt(SimpleCall("f", [], 2), 2)])
         r = parse("function f($a, $b, $c) { 3; 4; }")
         assert r == Block([
             FunctionDecl("f", [Argument("a"), Argument("b"), Argument("c")],
+                         Block([Stmt(ConstantInt(3)),
+                                Stmt(ConstantInt(4))]), 0)])
+
+        r = parse("function f($a) { 3; 4; }")
+        assert r == Block([
+            FunctionDecl("f", [Argument("a")],
                          Block([Stmt(ConstantInt(3)),
                                 Stmt(ConstantInt(4))]), 0)])
         r = parse("function f(&$a) {}")
@@ -322,15 +328,19 @@ class TestParser(object):
         r = parse('''
         echo 1, 2, 3;
         ''')
-        assert r == Block([Echo([ConstantInt(1), ConstantInt(2),
-                                 ConstantInt(3)], 1)])
+        assert r == Block([Echo([ConstantInt(1, 1), ConstantInt(2, 1),
+                                 ConstantInt(3, 1)], 1)])
+        # print gramma is >T_PRING expr<, so we should see parse exception
+        raises(ValueError, lambda : parse('''
+        print 1, 2, 3;
+        '''))
 
     def test_string_literal(self):
         r = parse('''
         $x = "\\n";
         ''')
-        expected = Block([Stmt(Assignment(Variable(ConstantStr("x")),
-                                                   ConstantStr("\\n")), 1)])
+        expected = Block([Stmt(Assignment(Variable(ConstantStr("x", 1), 1),
+                                                   ConstantStr("\\n", 1), 1), 1)])
         assert r == expected
 
     def test_getitem(self):

@@ -9,7 +9,8 @@ RULES = [
     ("or", 'T_LOGICAL_OR'),
     ("xor", 'T_LOGICAL_XOR'),
     ("and", 'T_LOGICAL_AND'),
-    ("print", 'T_PRINT'),
+    # XXX think this over!!!
+    ("print ", 'T_PRINT'),
     ("echo", 'T_ECHO'),
     ("\+\=", 'T_PLUS_EQUAL'),
     ("\-\=", 'T_MINUS_EQUAL'),
@@ -61,7 +62,6 @@ RULES = [
     ("-?0[0-9]*", 'T_LNUMBER'),
     ("-?0x([0-9]|[a-fA-F])*", 'T_LNUMBER'),
     ("(\"[^\"]*\")|('[^']*')", 'T_CONSTANT_ENCAPSED_STRING'),
-    ("(\"[^\"]*\")|('[^']*')", 'T_STRING'),
 
     ("\$[a-zA-Z]+", 'T_VARIABLE'),
     ("\$\{[a-zA-Z]*\}", 'T_STRING_VARNAME'),
@@ -134,6 +134,8 @@ RULES = [
     ("__DIR__", 'T_DIR'),
     ("\\\\", 'T_NS_SEPARATOR'),
     ("\_\_halt_compiler", 'T_HALT_COMPILER'),
+
+    ("[a-zA-Z]+", 'T_STRING'),
 
     ("\&", '&'),
     ("\,", ','),

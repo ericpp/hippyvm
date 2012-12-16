@@ -51,11 +51,18 @@ class Frame(object):
         stackpos = jit.hint(self.stackpos, promote=True) - 1
         assert stackpos >= 0
         res = self.stack[stackpos]
-        if self.stack[stackpos] is not None:
-            self.stack[stackpos].mark_invalid()
+        #if self.stack[stackpos] is not None:
+        #    self.stack[stackpos].mark_invalid()
         self.stack[stackpos] = None # don't artificially keep alive stuff
         self.stackpos = stackpos
         return res
+
+    def pop_n(self, count):
+        stackpos = jit.hint(self.stackpos, promote=True) - count
+        assert stackpos >= 0
+        for i in range(count):
+            self.stack[stackpos + i] = None
+        self.stackpos = stackpos
 
     @jit.unroll_safe
     def clean(self, bytecode):
@@ -68,6 +75,17 @@ class Frame(object):
         stackpos = jit.hint(self.stackpos, promote=True) - 1
         assert stackpos >= 0
         return self.stack[stackpos]
+
+    def peek_nth(self, n):
+        # peek() == peek_nth(0)
+        stackpos = jit.hint(self.stackpos, promote=True) + ~n
+        assert stackpos >= 0
+        return self.stack[stackpos]
+
+    def poke_nth(self, n, w_obj):
+        stackpos = jit.hint(self.stackpos, promote=True) + ~n
+        assert stackpos >= 0
+        self.stack[stackpos] = w_obj
 
     def store_var_by_name(self, space, bc, name, w_value):
         if bc.uses_dict:
@@ -252,10 +270,12 @@ class Interpreter(object):
         return pc
 
     def STORE(self, bytecode, frame, space, arg, arg2, pc):
-        w_val = frame.pop()
+        w_val = frame.peek_nth(arg)
         w_var = frame.pop()
+        w_keep = frame.peek()
+        frame.pop_n(arg)
         frame.store_var(space, w_var, w_val)
-        frame.push(w_val)
+        frame.push(w_keep)
         return pc
 
     def DISCARD_TOP(self, bytecode, frame, space, arg, arg2, pc):
@@ -384,18 +404,23 @@ class Interpreter(object):
         frame.push(space.getitem(w_obj, w_item))
         return pc
 
-    def ITEMREFERENCE(self, bytecode, frame, space, arg, arg2, pc):
-        w_item = frame.pop()
-        w_obj = frame.pop()
-        frame.push(space.itemreference(w_obj, w_item))
+    def FETCHITEM(self, bytecode, frame, space, arg, arg2, pc):
+        # like GETITEM, but without destroying the input argument
+        w_obj = frame.peek()
+        w_item = frame.peek_nth(arg)
+        frame.push(space.getitem(w_obj, w_item))
         return pc
 
-    def SETITEM(self, bytecode, frame, space, arg, arg2, pc):
-        w_value = frame.pop()
-        w_item = frame.pop()
-        w_obj = frame.pop()
-        space.setitem(w_obj, w_item, w_value)
-        frame.push(w_value)
+    def STOREITEM(self, bytecode, frame, space, arg, arg2, pc):
+        # strange stack effects, matching the usage of this opcode
+        w_value = frame.peek_nth(arg)
+        w_target = frame.pop()
+        if isinstance(w_target, W_Reference):
+            xxx
+        w_item = frame.peek_nth(arg)
+        w_obj = frame.peek()
+        w_newvalue = space.setitem(w_obj, w_item, w_value)
+        frame.poke_nth(arg, w_newvalue)
         return pc
 
     def BINARY_CONCAT(self, bytecode, frame, space, arg, arg2, pc):

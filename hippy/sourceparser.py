@@ -276,31 +276,6 @@ class GetItem(Node):
     def repr(self):
         return 'GetItem(%s, %s)' % (self.node.repr(), self.item.repr())
 
-class GetItemReference(GetItem):
-    pass
-
-class SetItem(Node):
-    def __init__(self, node, item, value):
-        self.node = node
-        self.item = item
-        self.value = value
-
-    def repr(self):
-        return 'SetItem(%s, %s, %s)' % (self.node.repr(), self.item.repr(),
-                                        self.value.repr())
-
-class InplaceSetItem(Node):
-    def __init__(self, op, node, item, value):
-        self.op = op
-        self.node = node
-        self.item = item
-        self.value = value
-
-    def repr(self):
-        return 'InplaceSetItem(%s, %s, %s, %s)' % (self.op, self.node.repr(),
-                                                   self.item.repr(),
-                                                   self.value.repr())
-
 class Array(Node):
     def __init__(self, initializers):
         self.initializers = initializers
@@ -712,10 +687,10 @@ class Transformer(object):
         raise NotImplementedError
 
     def parse_getitem(self, atom, rest, is_func_arg=False):
-        if is_func_arg:
-            cls = GetItemReference
-        else:
-            cls = GetItem
+        #if is_func_arg:
+        #    cls = GetItemReference
+        #else:
+        cls = GetItem
         if len(rest.children) == 3:
             return cls(atom, self.visit_expr(rest.children[1]))
         atom = cls(atom, self.visit_expr(rest.children[1]))
@@ -755,11 +730,12 @@ class Transformer(object):
             atom = Variable(self.visit_atom(node.children[1]))
             getitem = self.parse_getitem(atom, node.children[2])
             if oper != '=':
-                return InplaceSetItem(oper, getitem.node, getitem.item,
-                                      self.visit_expr(node.children[4]))
-            return SetItem(getitem.node, getitem.item,
-                           self.visit_expr(node.children[4]))
+                return InplaceOp(oper, getitem,
+                                 self.visit_expr(node.children[4]))
+            return Assignment(getitem,
+                              self.visit_expr(node.children[4]))
         elif len(node.children) == 6:
+            XXX   # ??
             if node.children[4].additional_info != '=':
                 raise ParserError
             return Append(Variable(self.visit_atom(node.children[1])),

@@ -1,12 +1,12 @@
 
 from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Variable, ConstantStr, Echo, ConstantFloat, If, SuffixOp, PrefixOp,\
-     While, SimpleCall, For, GetItem, SetItem, Array, FunctionDecl, Argument,\
+     While, SimpleCall, For, GetItem, Array, FunctionDecl, Argument,\
      Return, Append, And, Or, InplaceOp, Global, NamedConstant, DoWhile,\
-     Reference, ReferenceArgument, Break, InplaceSetItem, Hash, IfExpr,\
+     Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
      UninitializedVariable, InitializedVariable, DefaultArgument,\
-     GetItemReference, ConstantAppend
+     ConstantAppend
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 #from hippy.objects.strobject import W_StrInterpolation
@@ -257,9 +257,10 @@ class __extend__(Echo):
 
 class __extend__(Assignment):
     def compile(self, ctx):
-        self.var.compile(ctx)
+        depth = self.var.compile_assignment_prepare(ctx)
         self.expr.compile(ctx)
-        ctx.emit(consts.STORE)
+        self.var.compile_assignment_fetch(ctx, depth)
+        self.var.compile_assignment_store(ctx, depth)
 
 class __extend__(ConstantInt):
     def compile(self, ctx):
@@ -315,6 +316,15 @@ class __extend__(Variable):
         else:
             self.node.compile(ctx)
         ctx.emit(consts.LOAD_VAR)
+
+    def compile_assignment_prepare(self, ctx):
+        return 0
+
+    def compile_assignment_fetch(self, ctx, depth):
+        self.compile(ctx)
+
+    def compile_assignment_store(self, ctx, depth):
+        ctx.emit(consts.STORE, depth + 1)
 
 class __extend__(SuffixOp):
     def compile(self, ctx):
@@ -400,27 +410,18 @@ class __extend__(GetItem):
         self.item.compile(ctx)
         ctx.emit(consts.GETITEM)
 
-class __extend__(GetItemReference):
-    def compile(self, ctx):
-        self.node.compile(ctx)
+    def compile_assignment_prepare(self, ctx):
+        depth = self.node.compile_assignment_prepare(ctx)
         self.item.compile(ctx)
-        ctx.emit(consts.ITEMREFERENCE)
+        return depth + 1
 
-class __extend__(SetItem):
-    def compile(self, ctx):
-        self.node.compile(ctx)
-        self.item.compile(ctx)
-        ctx.emit(consts.ITEMREFERENCE)
-        self.value.compile(ctx)
-        ctx.emit(consts.STORE)
+    def compile_assignment_fetch(self, ctx, depth):
+        self.node.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.FETCHITEM, depth + 1)
 
-class __extend__(InplaceSetItem):
-    def compile(self, ctx):
-        self.node.compile(ctx)
-        self.item.compile(ctx)
-        ctx.emit(consts.ITEMREFERENCE)
-        self.value.compile(ctx)
-        ctx.emit(consts.INPLACE_OP_TO_BC[self.op])
+    def compile_assignment_store(self, ctx, depth):
+        ctx.emit(consts.STOREITEM, depth + 1)
+        self.node.compile_assignment_store(ctx, depth)
 
 class __extend__(Array):
     def compile(self, ctx):

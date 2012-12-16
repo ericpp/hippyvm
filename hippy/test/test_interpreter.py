@@ -559,6 +559,87 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 11
         assert self.space.int_w(output[1]) == 42
 
+    def test_store_order_1(self):
+        output = self.run('''
+        $a = 5;
+        $v = 6;
+        $a = ($a =& $v);  // we must not read the reference to the leftmost $a
+        echo $a;          // before we evaluate the expression ($a =& $v)
+        $a = 7;
+        echo $v;
+        ''')
+        assert self.space.int_w(output[0]) == 6
+        assert self.space.int_w(output[1]) == 7
+
+    def test_array_store_simple_1(self):
+        output = self.run('''
+        $v = 5;
+        $a = array(&$v);
+        $a[0] = 40 + 2;
+        echo $v;
+        ''')
+        assert self.space.int_w(output[0]) == 42
+
+    def test_array_store_simple_2(self):
+        output = self.run('''
+        $v = 5;
+        $a = array(array(&$v));
+        $a[0][0] = 40 + 2;
+        echo $v;
+        ''')
+        assert self.space.int_w(output[0]) == 42
+
+    def test_array_store_simple_3(self):
+        output = self.run('''
+        $c = array(5);
+        $a = array(&$c);
+        $a[0][0] = 40 + 2;
+        echo $c[0];
+        ''')
+        assert self.space.int_w(output[0]) == 42
+
+    def test_array_store_order_0(self):
+        output = self.run('''
+        $a = array(10, 11, 12, 13, array(20, 21, 22, 23));
+        $n = 2;
+        $a[$n *= 2][$n -= 1] = $n += 100;
+        echo $a[4][3], $n;
+        ''')
+        assert self.space.int_w(output[0]) == 103
+        assert self.space.int_w(output[1]) == 103
+
+    def test_array_store_order_1(self):
+        output = self.run('''
+        $a = array(5);
+        $a[0] = 3+!($a=array(6, 7));
+        echo $a[0], $a[1];
+        ''')
+        assert self.space.int_w(output[0]) == 3
+        assert self.space.int_w(output[1]) == 7
+
+    def test_array_store_order_2(self):
+        output = self.run('''
+        $a = array(5);
+        $v = 5;
+        $a[0] = 3+!($a=array(&$v, 7));
+        echo $a[0], $a[1], $v;
+        ''')
+        assert self.space.int_w(output[0]) == 3
+        assert self.space.int_w(output[1]) == 7
+        assert self.space.int_w(output[2]) == 3
+
+    def test_array_store_order_3(self):
+        output = self.run('''
+        $v = 5;
+        $a = array(&$v);
+        $b = $a[0] = count($a=array(6, 7, 8));
+        echo $a[0], $b;
+        echo $v;
+        ''')
+        assert self.space.int_w(output[0]) == 3
+        assert self.space.int_w(output[1]) == 3
+        assert self.space.int_w(output[2]) == 5
+
     def test_dense_array_not_from_0(self):
         py.test.skip("XXX REDO")
         output = self.run('''

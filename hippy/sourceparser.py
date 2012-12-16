@@ -591,6 +591,16 @@ class Transformer(object):
             return self.visit_subexpr(node, is_func_arg=is_func_arg)
         elif symname == 'primary':
             return self.visit_primary(node, is_func_arg=is_func_arg)
+        elif symname == 'assign_source':
+            if len(node.children) == 1:
+                return self.visit_expr(node.children[0],
+                                       is_func_arg=is_func_arg)
+            assert node.children[0].symbol == 'REFERENCE'
+            atom = Variable(self.visit_atom(node.children[2]))
+            if len(node.children) > 3:
+                atom = self.parse_getitem(atom, node.children[3],
+                                          is_func_arg=is_func_arg)
+            return Reference(atom)
         raise NotImplementedError
 
     def visit_funccall(self, node):
@@ -713,8 +723,6 @@ class Transformer(object):
             if len(node.children) == 2:
                 return Variable(self.visit_atom(node.children[1]))
             return Variable(self.visit_expr(node.children[2]))
-        elif symname == 'REFERENCE':
-            return Reference(self.visit_atom(node.children[1]))
         raise NotImplementedError
 
     def visit_subexpr(self, node, is_func_arg=False):

@@ -545,6 +545,13 @@ class __extend__(GetItem):
         ctx.emit(consts.STOREITEM_REF, depth + 1)
         self.node.compile_assignment_store(ctx, depth)   # and not '.._ref'
 
+    def compile_reference(self, ctx):
+        depth = self.compile_assignment_prepare(ctx)
+        ctx.emit(consts.LOAD_NULL)
+        self.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.MAKE_REF, depth + 1)
+        self.compile_assignment_store(ctx, depth)
+
 class __extend__(Array):
     def compile(self, ctx):
         for item in self.initializers:

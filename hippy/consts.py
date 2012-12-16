@@ -68,6 +68,7 @@ BYTECODES = [
     ('FETCHITEM', 1, +1),
     ('STOREITEM', 1, -1),
     ('STOREITEM_REF', 1, 0),
+    ('MAKE_REF', 1, 0),
     ('ARRAY', 1, ARGVAL1),
     ('MAKE_HASH', 1, ARGVAL2),
     ('CREATE_ITER', 0, 0),

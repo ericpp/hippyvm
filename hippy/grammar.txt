@@ -41,7 +41,7 @@ primary: ARRAY "(" ")" | ARRAY "(" array_constr ","? ")" |
          function_call | atom INOP | "(" expr ")" | NAME |
          atom ("[" expr "]")+ | atom | INOP atom |
          PLUSMINUS primary | UNARYONLY primary | "(" ARRAY ")" primary;
-atom: FLOAT | DECIMAL | STR | "$" atom | "$" "{" expr "}" | NAME | REFERENCE atom;
+atom: FLOAT | DECIMAL | STR | "$" atom | "$" "{" expr "}" | NAME;
 
 array_pair: expr ("=>" expr)?;
 array_constr: array_pair ("," array_pair)*;
@@ -55,6 +55,8 @@ var_assign: "$" NAME | REFERENCE "$" NAME;
 arg_assign: "$" NAME (ASSIGN_OPER expr)? | REFERENCE "$" NAME;
 arg_decls: arg_assign "," arg_decls | arg_assign;
 
-assignment: "$" atom ("[" expr "]")+ ASSIGN_OPER expr |
-            "$" atom ("[" expr "]")* "[" "]" ASSIGN_OPER expr |
-            "$" atom ASSIGN_OPER expr;
+assign_source: expr | REFERENCE "$" atom ("[" expr "]")*;
+
+assignment: "$" atom ("[" expr "]")+ ASSIGN_OPER assign_source |
+            "$" atom ("[" expr "]")* "[" "]" ASSIGN_OPER assign_source |
+            "$" atom ASSIGN_OPER assign_source;

@@ -432,6 +432,17 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [5, 7]
 
+    def test_references_right_array(self):
+        output = self.run('''
+        $b = array(0);
+        $a = & $b[0];
+        $a = 15;
+        echo $b[0];
+        $b[0] = 17;
+        echo $a;
+        ''')
+        assert [self.space.int_w(i) for i in output] == [15, 17]
+
     def test_references_plusplus_1(self):
         output = self.run("$x = 1; $y =& $x; echo ++$x; echo ++$x; echo $y;")
         assert self.space.int_w(output[0]) == 2;

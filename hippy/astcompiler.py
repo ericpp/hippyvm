@@ -326,19 +326,30 @@ class __extend__(Assignment):
     # STOREITEM_REF 4    [ 5, 6, NA1, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
     # STOREITEM 4        [ 5, NA2, NA1, Ref$b, Ref$a, Array$a[5] ]
     # STOREITEM 4        [ NA3, NA2, NA1, Ref$b, Ref$a ]
-    # POPN 4             [ NA3 ]
-    # STORE_REF $a       [ NA3 ]           # "NA" = "NewArray"
+    # STORE 4            [ Ref$b ]         # "NA" = "NewArray"
     #
-    # If the expression of the right is more complex than just '$b',
-    # then we use the fact that this code:
+    # If the expression on the right is more complex than just '$b',
+    # say '... =& $b[7][8]', then we use compile_reference() to get code
+    # like that to load it:
     #
-    #     $a =& $b[5][6];
+    # LOAD_CONST 7       [ 7 ]
+    # LOAD_CONST 8       [ 7, 8 ]
+    # LOAD_NONE          [ 7, 8, None ]
+    # LOAD_FAST $b       [ 7, 8, None, Ref$b ]
+    # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7] ]
+    # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7], Array$b[7][8] ]
+    # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7], Array$b[7][8] ]
+    # STOREITEM 3        [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
+    # STORE 3            [ NewRef ]
     #
-    # is equivalent to:
+    # The case of '... =& $b;' is done just with a LOAD_FAST, but following
+    # the recipe above we would get the following equivalent code:
     #
-    #     $tmp = $b[5][6];
-    #     $b[5][6] =& $tmp;
-    #     $a =& $tmp;
+    # LOAD_NONE          [ None ]
+    # LOAD_FAST $b       [ None, Ref$b ]
+    # MAKE_REF 1         [ Ref$b, Ref$b ]     # already a ref
+    # STORE 1            [ Ref$b ]            # stores $b in $b, no-op
     #
 
 class __extend__(ConstantInt):

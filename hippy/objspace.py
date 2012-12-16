@@ -9,7 +9,7 @@ from hippy.objects.base import W_NullObject
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject
-from hippy.objects.arrayobject import W_ArrayObject, new_array_from_list
+from hippy.objects.arrayobject import W_ArrayObject
 
 
 @specialize.memo()
@@ -193,7 +193,7 @@ class ObjSpace(object):
         return True
 
     def new_array_from_list(self, lst_w):
-        return new_array_from_list(self, lst_w)
+        return W_ArrayObject.new_array_from_list(lst_w)
 
     def new_array_from_pairs(self, lst_w):
         return new_array_from_pairs(self, lst_w)

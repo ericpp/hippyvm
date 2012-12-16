@@ -171,11 +171,13 @@ RULES = [
     ]
 
 PRECEDENCES = [
-    ("left", [",",]),
+    ("left", [","]),
     # ("left", ["T_ELSEIF",]),
     # ("left", ["T_ELSE",]),
     # ("left", ["T_ENDIF",]),
-
+    ("left", ["=",]),
+    # ("left", ["T_BOOLEAN_OR",]),
+    # ("left", ["T_BOOLEAN_AND",]),
     ("left", ["+", "-"]),
     ("left", ["*", "/"]),
     ("right", ['~', 'T_INC', 'T_DEC', 'T_INT_CAST', 'T_DOUBLE_CAST', 'T_STRING_CAST',

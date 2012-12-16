@@ -59,10 +59,11 @@ RULES = [
     ("else", 'T_ELSE'),
     ("endif", 'T_ENDIF'),
 
-    ("-?[0-9]*\.[0-9]*", 'T_DNUMBER'),
-    ("(-?[0-9]*\.[0-9]*|-?0|[1-9][0-9]*)e(\+|\-)?[1-9][0-9]*", 'T_DNUMBER'),
+    ("([0-9]*\.[0-9]*|[0-9][0-9]*)e(\+|\-)?[1-9][0-9]*", 'T_DNUMBER'),
+    ("[0-9]*\.[0-9]*", 'T_DNUMBER'),
+    ("0x([0-9]|[a-fA-F])*", 'T_LNUMBER'),
+    ("0X([0-9]|[a-fA-F])*", 'T_LNUMBER'),
     ("[0-9]+", 'T_LNUMBER'),
-    ("-?0x([0-9]|[a-fA-F])*", 'T_LNUMBER'),
     ("(\"[^\"]*\")|('[^']*')", 'T_CONSTANT_ENCAPSED_STRING'),
 
     ("\$[a-zA-Z]+", 'T_VARIABLE'),
@@ -173,12 +174,9 @@ RULES = [
 
 PRECEDENCES = [
     ("left", [","]),
-    # ("left", ["T_ELSEIF",]),
-    # ("left", ["T_ELSE",]),
-    # ("left", ["T_ENDIF",]),
     ("left", ["=",]),
-    # ("left", ["T_BOOLEAN_OR",]),
-    # ("left", ["T_BOOLEAN_AND",]),
+    ("left", ["T_LOGICAL_AND",]),
+    ("nonassoc", ['<', "T_IS_SMALLER_OR_EQUAL", '>', "T_IS_GREATER_OR_EQUAL"]),
     ("left", ["+", "-"]),
     ("left", ["*", "/"]),
     ("right", ['~', 'T_INC', 'T_DEC', 'T_INT_CAST', 'T_DOUBLE_CAST', 'T_STRING_CAST',

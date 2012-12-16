@@ -9,6 +9,9 @@ RULES = [
     ("or", 'T_LOGICAL_OR'),
     ("xor", 'T_LOGICAL_XOR'),
     ("and", 'T_LOGICAL_AND'),
+    ("foreach", 'T_FOREACH'),
+    ("endforeach", 'T_ENDFOREACH'),
+
     # XXX think this over!!!
     ("print ", 'T_PRINT'),
     ("echo", 'T_ECHO'),
@@ -30,7 +33,7 @@ RULES = [
     ("\=\=\=", 'T_IS_IDENTICAL'),
     ("\!\=\=", 'T_IS_NOT_IDENTICAL'),
     ("\<\=", 'T_IS_SMALLER_OR_EQUAL'),
-    ("\=\>", 'T_IS_GREATER_OR_EQUAL'),
+    ("\>\=", 'T_IS_GREATER_OR_EQUAL'),
     ("\<\<", 'T_SL'),
     ("\>\>", 'T_SR'),
     ("instanceof", 'T_INSTANCEOF'),
@@ -65,14 +68,13 @@ RULES = [
 
     ("\$[a-zA-Z]+", 'T_VARIABLE'),
     ("\$\{[a-zA-Z]*\}", 'T_STRING_VARNAME'),
+    ("(//[^\n]*)|(#[^\n]*)|(/\*([^\*]|\*[^/])*\*/)", 'T_COMMENT'),
 
     ("do", 'T_DO'),
     ("while", 'T_WHILE'),
     ("endwhile", 'T_ENDWHILE'),
     ("for", 'T_FOR'),
     ("endfor", 'T_ENDFOR'),
-    ("foreach", 'T_FOREACH'),
-    ("endforeach", 'T_ENDFOREACH'),
     ("declare", 'T_DECLARE'),
     ("enddeclare", 'T_ENDDECLARE'),
     ("as", 'T_AS'),
@@ -269,7 +271,7 @@ class Lexer(object):
             tok = self.token()
             if tok is None:
                 break
-            while tok.name in ('H_NEW_LINE', 'H_WHITESPACE'):
+            while tok.name in ('H_NEW_LINE', 'H_WHITESPACE', 'T_COMMENT'):
                 tok = self.token()
                 if tok is None:
                     break

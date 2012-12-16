@@ -48,7 +48,7 @@ class Stmt(Node):
         self.lineno = lineno
 
     def repr(self):
-        return "Stmt(%s)" % self.expr.repr()
+        return "Stmt(%s, %d)" % (self.expr.repr(), self.lineno)
 
 
 class Assignment(Node):
@@ -123,7 +123,11 @@ class BinOp(Node):
         self.lineno = 0
 
     def repr(self):
-        return "BinOp(%s %s %s)" % (self.left.repr(), self.op, self.right.repr())
+        return "BinOp(%s %s %s, %d)" % (
+            self.left.repr(),
+            self.op,
+            self.right.repr(),
+            self.lineno)
 
 
 class PrefixOp(Node):
@@ -594,7 +598,8 @@ class Parser(object):
 
     @pg.production("unticked_statement : expr ;")
     def unticked_statement_expr(self, p):
-        return Stmt(p[0], lineno=p[0].lineno)
+        return Stmt(p[0], lineno=p[1].getsourcepos())
+
 
     @pg.production("unticked_statement : { inner_statement_list }")
     def unticked_statement_inner_statement_list(self, p):
@@ -668,7 +673,7 @@ class Parser(object):
 
     @pg.production("expr : T_PRINT expr")
     def expr_t_print_expr(self, p):
-        return Echo(p[1], lineno=p[0].getsourcepos())
+        return Echo([p[1]], lineno=p[0].getsourcepos())
 
     @pg.production("scalar : T_STRING_VARNAME")
     def scalar_t_string_varname(self, p):
@@ -699,7 +704,7 @@ class Parser(object):
         if p[0].gettokentype() == 'T_DNUMBER':
             return ConstantFloat(float(p[0].getstr()), lineno=lineno)
         if p[0].gettokentype() == 'T_CONSTANT_ENCAPSED_STRING':
-            return ConstantStr(p[0].getstr().strip("\""), lineno=lineno)
+            return ConstantStr(p[0].getstr().strip("\"").strip("\'"), lineno=lineno)
         raise Exception("Not implemented yet!")
 
 
@@ -810,6 +815,45 @@ class Parser(object):
     def unticked_statement_t_return_variable(self, p):
         return Return(p[1], lineno=p[0].getsourcepos())
 
+    @pg.production("unticked_statement : T_FOREACH "
+                   "( variable T_AS foreach_variable "
+                   "foreach_optional_arg ) foreach_statement")
+    def unticked_statement_t_for_each_variable(self, p):
+        return ForEach(p[2], p[4], p[7], lineno=p[0].getsourcepos())
+
+    @pg.production("foreach_variable : variable")
+    def foreach_variable_variable(self, p):
+        return Argument(p[0].node.strval, lineno=p[0].lineno)
+
+    @pg.production("foreach_variable : & variable")
+    def foreach_variable_ref_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_optional_arg : T_DOUBLE_ARROW foreach_variable")
+    def foreach_opt_arg_t_d_arrow_foreach_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_optional_arg : empty")
+    def foreach_opt_arg_empty(self, p):
+        return p[0]
+
+    @pg.production("foreach_statement : statement")
+    def foreach_statement_statement(self, p):
+        return p[0]
+
+    @pg.production("foreach_statement : "
+                   ": inner_statement_list T_ENDFOREACH ;")
+    def foreach_statement_inner_statement_list(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_optional_arg : T_DOUBLE_ARROW foreach_variable")
+    def foreach_opt_arg_t_d_arrow_foreach_var(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("foreach_optional_arg : empty")
+    def foreach_opt_arg_empty(self, p):
+        raise NotImplementedError(p)
+
     @pg.production("unticked_statement : T_GLOBAL global_var_list ;")
     def unticked_statement_t_global_global_var_list(self, p):
         return Global(p[1], lineno=p[0].getsourcepos())
@@ -837,6 +881,37 @@ class Parser(object):
     @pg.production("global_var : $ { expr }")
     def global_var_expr(self, p):
         raise NotImplementedError(p)
+
+    @pg.production("unticked_statement : T_STATIC static_var_list ;")
+    def unticked_statement_t_static_static_var_list(self, p):
+        return StaticDecl(p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("static_var_list : static_var_list , T_VARIABLE")
+    def static_var_list_static_var_list_t_variable(self, p):
+        if isinstance(p[0], list):
+            p[0].append(UninitializedVariable(p[2].getstr()[1:],
+                                              lineno=p[2].getsourcepos()))
+            return p[0]
+        raise NotImplementedError(p)
+
+    @pg.production("static_var_list : static_var_list"
+                   " , T_VARIABLE = static_scalar")
+    def static_var_list_static_var_list_t_variable_t_eq_static_scalar(self, p):
+        if isinstance(p[0], list):
+            p[0].append(InitializedVariable(p[2].getstr()[1:], p[4],
+                                              lineno=p[2].getsourcepos()))
+            return p[0]
+        raise NotImplementedError(p)
+
+    @pg.production("static_var_list : T_VARIABLE")
+    def static_var_list_t_variable(self, p):
+        return [UninitializedVariable(p[0].getstr()[1:],
+                                     lineno=p[0].getsourcepos())]
+
+    @pg.production("static_var_list : T_VARIABLE = static_scalar")
+    def static_var_list_t_variable_t_eq_static_scalar(self, p):
+        return [InitializedVariable(p[0].getstr()[1:], p[2],
+                                   lineno=p[0].getsourcepos())]
 
     @pg.production("unticked_statement : T_IF ( expr ) "
                    "statement elseif_list else_single")
@@ -1100,7 +1175,11 @@ class Parser(object):
     @pg.production("non_empty_parameter_list : "
                    "optional_class_type T_VARIABLE = static_scalar")
     def nepl_optional_class_type_t_var_static_scalar(self, p):
-        raise NotImplementedError(p)
+        if p[0] is not None:
+            raise NotImplementedError(p)
+        return [DefaultArgument(p[1].getstr()[1:] ,
+                                p[3],
+                                lineno=p[1].getsourcepos())]
 
     @pg.production("non_empty_parameter_list : "
                    "non_empty_parameter_list , optional_class_type"
@@ -1146,11 +1225,23 @@ class Parser(object):
 
     @pg.production("combined_scalar : T_ARRAY ( array_pair_list )")
     def combined_scalar_t_array_array_pair_list(self, p):
-        return Array(p[2], p[0].getsourcepos())
+        pairs = p[2]
+        print pairs
+        arr_pairs = []
+        is_hash = False
+        for k, v in pairs:
+            if not isinstance(k, ConstantAppend):
+                is_hash = True
+                break
+            arr_pairs.append(v)
+        if is_hash:
+            return Hash(pairs, p[0].getsourcepos())
+        else:
+            return Array(arr_pairs, p[0].getsourcepos())
 
     @pg.production("combined_scalar : [ array_pair_list ]")
     def combined_scalar_square_bracket_array_pair_list(self, p):
-        return Array(p[1], p[0].getsourcepos())
+        raise NotImplementedError(p)
 
     @pg.production("array_pair_list : "
                    "non_empty_array_pair_list possible_comma")
@@ -1164,24 +1255,28 @@ class Parser(object):
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , expr T_DOUBLE_ARROW expr")
     def non_empty_array_pair_list_list_expr_da_expr(self, p):
+        print p
+        if p[0] is not None:
+            p[0].append((p[2], p[4]))
+            return p[0]
         raise NotImplementedError(p)
 
     @pg.production("non_empty_array_pair_list : "
                    "expr T_DOUBLE_ARROW expr")
     def non_empty_array_pair_list_expr_da_expr(self, p):
-        raise NotImplementedError(p)
+        return [(p[0], p[2])]
 
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , expr")
     def non_empty_array_pair_list_list_expr(self, p):
         if p[0] is not None:
-            p[0].append(p[2])
+            p[0].append((ConstantAppend(), p[2]))
             return p[0]
         raise NotImplementedError(p)
 
     @pg.production("non_empty_array_pair_list : expr")
     def non_empty_array_pair_list_expr(self, p):
-        return [p[0]]
+        return [(ConstantAppend(), p[0])]
 
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , "
@@ -1196,7 +1291,7 @@ class Parser(object):
 
     @pg.production("possible_comma : ,")
     def possible_comma(self, p):
-        raise NotImplementedError(p)
+        return None
 
 
     @pg.production("empty :")

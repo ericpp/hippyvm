@@ -658,6 +658,10 @@ class Parser(object):
     def expr_variable_inplaceop_expr(self, p):
         return InplaceOp(p[1].getstr(), p[0], p[2])
 
+    @pg.production("expr_without_variable : scalar")
+    def expr_scalar(self, p):
+        return p[0]
+
     @pg.production("expr : - expr", precedence="T_DEC")
     @pg.production("expr : + expr", precedence="T_INC")
     def expr_h_minus_expr(self, p):

@@ -22,6 +22,12 @@ class ExecutionContext(object):
     def __init__(self):
         self.interpreter = None
 
+    def notice(self, msg):
+        self.interpreter.logger.notice(self.interpreter, msg)
+
+    def fatal(self, msg):
+        self.interpreter.logger.fatal(self.interpreter, msg)        
+
     def writestr(self, str):
         os.write(1, str)
 

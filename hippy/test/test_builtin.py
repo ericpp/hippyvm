@@ -267,10 +267,19 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_defined(self):
         output = self.run('''
-        define("abc", 3);
+        echo define("abc", 3);
         echo defined("abc"), defined("def");
         ''')
-        assert [i.boolval for i in output] == [True, False]
+        assert [i.boolval for i in output] == [True, True, False]
+        output = self.run('''
+        define("abc", 3);
+        echo define("abc", 31);
+        echo abc;
+        ''')
+        assert not output[0].boolval
+        assert self.space.int_w(output[1]) == 3
+        assert self.interp.logger.msgs == [('NOTICE',
+                                            'Constant abc already defined')]
 
     def test_array_diff_key(self):
         output = self.run('''

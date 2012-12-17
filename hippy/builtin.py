@@ -100,9 +100,10 @@ def strlen(space, w_obj):
 @wrap(['space', str, W_Root])
 def define(space, name, w_obj):
     if name in space.ec.interpreter.constants:
-        raise InterpreterError("constant already defined")
+        space.ec.notice("Constant %s already defined" % name)
+        return space.w_False
     space.ec.interpreter.constants[name.lower()] = w_obj
-    return space.w_Null
+    return space.w_True
 
 # XXX unroll_iff probably
 @jit.unroll_safe

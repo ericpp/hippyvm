@@ -13,12 +13,13 @@ class ByteCode(object):
                           'is_main', 'uses_dict']
     
     def __init__(self, code, consts, names, varnames, user_functions,
-                 static_vars, filename, sourcelines,
+                 static_vars, filename, sourcelines, line_start_offset,
                  startlineno=0, bc_mapping=None, name='<main>',
                  uses_GLOBALS=False, is_main=False):
         self.code = code
         self.filename = filename
         self.sourcelines = sourcelines
+        self.line_start_offset = line_start_offset
         self.consts = consts
         self.names = names
         self.varnames = varnames # named variables
@@ -38,6 +39,9 @@ class ByteCode(object):
         self.is_main = is_main
         self.uses_dict = is_main
         self.static_vars = static_vars
+
+    def getline(self, no):
+        return self.sourcelines[no - self.line_start_offset]
 
     @jit.elidable
     def lookup_static(self, name):

@@ -67,7 +67,8 @@ def entry_point(argv):
     extra_offset = data[:start].count("\n") + 1
     source_data = data[start:end]
     space = getspace()
-    bc = compile_ast(filename, data, parse(source_data), space, extra_offset)
+    bc = compile_ast(filename, source_data, parse(source_data), space,
+                     extra_offset)
     interp = Interpreter(space, Logger())
     frame = Frame(space, bc)
     try:

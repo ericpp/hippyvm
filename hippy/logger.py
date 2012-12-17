@@ -21,7 +21,7 @@ class Logger(object):
         funcname = code.name
         filename = code.filename
         line = code.bc_mapping[frame.next_instr]
-        source = code.sourcelines[line - 1]
+        source = code.getline(line)
         tb.append((filename, funcname, line, source))
 
     def _log_traceback(self, filename, funcname, line, source):

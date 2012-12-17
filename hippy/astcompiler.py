@@ -187,7 +187,8 @@ class CompilerContext(object):
     def create_bytecode(self):
         return ByteCode("".join(self.data), self.consts[:], self.names[:],
                         self.varnames[:], self.functions, self.static_vars,
-                        self.filename, self.sourcelines, self.startlineno,
+                        self.filename, self.sourcelines, self.extra_offset,
+                        self.startlineno,
                         self.lineno_map, self.name, self.uses_GLOBALS,
                         is_main=self.is_main)
 

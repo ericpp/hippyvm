@@ -535,47 +535,118 @@ class TestCompiler(object):
 
     def test_global(self):
         self.check_compile("""
-        global $a;
+        global $a;    // equivalent to $a =& $GLOBALS["a"]
         """, """
         LOAD_VAR_NAME 0
         DECLARE_GLOBAL 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_constant(self):
         self.check_compile("""
         $x = c;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_NAMED_CONSTANT 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_dowhile(self):
         self.check_compile("""
         do { 1; } while (2);
         """, """
-        LOAD_CONST 0
+      0 LOAD_CONST 0
         DISCARD_TOP
         LOAD_CONST 1
         JUMP_BACK_IF_TRUE 0
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
-    def test_reference(self):
+    def test_reference_simple(self):
         self.check_compile("""
-        &$a;
+        $b; $a = &$b;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
-        REFERENCE
+        LOAD_FAST 0
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_FAST 0
+        STORE_FAST_REF 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
         """)
-        XXX # more cases!
+
+    def test_reference_left_array(self):
+        self.check_compile("""
+        $b; $a[5][6][7] =& $b;
+        """, """
+        LOAD_FAST 0
+        DISCARD_TOP
+        LOAD_CONST 0
+        LOAD_CONST 1
+        LOAD_CONST 2
+        LOAD_FAST 0
+        LOAD_FAST 1
+        FETCHITEM 4
+        FETCHITEM 4
+        STOREITEM_REF 4
+        STOREITEM 4
+        STOREITEM 4
+        STORE 4
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_reference_right_array(self):
+        self.check_compile("""
+        $b; $a =& $b[7][8];
+        """, """
+        LOAD_FAST 0
+        DISCARD_TOP
+        LOAD_CONST 0
+        LOAD_CONST 1
+        LOAD_NULL
+        LOAD_FAST 0
+        FETCHITEM 3
+        FETCHITEM 3
+        MAKE_REF 3
+        STOREITEM_REF 3
+        STOREITEM 3
+        STORE 3
+        STORE_FAST_REF 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_reference_both_left_right_array(self):
+        self.check_compile("""
+        $b+0; $a[0] =& $b[1];
+        """, """
+        LOAD_FAST 0
+        LOAD_CONST 0
+        BINARY_ADD
+        DISCARD_TOP
+        LOAD_CONST 0
+        LOAD_CONST 1
+        LOAD_NULL
+        LOAD_FAST 0
+        FETCHITEM 2
+        MAKE_REF 2
+        STOREITEM_REF 2
+        STORE 2
+        LOAD_FAST 1
+        STOREITEM_REF 2
+        STORE 2
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
 
     def test_break(self):
         self.check_compile("""

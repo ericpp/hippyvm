@@ -654,11 +654,12 @@ class TestCompiler(object):
            break;
         }
         """, """
-        LOAD_CONST 0
+      0 LOAD_CONST 0
         JUMP_IF_FALSE 12
         JUMP_FORWARD 12
         JUMP_BACKWARD 0
-        RETURN_NULL
+     12 LOAD_NULL
+        RETURN
         """)
 
     def test_continue(self):
@@ -667,11 +668,12 @@ class TestCompiler(object):
            continue;
         }
         """, """
-        LOAD_CONST 0
+      0 LOAD_CONST 0
         JUMP_IF_FALSE 12
         JUMP_BACKWARD 0
         JUMP_BACKWARD 0
-        RETURN_NULL
+     12 LOAD_NULL
+        RETURN
         """)
 
     def test_break_for(self):
@@ -682,13 +684,14 @@ class TestCompiler(object):
         """, """
         LOAD_CONST 0
         DISCARD_TOP
-        LOAD_CONST 0
+      4 LOAD_CONST 0
         JUMP_IF_FALSE 20
         JUMP_FORWARD 20
         LOAD_CONST 0
         DISCARD_TOP
         JUMP_BACKWARD 4
-        RETURN_NULL
+     20 LOAD_NULL
+        RETURN
         """)
 
     def test_break_do_while(self):
@@ -697,46 +700,52 @@ class TestCompiler(object):
            break;
         } while(1);
         """, """
-        JUMP_FORWARD 9
+      0 JUMP_FORWARD 9
         LOAD_CONST 0
         JUMP_BACK_IF_TRUE 0
-        RETURN_NULL
+      9 LOAD_NULL
+        RETURN
         """)
 
     def test_if_expr(self):
         self.check_compile("""
-        $a = 1 ? 0 : 1;
+        $a = 0 ? 5 : 10;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_CONST 0
-        JUMP_IF_FALSE 16
+        JUMP_IF_FALSE 12
         LOAD_CONST 1
-        JUMP_FORWARD 19
-        LOAD_CONST 0
-        STORE
+        JUMP_FORWARD 15
+     12 LOAD_CONST 2
+     15 LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_iterator_1(self):
-        self.check_compile("""
-        foreach ($a as $b) {$b;}
+        py.test.skip("XXX fix me: the syntax is "
+                     "'foreach (<expr> as <assignment_target>)'")
+        bc = self.check_compile("""
+        foreach ($a as $b) {$b+1;}
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         CREATE_ITER
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+      5 LOAD_FAST 1
         NEXT_VALUE_ITER 20
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+        LOAD_FAST 1
+        LOAD_CONST 0
+        BINARY_ADD
         DISCARD_TOP
         JUMP_BACK_IF_NOT_DONE 5
-        RETURN_NULL
+     20 LOAD_NULL
+        RETURN
         """)
+        assert bc.stackdepth == 3
 
     def test_iterator_2(self):
+        py.test.skip("XXX fix me: the syntax is "
+                     "'foreach (<expr> as <assignment_target>)'")
         self.check_compile("""
         foreach ($a as $b => $c) {$b;}
         """, """
@@ -762,7 +771,8 @@ class TestCompiler(object):
         LOAD_CONST 0
         CAST_ARRAY
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_dynamic_call(self):
@@ -770,18 +780,17 @@ class TestCompiler(object):
         $a = 'func';
         $a(3, 4);
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_NAME 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         CALL 2
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_lineno_mapping(self):
@@ -799,15 +808,16 @@ class TestCompiler(object):
         array(1=>$a);
         """, """
         LOAD_CONST 0
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         MAKE_HASH 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.stackdepth == 2
 
     def test_make_hash_const(self):
+        py.test.skip("XXX REDO")
         bc = self.check_compile("""
         array(1=>2, 5=>null, 6=>true, 4=>3.5, 'abc'=>'def',
               'h'=>false);
@@ -831,9 +841,10 @@ class TestCompiler(object):
         DISCARD_TOP
         LOAD_CONST 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
-        assert bc.bc_mapping == [1, 1, 1, 1, 2, 2, 2, 2, 2]
+        assert bc.bc_mapping == [1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
 
     def test_declare_static(self):
         self.check_compile("""
@@ -841,7 +852,8 @@ class TestCompiler(object):
         """, """
         LOAD_VAR_NAME 0
         DECLARE_STATIC 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_initialized_static(self):
@@ -850,19 +862,20 @@ class TestCompiler(object):
         """, """
         LOAD_VAR_NAME 0
         DECLARE_STATIC 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.static_vars.keys() == ['a']
 
     def test_print_exprs(self):
         bc = self.check_compile("$x = 3;", """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         LOAD_NAME 0
         ECHO 2
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """, print_exprs=True)
         c = bc.consts[0]
         assert isinstance(c, W_IntObject)

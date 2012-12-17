@@ -129,7 +129,7 @@ RULES = [
     ("heredoc start", 'T_START_HEREDOC'),
     ("heredoc end", 'T_END_HEREDOC'),
     #("\$\{", 'T_DOLLAR_OPEN_CURLY_BRACES'),
-    ("\{\$", 'T_CURLY_OPEN'),
+    # ("\{\$", 'T_CURLY_OPEN'),
     ("\:\:", 'T_PAAMAYIM_NEKUDOTAYIM'),
     ("namespace", 'T_NAMESPACE'),
     ("__NAMESPACE__", 'T_NS_C'),

@@ -681,7 +681,7 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
-        print "Block(%s)" % p
+        print p
         return Block(p[0])
 
     @pg.production("top_statement_list : top_statement_list top_statement")
@@ -716,7 +716,7 @@ class Parser(object):
                 return p[0]
             return p[0]
         if p[0] is None:
-            return p[1]
+            return [p[1]]
         return [p[0], p[1]]
 
     @pg.production("inner_statement_list : empty")
@@ -740,7 +740,7 @@ class Parser(object):
     def unticked_statement_inner_statement_list(self, p):
         if p[1] is None:
             return Block([], lineno=p[0].getsourcepos())
-        return Block([p[1]], lineno=p[0].getsourcepos())
+        return Block(p[1], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : ;")
     def unticked_statement_empty_statement(self, p):
@@ -1015,7 +1015,6 @@ class Parser(object):
 
     @pg.production("global_var_list : global_var_list , global_var")
     def global_var_list_global_var_list_global_var(self, p):
-        print p
         if isinstance(p[0], list):
             p[0].append(p[2])
             return p[0]
@@ -1224,7 +1223,7 @@ class Parser(object):
     @pg.production("non_empty_function_call_parameter_list : "
                    "variable")
     def non_empty_function_call_parameter_list_variable(self, p):
-        raise NotImplementedError(p)
+        return [p[0]]
 
     @pg.production("non_empty_function_call_parameter_list : "
                    "& w_variable")
@@ -1300,7 +1299,6 @@ class Parser(object):
     @pg.production("non_empty_parameter_list : "
                    "non_empty_parameter_list , optional_class_type T_VARIABLE")
     def nepl_nepl_optional_class_type_t_var(self, p):
-        print p
         lineno = p[3].getsourcepos()
         tvar = Argument(p[3].getstr()[1:], lineno=lineno)
 
@@ -1381,7 +1379,6 @@ class Parser(object):
     @pg.production("combined_scalar : T_ARRAY ( array_pair_list )")
     def combined_scalar_t_array_array_pair_list(self, p):
         pairs = p[2]
-        print pairs
         arr_pairs = []
         is_hash = False
         for k, v in pairs:
@@ -1410,7 +1407,6 @@ class Parser(object):
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , expr T_DOUBLE_ARROW expr")
     def non_empty_array_pair_list_list_expr_da_expr(self, p):
-        print p
         if p[0] is not None:
             p[0].append((p[2], p[4]))
             return p[0]

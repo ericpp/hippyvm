@@ -3,6 +3,7 @@ from hippy.objects.base import W_Root
 from hippy.error import InterpreterError
 from builtin import wrap
 
+
 def is_int(s):
     if not s:
         return False
@@ -234,8 +235,10 @@ def array_flip(space, w_arr):
             w_key, w_val = itr.next_item(space)
             if w_key.tp not in (space.tp_int, space.tp_str) or\
                     w_val.tp not in(space.tp_int, space.tp_str):
-                pairs.append((w_key, w_val))
-            pairs.append((w_val, w_key))
+                space.ec.report_warning("Warning: array_flip(): Can only flip "
+                                        "STRING and INTEGER values! in %s on line %d\n")
+            else:
+                pairs.append((w_val, w_key))
     return space.new_array_from_pairs(pairs)
 
 
@@ -315,6 +318,7 @@ def _pad_array(space, w_arr, pairs, idx):
                 idx += 1
     return idx
 
+
 @wrap(['space', W_Root, W_Root, W_Root])
 def array_pad(space, w_arr, w_size, w_value):
     pairs = []
@@ -335,33 +339,35 @@ def array_pad(space, w_arr, w_size, w_value):
         _pad_array(space, w_arr, pairs, idx)
     return space.new_array_from_pairs(pairs)
 
-# @wrap(['space', 'args_w'])
-# def array_reverse(space, args_w):
-#     keep_keys = False
-#     if len(args_w) < 1:
-#         raise InterpreterError("function need at least one argument array")
-#     if args_w[0].tp != space.tp_array:
-#         raise InterpreterError("function need at least one argument array")
-#     if len(args_w) == 2:
-#         # if args_w[1].tp != space.w_bool:
-#         #     raise InterpreterError("array_reverse() expects parameter"
-#         #                            " 2 to be boolean")
-#         keep_keys = space.is_true(args_w[1])
-#     w_arr = args_w[0]
-#     keys = []
-#     vals = []
-#     idx = space.arraylen(w_arr) - 1
-#     with space.iter(w_arr) as itr:
-#         while not itr.done():
-#             w_key, w_val = itr.next_item(space)
-#             if keep_keys:
-#                 keys.append(w_key)
-#             else:
-#                 keys.append(space.newint(idx))
-#                 idx -= 1
-#             vals.append(w_val)
-#     pairs = zip(reversed(keys), reversed(vals))
-#     return space.new_array_from_pairs(pairs)
+
+@wrap(['space', 'args_w'])
+def array_reverse(space, args_w):
+    keep_keys = False
+    if len(args_w) < 1:
+        raise InterpreterError("function need at least one argument array")
+    if args_w[0].tp != space.w_array:
+        raise InterpreterError("function need at least one argument array")
+    if len(args_w) == 2:
+        # if args_w[1].tp != space.w_bool:
+        #     raise InterpreterError("array_reverse() expects parameter"
+        #                            " 2 to be boolean")
+        keep_keys = space.is_true(args_w[1])
+    w_arr = args_w[0]
+    keys = []
+    vals = []
+    idx = space.arraylen(w_arr) - 1
+    with space.iter(w_arr) as itr:
+        while not itr.done():
+            w_key, w_val = itr.next_item(space)
+            if keep_keys:
+                keys.append(w_key)
+            else:
+                keys.append(space.newint(idx))
+                idx -= 1
+            vals.append(w_val)
+    pairs = zip(reversed(keys), reversed(vals))
+    return space.new_array_from_pairs(pairs)
+
 
 @wrap(['space', W_Root])
 def array_sum(space, w_arr):

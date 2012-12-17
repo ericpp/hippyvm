@@ -103,6 +103,9 @@ class W_IntObject(W_Root):
     def var_dump(self, space, indent, recursion):
         space.ec.writestr('%sint(%d)\n' % (indent, self.intval))
 
+    def abs(self, space):
+        return abs(self.intval)
+
 for _name in BINOP_LIST:
     if hasattr(W_IntObject, _name):
         continue

@@ -28,7 +28,7 @@ def new_weakref(obj):
 
 class W_StrInterpolation(W_Root):
     _immutable_fields_ = ['strings[*]', 'vars[*]']
-    
+
     def __init__(self, strings, vars):
         self.strings = strings
         self.vars = vars
@@ -408,21 +408,32 @@ class W_StringObject(W_Root):
         # scan string for first non . non number
         i = 0
         is_float = False
+        is_hex = False
         if not s:
             return space.wrap(0)
         if s[0] == '-':
             i += 1
         while i < len(s):
-            if (s[i] < '0' or s[i] > '9'):
-                if s[i] == '.':
-                    is_float = True
+            if is_hex:
+                if s[i].lower() in ['a', 'b', 'c', 'd', 'e', 'f'] or s[i].isdigit():
+                    i += 1
                 else:
                     break
-            i += 1
+            else:
+                if (s[i] < '0' or s[i] > '9'):
+                    if s[i] == '.' or s[i].lower() == 'e':
+                        is_float = True
+                    elif s[i] == 'x' and s[i - 1] == '0':
+                        is_hex = True
+                    else:
+                        break
+                i += 1
         if i == 0:
             return space.wrap(0)
         if is_float:
             return space.newfloat(float(s[:i]))
+        if is_hex:
+            return space.newint(int(s[:i], 16))
         return space.newint(int(s[:i]))
 
     def is_valid_number(self, space):
@@ -491,3 +502,6 @@ class W_StringObject(W_Root):
     def var_dump(self, space, indent, recursion):
         s = self.str_w(space)
         space.ec.writestr('%sstring(%d) "%s"\n' % (indent, len(s), s))
+
+    def abs(space, self):
+        return self.as_number(space).abs(space)

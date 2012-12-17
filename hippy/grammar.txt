@@ -7,6 +7,9 @@ UNARYONLY: "!";
 ADD_OPER: "[%\|\.]";
 FLOAT: "-?[0-9]*\.[0-9]*";
 DECIMAL: "-?0|[1-9][0-9]*";
+OCTAL: "-?0[0-9]*";
+HEXADECIMAL: "-?0x([0-9]*|[a-fA-F])*";
+EXPONENT: "(-?[0-9]*\.[0-9]*|-?0|[1-9][0-9]*)e(\+|\-)?[1-9][0-9]*";
 ASSIGN_OPER: "=|(\+=)|(-=)|(\*=)|(/=)|(<<=)|(>>=)|(\.=)";
 MULT_OPER: "[/*]|(<<)|(>>)"; # XXX is this the right order even?
 COMP_OPER: "(===)|(==)|(>=)|(<=)|>|<|(!==)|(!=)";
@@ -41,7 +44,7 @@ primary: ARRAY "(" ")" | ARRAY "(" array_constr ","? ")" |
          function_call | atom INOP | "(" expr ")" | NAME |
          atom ("[" expr "]")+ | atom | INOP atom |
          PLUSMINUS primary | UNARYONLY primary | "(" ARRAY ")" primary;
-atom: FLOAT | DECIMAL | STR | "$" atom | "$" "{" expr "}" | NAME | REFERENCE atom;
+atom: FLOAT | DECIMAL | HEXADECIMAL | OCTAL | EXPONENT | STR | "$" atom | "$" "{" expr "}" | NAME | REFERENCE atom;
 
 array_pair: expr ("=>" expr)?;
 array_constr: array_pair ("," array_pair)*;

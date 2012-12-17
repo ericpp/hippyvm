@@ -5,7 +5,7 @@ from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
 
 class W_FloatObject(W_Root):
     _immutable_fields_ = ['floatval']
-    
+
     def __init__(self, floatval):
         self.floatval = floatval
 
@@ -44,7 +44,7 @@ class W_FloatObject(W_Root):
         return self
 
     def uminus(self, space):
-        return space.newfloat(-self.floatval) 
+        return space.newfloat(-self.floatval)
 
     def uplusplus(self, space):
         return space.newfloat(self.floatval + 1)
@@ -81,6 +81,10 @@ class W_FloatObject(W_Root):
 
     def var_dump(self, space, indent, recursion):
         space.ec.writestr('%sfloat(%s)\n' % (indent, self._as_str()))
+
+    def abs(self, space):
+        return abs(self.floatval)
+
 
 for _name in BINOP_LIST:
     if hasattr(W_FloatObject, _name):

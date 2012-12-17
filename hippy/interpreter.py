@@ -1,7 +1,7 @@
 
 from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES,\
-     BINOP_LIST, RETURN, INPLACE_LIST
+     BINOP_LIST, RETURN
 from hippy.builtin import setup_builtin_functions
 from hippy import array_funcs     # site-effect of registering functions
 from hippy.error import InterpreterError
@@ -484,14 +484,6 @@ class Interpreter(object):
         frame.push(W_Reference(w_var))
         return pc
 
-    def INPLACE_CONCAT(self, bytecode, frame, space, arg, arg2, pc):
-        w_value = frame.pop()
-        w_var = frame.pop()
-        frame.store_var(space, w_var,
-                        space.inplace_concat(w_var, w_value))
-        frame.push(w_var)
-        return pc
-
     def CREATE_ITER(self, bytecode, frame, space, arg, arg2, pc):
         w_arr = frame.pop()
         frame.push(space.create_iter(space.as_array(w_arr)))
@@ -535,22 +527,7 @@ def _new_binop(name):
     BINARY.func_name = new_name
     return new_name, BINARY
 
-def _new_inplace_op(name):
-    def INPLACE(self, bytecode, frame, space, arg, arg2, pc):
-        w_value = frame.pop()
-        w_var = frame.pop()
-        w_newval = getattr(space, name)(w_var, w_value)
-        frame.store_var(space, w_var, w_newval)
-        frame.push(w_newval)
-        return pc
-    new_name = 'INPLACE_' + name.upper()
-    INPLACE.func_name = new_name
-    return new_name, INPLACE
-
 for _name in BINOP_LIST:
     setattr(Interpreter, *_new_binop(_name))
-
-for _name in INPLACE_LIST:
-    setattr(Interpreter, *_new_inplace_op(_name))
 
 unrolling_bc = unrolling_iterable(enumerate(BYTECODE_NAMES))

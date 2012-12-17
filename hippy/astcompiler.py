@@ -376,6 +376,39 @@ class __extend__(Assignment):
         self.var.compile_assignment_fetch_ref(ctx, depth)
         self.var.compile_assignment_store_ref(ctx, depth)
 
+class __extend__(InplaceOp):
+    # In-place operators: "$a += 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 42      [ 42 ]
+    # LOAD_FAST $a       [ 42, Ref$a ]
+    # DUP_TOP_AND_NTH 1  [ 42, Ref$a, Ref$a, 42 ]
+    # BINARY_ADD         [ 42, Ref$a, $a+42 ]
+    # POP_AND_POKE_NTH 1 [ $a+42, Ref$a ]
+    # STORE 1            [ $a+42 ]
+    #
+    # "$a[5] += 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_CONST 42      [ 5, 42 ]
+    # LOAD_FAST $a       [ 5, 42, Ref$a ]
+    # FETCHITEM 2        [ 5, 42, Ref$a, OldValue$a[5] ]
+    # DUP_TOP_AND_NTH 2  [ 5, 42, Ref$a, OldValue$a[5], OldValue$a[5], 42 ]
+    # BINARY_ADD         [ 5, 42, Ref$a, OldValue$a[5], old+42 ]
+    # POP_AND_POKE_NTH 2 [ 5, old+42, Ref$a, OldValue$a[5] ]
+    # STOREITEM 2        [ NewArray1, old+42, Ref$a ]
+    # STORE 2            [ old+42 ]
+    #
+    def compile(self, ctx):
+        assert self.op.endswith('=')
+        op = self.op[:-1]
+        depth = self.var.compile_assignment_prepare(ctx)
+        self.expr.compile(ctx)
+        self.var.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.DUP_TOP_AND_NTH, depth + 1)
+        ctx.emit(consts.BIN_OP_TO_BC[op])
+        ctx.emit(consts.POP_AND_POKE_NTH, depth + 1)
+        self.var.compile_assignment_store(ctx, depth)
+
 class __extend__(ConstantInt):
     def compile(self, ctx):
         ctx.emit(consts.LOAD_CONST, ctx.create_int_const(self.intval))
@@ -411,12 +444,6 @@ class __extend__(BinOp):
         self.left.compile(ctx)
         self.right.compile(ctx)
         ctx.emit(consts.BIN_OP_TO_BC[self.op])
-
-class __extend__(InplaceOp):
-    def compile(self, ctx):
-        self.var.compile(ctx)
-        self.expr.compile(ctx)
-        ctx.emit(consts.INPLACE_OP_TO_BC[self.op])
 
 class __extend__(Variable):
     def compile(self, ctx):

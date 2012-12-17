@@ -522,11 +522,15 @@ class TestCompiler(object):
         self.check_compile("""
         $a += 2;
         """, """
-        LOAD_FAST 0
         LOAD_CONST 0
-        INPLACE_ADD
+        LOAD_FAST 0
+        DUP_TOP_AND_NTH 1
+        BINARY_ADD
+        POP_AND_POKE_NTH 1
+        STORE 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_global(self):

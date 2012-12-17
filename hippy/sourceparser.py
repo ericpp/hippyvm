@@ -55,7 +55,7 @@ class Stmt(Node):
         return "Stmt(%s)" % self.expr.repr()
 
 class Assignment(Node):
-    """ Simple assignment to statically named variable
+    """ Assignment, both for '=' and '=&'.
     """
     def __init__(self, var, expr):
         self.var = var
@@ -65,6 +65,8 @@ class Assignment(Node):
         return "Assign(%s, %s)" % (self.var.repr(), self.expr.repr())
 
 class InplaceOp(Node):
+    """ In-place assignment operators: '+=' and friends.
+    """
     def __init__(self, op, var, expr):
         self.op = op
         self.var = var

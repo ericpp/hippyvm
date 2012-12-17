@@ -7,7 +7,7 @@ from hippy import array_funcs     # site-effect of registering functions
 from hippy.error import InterpreterError
 from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
-#from hippy.objects.strobject import W_StrInterpolation
+from hippy.objects.interpolate import W_StrInterpolation
 from hippy.objects.arrayiter import BaseArrayIterator
 #from hippy.objects.arrayobject import new_globals_wrapper
 from pypy.rlib.objectmodel import we_are_translated

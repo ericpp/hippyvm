@@ -55,7 +55,8 @@ var_assign: "$" NAME | REFERENCE "$" NAME;
 arg_assign: "$" NAME (ASSIGN_OPER expr)? | REFERENCE "$" NAME;
 arg_decls: arg_assign "," arg_decls | arg_assign;
 
-assign_source: expr | REFERENCE "$" atom ("[" expr? "]")*;
+assign_source: expr | REFERENCE "$" atom ("[" expr? "]")+ |
+                      REFERENCE "$" atom;
 
 assignment: "$" atom ("[" expr? "]")+ ASSIGN_OPER assign_source |
             "$" atom ASSIGN_OPER assign_source;

@@ -394,6 +394,24 @@ class TestCompiler(object):
         RETURN
         """)
 
+    def test_getitem_2_reference(self):
+        self.check_compile("$a = & $b[0][0];", """
+        LOAD_CONST 0
+        LOAD_CONST 0
+        LOAD_NULL
+        LOAD_FAST 0
+        FETCHITEM 3
+        FETCHITEM 3
+        MAKE_REF 3
+        STOREITEM_REF 3
+        STOREITEM 3
+        STORE 3
+        STORE_FAST_REF 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
     def test_function_decl(self):
         py.test.skip("XXX FIXME")
 

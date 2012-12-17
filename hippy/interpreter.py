@@ -453,13 +453,6 @@ class Interpreter(object):
         frame.push(space.new_array_from_pairs(args_w))
         return pc
 
-    def APPEND(self, bytecode, frame, space, arg, arg2, pc):
-        w_val = frame.pop()
-        arr = frame.pop()
-        frame.push(w_val)
-        space.append(arr, w_val)
-        return pc
-
     @jit.unroll_safe
     def DECLARE_GLOBAL(self, bytecode, frame, space, arg, arg2, pc):
         for i in range(arg):

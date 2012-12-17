@@ -361,6 +361,26 @@ class TestCompiler(object):
         RETURN
         """)
 
+    def test_setitem_2(self):
+        self.check_compile("$x[$y-1][$z+5] = 1;", """
+        LOAD_FAST 0
+        LOAD_CONST 0
+        BINARY_SUB     # $y-1
+        LOAD_FAST 1
+        LOAD_CONST 1
+        BINARY_ADD     # $z+5
+        LOAD_CONST 0   # 1
+        LOAD_FAST 2    # $x
+        FETCHITEM 3
+        FETCHITEM 3
+        STOREITEM 3
+        STOREITEM 3
+        STORE 3
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
     def test_array_constructor(self):
         self.check_compile("$x = array(1, 2, $y);", """
         LOAD_CONST 0
@@ -417,12 +437,32 @@ class TestCompiler(object):
         self.check_compile("""
         $a[] = 3;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_NULL
         LOAD_CONST 0
-        APPEND
+        LOAD_FAST 0
+        FETCHITEM_APPEND 2
+        STOREITEM 2
+        STORE 2
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_append_reference(self):
+        self.check_compile("""
+        $a = &$b[];
+        """, """
+        LOAD_NULL            # NULL
+        LOAD_NULL            # NULL, NULL
+        LOAD_FAST 0          # NULL, NULL, Ref$b
+        FETCHITEM_APPEND 2   # idx, NULL, Ref$b, Array$b[idx]
+        MAKE_REF 2           # idx, NewRef, Ref$b, Array$b[idx]
+        STOREITEM_REF 2      # NewArray, NewRef, Ref$b, Array$b[idx]
+        STORE 2              # NewRef
+        STORE_FAST_REF 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
         """)
 
     def test_and(self):

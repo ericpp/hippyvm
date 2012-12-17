@@ -39,7 +39,7 @@ additive: multitive PLUSMINUS additive | multitive ADD_OPER additive |
 multitive: primary MULT_OPER multitive | primary;
 primary: ARRAY "(" ")" | ARRAY "(" array_constr ","? ")" |
          function_call | atom INOP | "(" expr ")" | NAME |
-         atom ("[" expr "]")+ | atom | INOP atom |
+         atom ("[" expr? "]")+ | atom | INOP atom |
          PLUSMINUS primary | UNARYONLY primary | "(" ARRAY ")" primary;
 atom: FLOAT | DECIMAL | STR | "$" atom | "$" "{" expr "}" | NAME;
 
@@ -55,8 +55,7 @@ var_assign: "$" NAME | REFERENCE "$" NAME;
 arg_assign: "$" NAME (ASSIGN_OPER expr)? | REFERENCE "$" NAME;
 arg_decls: arg_assign "," arg_decls | arg_assign;
 
-assign_source: expr | REFERENCE "$" atom ("[" expr "]")*;
+assign_source: expr | REFERENCE "$" atom ("[" expr? "]")*;
 
-assignment: "$" atom ("[" expr "]")+ ASSIGN_OPER assign_source |
-            "$" atom ("[" expr "]")* "[" "]" ASSIGN_OPER assign_source |
+assignment: "$" atom ("[" expr? "]")+ ASSIGN_OPER assign_source |
             "$" atom ASSIGN_OPER assign_source;

@@ -310,6 +310,18 @@ class __extend__(Assignment):
     # Above, it leaves 42 untouched, which (although not used by STORE)
     # is the result of the whole expression.
     #
+    # Append: "$a[5][] = 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_NULL          [ 5, NULL ]
+    # LOAD_CONST 42      [ 5, NULL, 42 ]
+    # LOAD_FAST $a       [ 5, NULL, 42, Ref$a ]
+    # FETCHITEM 3        [ 5, NULL, 42, Ref$a, Array$a[5] ]
+    # FETCHITEM_APPEND 3 [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
+    # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
+    # STORE 3            [ 42 ]
+    #
     def _compile_assign_regular(self, ctx):
         depth = self.var.compile_assignment_prepare(ctx)
         self.expr.compile(ctx)
@@ -554,6 +566,22 @@ class __extend__(GetItem):
         ctx.emit(consts.MAKE_REF, depth + 1)
         self.compile_assignment_store_ref(ctx, depth)
 
+class __extend__(Append):
+    # note: this is a subclass of GetItem, so inherits all methods not
+    # explicitly overridden.
+    def compile(self, ctx):
+        self.node.compile(ctx)
+        ctx.emit(consts.GETITEM_APPEND)
+
+    def compile_assignment_prepare(self, ctx):
+        depth = self.node.compile_assignment_prepare(ctx)
+        ctx.emit(consts.LOAD_NULL)
+        return depth + 1
+
+    def compile_assignment_fetch(self, ctx, depth):
+        self.node.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.FETCHITEM_APPEND, depth + 1)
+
 class __extend__(Array):
     def compile(self, ctx):
         for item in self.initializers:
@@ -583,12 +611,6 @@ class __extend__(FunctionDecl):
                 assert False
             new_context.create_var_name(name) # make sure those are in vars
         ctx.register_function(self.name, args, new_context.create_bytecode())
-
-class __extend__(Append):
-    def compile(self, ctx):
-        self.node.compile(ctx)
-        self.expr.compile(ctx)
-        ctx.emit(consts.APPEND)
 
 class __extend__(And):
     def compile(self, ctx):

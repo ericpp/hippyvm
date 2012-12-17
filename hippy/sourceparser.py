@@ -290,13 +290,13 @@ class Hash(Node):
     def repr(self):
         return 'Hash([%s])' % ', '.join(["(%s => %s)" % (k.repr(), v.repr()) for k, v in self.initializers])
 
-class Append(Node):
-    def __init__(self, node, expr):
+class Append(GetItem):
+    def __init__(self, node):
         self.node = node
-        self.expr = expr
+        # no self.item
 
     def repr(self):
-        return 'Append(%s, %s)' % (self.node.repr(), self.expr.repr())
+        return 'Append(%s)' % (self.node.repr(),)
 
 class And(Node):
     def __init__(self, left, right):
@@ -697,14 +697,19 @@ class Transformer(object):
         raise NotImplementedError
 
     def parse_getitem(self, atom, rest, is_func_arg=False):
-        #if is_func_arg:
-        #    cls = GetItemReference
-        #else:
-        cls = GetItem
-        if len(rest.children) == 3:
-            return cls(atom, self.visit_expr(rest.children[1]))
-        atom = cls(atom, self.visit_expr(rest.children[1]))
-        return self.parse_getitem(atom, rest.children[3], is_func_arg=is_func_arg)
+        maybe_expr = rest.children[1]
+        if maybe_expr.symbol.endswith(']'):
+            atom = Append(atom)
+            tail = rest.children[2:]
+        else:
+            assert 'maybe' in maybe_expr.symbol
+            assert len(maybe_expr.children) == 1
+            atom = GetItem(atom, self.visit_expr(maybe_expr.children[0]))
+            tail = rest.children[3:]
+        if not tail:
+            return atom
+        assert len(tail) == 1
+        return self.parse_getitem(atom, tail[0], is_func_arg=is_func_arg)
 
     def visit_atom(self, node):
         symname = node.children[0].symbol
@@ -742,18 +747,7 @@ class Transformer(object):
                                  self.visit_expr(node.children[4]))
             return Assignment(getitem,
                               self.visit_expr(node.children[4]))
-        elif len(node.children) == 6:
-            XXX   # ??
-            if node.children[4].additional_info != '=':
-                raise ParserError
-            return Append(Variable(self.visit_atom(node.children[1])),
-                          self.visit_expr(node.children[5]))
-        elif len(node.children) == 7:
-            atom = Variable(self.visit_atom(node.children[1]))
-            getitem = self.parse_getitem(atom, node.children[2])
-            if node.children[5].additional_info != '=':
-                raise ParserError
-            return Append(getitem, self.visit_expr(node.children[6]))
+        assert len(node.children) == 4
         if node.children[2].additional_info == '=':
             return Assignment(Variable(self.visit_atom(node.children[1])),
                               self.visit_expr(node.children[3]))

@@ -154,7 +154,8 @@ def isset(space, w_obj):
 @wrap(['space', 'args_w'])
 def printf(space, args_w):
     if len(args_w) == 0:
-        raise InterpreterError("Not enough arguments for printf")
+        space.ec.notice("printf(): expects at least 1 parameter, 0 given")
+        return space.w_False
     no = 1
     format = space.str_w(args_w[0])
     # improve the estimate
@@ -164,22 +165,28 @@ def printf(space, args_w):
         c = format[i]
         if c == '%':
             if i == len(format) - 1:
-                raise InterpreterError("wrong % in string format")
+                space.ec.hippy_warn("printf(): wrong % in string format")
+                i += 1
+                continue
             next = format[i + 1]
             if next == '%':
                 builder.append('%')
             elif next == 'd':
                 if no == len(args_w):
-                    raise InterpreterError("not enough args to process")
+                    space.ec.warn("printf(): Too few arguments")
+                    return space.w_False
                 builder.append(str(space.int_w(args_w[no])))
             else:
-                raise InterpreterError("Unknown format char")
+                space.ec.hippy_warn("printf(): Unknown format char " + next)
             i += 2
         else:
             builder.append(c)
             i += 1
-    space.ec.interpreter.echo(space, space.newstrconst(builder.build()))
-    return space.w_Null
+    if no < len(args_w):
+        space.ec.hippy_warn("printf(): Too many arguments passed")
+    s = builder.build()
+    space.ec.interpreter.echo(space, space.newstrconst(s))
+    return space.wrap(len(s))
 
 @wrap(['space', W_Root])
 def is_array(space, w_obj):

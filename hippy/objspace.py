@@ -25,6 +25,12 @@ class ExecutionContext(object):
     def notice(self, msg):
         self.interpreter.logger.notice(self.interpreter, msg)
 
+    def warn(self, msg):
+        self.interpreter.logger.warn(self.interpreter, msg)
+
+    def hippy_warn(self, msg):
+        self.interpreter.logger.hippy_warn(self.interpreter, msg)
+
     def fatal(self, msg):
         self.interpreter.logger.fatal(self.interpreter, msg)        
 

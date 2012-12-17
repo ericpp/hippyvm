@@ -38,3 +38,10 @@ class Logger(object):
 
     def notice(self, interpreter, msg):
         self.log(interpreter, "NOTICE", msg)
+
+    def warn(self, interpreter, msg):
+        self.log(interpreter, "WARNING", msg)
+
+    def hippy_warn(self, interpreter, msg):
+        self.log(interpreter, "HIPPY WARNING", msg)
+        

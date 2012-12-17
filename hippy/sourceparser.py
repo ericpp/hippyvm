@@ -778,6 +778,7 @@ class Parser(object):
     @pg.production("expr_without_variable : expr / expr")
     @pg.production("expr_without_variable : expr > expr")
     @pg.production("expr_without_variable : expr < expr")
+    @pg.production("expr_without_variable : expr . expr")
     def expr_oper_expr(self, p):
         return BinOp(p[1].getstr(), p[0], p[2], lineno=p[1].getsourcepos())
 

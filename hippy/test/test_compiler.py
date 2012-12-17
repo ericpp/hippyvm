@@ -487,46 +487,42 @@ class TestCompiler(object):
         self.check_compile("""
         $a && $b;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         IS_TRUE
-        JUMP_IF_FALSE_NO_POP 14
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+        JUMP_IF_FALSE_NO_POP 12
+        LOAD_FAST 1
         IS_TRUE
         ROT_AND_DISCARD
-        DISCARD_TOP
-        RETURN_NULL
+     12 DISCARD_TOP
+        LOAD_NULL
+        RETURN
         """)
 
     def test_and_or(self):
         self.check_compile("""
         $a && $b || $c;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         IS_TRUE
-        JUMP_IF_FALSE_NO_POP 24
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+        JUMP_IF_FALSE_NO_POP 21
+        LOAD_FAST 1
         IS_TRUE
-        JUMP_IF_TRUE_NO_POP 22
-        LOAD_VAR_NAME 2
-        LOAD_VAR
+        JUMP_IF_TRUE_NO_POP 19
+        LOAD_FAST 2
         IS_TRUE
         ROT_AND_DISCARD
-        IS_TRUE
+     19 IS_TRUE
         ROT_AND_DISCARD
-        DISCARD_TOP
-        RETURN_NULL
+     21 DISCARD_TOP
+        LOAD_NULL
+        RETURN
         """)
 
     def test_inplace_add(self):
         self.check_compile("""
         $a += 2;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         LOAD_CONST 0
         INPLACE_ADD
         DISCARD_TOP

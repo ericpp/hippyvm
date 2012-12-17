@@ -456,7 +456,8 @@ class Reference(Node):
 
 
 class Break(Node):
-    def __init__(self, lineno=0):
+    def __init__(self, levels=1, lineno=0):
+        self.levels = levels
         self.lineno = lineno
 
     def repr(self):
@@ -464,7 +465,8 @@ class Break(Node):
 
 
 class Continue(Node):
-    def __init__(self, lineno=0):
+    def __init__(self, levels=1, lineno=0):
+        self.levels = levels
         self.lineno = lineno
 
     def repr(self):
@@ -681,7 +683,6 @@ class Parser(object):
 
     @pg.production("main : top_statement_list")
     def main_top_statement_list(self, p):
-        print p
         return Block(p[0])
 
     @pg.production("top_statement_list : top_statement_list top_statement")
@@ -945,8 +946,7 @@ class Parser(object):
 
     @pg.production("unticked_statement : T_BREAK expr ;")
     def unticked_statement_t_break_expr(self, p):
-        raise NotImplementedError(p)
-        # return Break(lineno=p[0].getsourcepos())
+        return Break(levels=p[1], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : T_BREAK ;")
     def unticked_statement_t_break(self, p):
@@ -954,8 +954,7 @@ class Parser(object):
 
     @pg.production("unticked_statement : T_CONTINUE expr ;")
     def unticked_statement_t_continue_expr(self, p):
-        raise NotImplementedError(p)
-        # return Continue(lineno=p[0].getsourcepos())
+        return Continue(levels=p[1], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : T_CONTINUE ;")
     def unticked_statement_t_continue(self, p):

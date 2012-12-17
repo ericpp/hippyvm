@@ -10,7 +10,8 @@ class ByteCode(object):
     _immutable_fields_ = ['code', 'consts[*]', 'varnames[*]',
                           'functions[*]', 'names[*]', 'stackdepth',
                           'var_to_pos', 'names_to_pos', 'user_functions']
-    
+    _marker = None
+
     def __init__(self, code, consts, names, varnames, user_functions,
                  static_vars,
                  startlineno=0, bc_mapping=None, name='<main>'):

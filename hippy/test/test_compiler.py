@@ -36,27 +36,30 @@ class TestCompiler(object):
     def compare(self, bc, expected):
         expected = bc_preprocess(expected)
         bcdump = bc.dump()
-        if bcdump != expected:
-            bcdump = bcdump.splitlines()
-            expected = expected.splitlines()
-            maxlen = max(len(expected), len(bcdump))
-            expected += ['' * (maxlen - len(expected))]
-            bcdump += ['' * (maxlen - len(bcdump))]
-            print "Got:" + " "*16 + "Expected:"
-            for bcline, expline in zip(bcdump, expected):
-                print "%s%s* %s" % (bcline, " " * (20 - len(bcline)),
-                                    expline)
-                if bcline != expline:
-                    assert False
+        bcdump = bcdump.splitlines()
+        expected = expected.splitlines()
+        maxlen = max(len(expected), len(bcdump))
+        expected += ['' * (maxlen - len(expected))]
+        bcdump += ['' * (maxlen - len(bcdump))]
+        print "Got:" + " "*26 + "Expected:"
+        for bcline, expline in zip(bcdump, expected):
+            print "%s%s %s" % (bcline, " " * (30 - len(bcline)),
+                                expline)
+            bcline = bcline.split()
+            expline = expline.split()
+            # we fail if the line we got is different than the expected line,
+            # possibly after removing the first word (the index number)
+            if bcline != expline and bcline[1:] != expline:
+                assert False
 
     def test_assign(self):
         bc = self.check_compile("$x = 3;", """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         c = bc.consts[0]
         assert isinstance(c, W_IntObject)
@@ -66,40 +69,41 @@ class TestCompiler(object):
     def test_addition(self):
         self.check_compile("3 + $x;", """
         LOAD_CONST 0
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         BINARY_ADD
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_substraction(self):
         self.check_compile("3 - $x;", """
         LOAD_CONST 0
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         BINARY_SUB
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_mul(self):
         self.check_compile("3 - $x * 3;", """
         LOAD_CONST 0
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         LOAD_CONST 0
         BINARY_MUL
         BINARY_SUB
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_echo(self):
         bc = self.check_compile("echo 3;", """
         LOAD_CONST 0
         ECHO 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.stackdepth == 1
 
@@ -107,20 +111,20 @@ class TestCompiler(object):
         bc = self.check_compile("echo 3.5;", """
         LOAD_CONST 0
         ECHO 1
-        RETURN_NULL""")
+        LOAD_NULL
+        RETURN""")
         assert bc.consts[0].floatval == 3.5
 
     def test_unary_minus(self):
         self.check_compile("-$x;+$y;", """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         UNARY_MINUS
         DISCARD_TOP
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+        LOAD_FAST 1
         UNARY_PLUS
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_float_const_cache(self):
@@ -129,7 +133,8 @@ class TestCompiler(object):
         LOAD_CONST 0
         BINARY_ADD
         ECHO 1
-        RETURN_NULL""")
+        LOAD_NULL
+        RETURN""")
         assert bc.consts[0].floatval == 3.5
 
     def test_if(self):
@@ -140,16 +145,15 @@ class TestCompiler(object):
         echo $x;
         """, """
         LOAD_CONST 0
-        JUMP_IF_FALSE 15
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        JUMP_IF_FALSE 16
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+     16 LOAD_FAST 0
         ECHO 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.stackdepth == 2
 
@@ -163,26 +167,24 @@ class TestCompiler(object):
         echo $x;
         """, """
         LOAD_CONST 0
-        JUMP_IF_FALSE 18
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        JUMP_IF_FALSE 19
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        JUMP_FORWARD 31
-        LOAD_VAR_NAME 0
-        LOAD_VAR
-        LOAD_CONST 0
+        JUMP_FORWARD 33
+     19 LOAD_CONST 0
         LOAD_CONST 1
         BINARY_ADD
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+     33 LOAD_FAST 0
         ECHO 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
-        assert bc.stackdepth == 3
+        assert bc.stackdepth == 2
 
     def test_ifelseif(self):
         self.check_compile("""
@@ -194,23 +196,22 @@ class TestCompiler(object):
         echo $x;
         """, """
         LOAD_CONST 0
-        JUMP_IF_FALSE 15
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        JUMP_IF_FALSE 19
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
+        JUMP_FORWARD 35
+     19 LOAD_CONST 1
+        JUMP_IF_FALSE 35
         LOAD_CONST 1
-        JUMP_IF_FALSE 30
-        LOAD_VAR_NAME 0
-        LOAD_VAR
-        LOAD_CONST 1
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+     35 LOAD_FAST 0
         ECHO 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_ifelseif_else(self):
@@ -225,29 +226,27 @@ class TestCompiler(object):
         echo $x;
         """, """
         LOAD_CONST 0
-        JUMP_IF_FALSE 15
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        JUMP_IF_FALSE 19
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
+        JUMP_FORWARD 48
+     19 LOAD_CONST 1
+        JUMP_IF_FALSE 38
         LOAD_CONST 1
-        JUMP_IF_FALSE 33
-        LOAD_VAR_NAME 0
-        LOAD_VAR
-        LOAD_CONST 1
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        JUMP_FORWARD 42
-        LOAD_VAR_NAME 0
-        LOAD_VAR
-        LOAD_CONST 2
-        STORE
+        JUMP_FORWARD 48
+     38 LOAD_CONST 2
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+     48 LOAD_FAST 0
         ECHO 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_while(self):
@@ -256,34 +255,32 @@ class TestCompiler(object):
         while ($i < 3)
           $i++;
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+     10 LOAD_FAST 0
         LOAD_CONST 1
         BINARY_LT
-        JUMP_IF_FALSE 29
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        JUMP_IF_FALSE 28
+        LOAD_FAST 0
         SUFFIX_PLUSPLUS
         DISCARD_TOP
-        JUMP_BACKWARD 9
-        RETURN_NULL
+        JUMP_BACKWARD 10
+     28 LOAD_NULL
+        RETURN
         """)
 
     def test_function_call(self):
         bc = self.check_compile("""
         cos($i);
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         LOAD_NAME 0
         CALL 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.stackdepth == 2
 
@@ -291,26 +288,23 @@ class TestCompiler(object):
         self.check_compile("""
         for ($i = 0; $i < 10; $i++) {$k++;}
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_CONST 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+     10 LOAD_FAST 0
         LOAD_CONST 1
         BINARY_LT
-        JUMP_IF_FALSE 35
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+        JUMP_IF_FALSE 33
+        LOAD_FAST 1
         SUFFIX_PLUSPLUS
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         SUFFIX_PLUSPLUS
         DISCARD_TOP
-        JUMP_BACKWARD 9
-        RETURN_NULL
+        JUMP_BACKWARD 10
+     33 LOAD_NULL
+        RETURN
         """)
 
     def test_long_for(self):
@@ -323,64 +317,61 @@ class TestCompiler(object):
 
     def test_constant_str(self):
         self.check_compile('$x = "abc"; echo $x . $x;', """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_NAME 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
+        LOAD_FAST 0
         BINARY_CONCAT
         ECHO 1
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_str_consts_preprocessed(self):
         bc = self.check_compile('$x = "\\n"; $y = "$x";', """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_NAME 0
-        STORE
+        LOAD_FAST 0
+        STORE 1
         DISCARD_TOP
-        LOAD_VAR_NAME 1
-        LOAD_VAR
         LOAD_CONST_INTERPOLATE 0
-        STORE
+        LOAD_FAST 1
+        STORE 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.names[0] == '\n';
 
-    def test_getitem(self):
+    def test_getitem_setitem(self):
         self.check_compile("$x[3]; $x[3] = 1;", """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_FAST 0
         LOAD_CONST 0
         GETITEM
         DISCARD_TOP
-        LOAD_VAR_NAME 0
-        LOAD_VAR
         LOAD_CONST 0
-        ITEMREFERENCE
         LOAD_CONST 1
-        STORE
+        LOAD_FAST 0
+        FETCHITEM 2
+        STOREITEM 2
+        STORE 2
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_array_constructor(self):
-        self.check_compile("$x = array(1, 2, 3);", """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        self.check_compile("$x = array(1, 2, $y);", """
         LOAD_CONST 0
         LOAD_CONST 1
-        LOAD_CONST 2
+        LOAD_FAST 0
         ARRAY 3
-        STORE
+        LOAD_FAST 1
+        STORE 1
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
 
     def test_function_decl(self):
@@ -410,13 +401,16 @@ class TestCompiler(object):
     def test_function_decl_2(self):
         bc = self.check_compile("""
         function f() { return; }""", """
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.user_functions.keys() == ['f']
         assert bc.user_functions['f'].args == []
         self.compare(bc.user_functions['f'].bytecode, """
-        RETURN_NULL
-        RETURN_NULL # unreachable
+        LOAD_NULL
+        RETURN
+        LOAD_NULL   # unreachable
+        RETURN
         """)
 
     def test_append(self):
@@ -514,8 +508,6 @@ class TestCompiler(object):
         """)
 
     def test_reference(self):
-        py.test.skip("XXX FIXME")
-
         self.check_compile("""
         &$a;
         """, """
@@ -525,6 +517,7 @@ class TestCompiler(object):
         DISCARD_TOP
         RETURN_NULL
         """)
+        XXX # more cases!
 
     def test_break(self):
         self.check_compile("""

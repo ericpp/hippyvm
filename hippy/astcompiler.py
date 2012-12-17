@@ -458,9 +458,12 @@ class __extend__(If):
         ctx.emit(consts.JUMP_IF_FALSE, 0)
         pos = ctx.get_pos()
         self.body.compile(ctx)
+        jump_after_list = []
 
         if self.elseiflist:
             for elem in self.elseiflist:
+                ctx.emit(consts.JUMP_FORWARD, 0)
+                jump_after_list.append(ctx.get_pos())
                 ctx.patch_pos(pos)
                 elem.cond.compile(ctx)
                 ctx.emit(consts.JUMP_IF_FALSE, 0)
@@ -469,13 +472,12 @@ class __extend__(If):
 
         if self.elseclause is not None:
             ctx.emit(consts.JUMP_FORWARD, 0)
-            elsepos = ctx.get_pos()
-        else:
-            elsepos = -1 # help the annotator
+            jump_after_list.append(ctx.get_pos())
         ctx.patch_pos(pos)
         if self.elseclause is not None:
             self.elseclause.compile(ctx)
-            ctx.patch_pos(elsepos)
+        for pos in jump_after_list:
+            ctx.patch_pos(pos)
 
 class __extend__(While):
     def compile(self, ctx):

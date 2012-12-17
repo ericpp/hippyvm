@@ -231,7 +231,7 @@ class Interpreter(object):
     def STORE(self, bytecode, frame, space, arg, arg2, pc):
         w_val = frame.peek_nth(arg)
         w_var = frame.pop()
-        w_keep = frame.peek()
+        w_keep = frame.peek().deref()
         frame.pop_n(arg)
         frame.store_var(space, w_var, w_val)
         frame.push(w_keep)

@@ -1340,9 +1340,9 @@ class TestInterpreter(BaseTestInterpreter):
         output = self.run('''
         $F = "xxx"; $f = 0; $s = "x";
         $F[$s[0]=$f] = ++$f;      // changes $F[0]
-        echo $F;
+        echo $F . $s;
         ''')
-        assert self.space.str_w(output[0]) == "1xx"
+        assert self.space.str_w(output[0]) == "1xx0"
 
     def test_evaluation_order_array(self):
         output = self.run('''

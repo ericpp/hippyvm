@@ -247,6 +247,17 @@ class Interpreter(object):
         frame.push(w_v)
         return pc
 
+    def DUP_TOP_AND_NTH(self, bytecode, frame, space, arg, arg2, pc):
+        w_v = frame.peek_nth(arg)
+        frame.push(frame.peek())
+        frame.push(w_v)
+        return pc
+
+    def POP_AND_POKE_NTH(self, bytecode, frame, space, arg, arg2, pc):
+        w_v = frame.pop()
+        frame.poke_nth(arg, w_v)
+        return pc
+
     def LOAD_NAME(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(space.newstrconst(bytecode.names[arg]))
         return pc

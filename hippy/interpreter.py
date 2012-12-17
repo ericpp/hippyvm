@@ -191,54 +191,57 @@ class Interpreter(object):
 
     def interpret(self, space, frame, bytecode):
         bytecode.setup_functions(self, space)
-        pc = 0
         self.enter(frame)
         try:
-            while True:
-                driver.jit_merge_point(bytecode=bytecode, frame=frame,
-                                       pc=pc, self=self)
-                code = bytecode.code
-                next_instr = ord(code[pc])
-                frame.next_instr = pc
-                # XXX change this to range check
-                numargs = BYTECODE_NUM_ARGS[next_instr]
-                pc += 1
-                if numargs == 1:
-                    arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
-                    arg2 = 0
-                    pc += 2
-                elif numargs == 2:
-                    arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
-                    arg2 = ord(code[pc + 2]) + (ord(code[pc + 3]) << 8)
-                    pc += 4
-                else:
-                    arg = 0 # don't make it negative
-                    arg2 = 0
-                assert arg >= 0
-                assert arg2 >= 0
-                if next_instr == RETURN_NULL:
-                    assert frame.stackpos == 0
-                    frame.clean(bytecode)
-                    return None
-                elif next_instr == RETURN:
-                    assert frame.stackpos == 1
-                    res = frame.stack[0].deref()
-                    frame.clean(bytecode)
-                    return res
-                if we_are_translated():
-                    for i, name in unrolling_bc:
-                        if i == next_instr:
-                            pc = getattr(self, name)(bytecode, frame, space,
-                                                     arg, arg2, pc)
-                            break
-                    else:
-                        assert False
-                else:
-                    #print get_printable_location(pc, bytecode, self)
-                    pc = getattr(self, BYTECODE_NAMES[next_instr])(bytecode,
-                                 frame, space, arg, arg2, pc)
+            return self._interpret(space, frame, bytecode)
         finally:
             self.leave(frame)
+
+    def _interpret(self, space, frame, bytecode):
+        pc = 0
+        while True:
+            driver.jit_merge_point(bytecode=bytecode, frame=frame,
+                                   pc=pc, self=self)
+            code = bytecode.code
+            next_instr = ord(code[pc])
+            frame.next_instr = pc
+            # XXX change this to range check
+            numargs = BYTECODE_NUM_ARGS[next_instr]
+            pc += 1
+            if numargs == 1:
+                arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
+                arg2 = 0
+                pc += 2
+            elif numargs == 2:
+                arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
+                arg2 = ord(code[pc + 2]) + (ord(code[pc + 3]) << 8)
+                pc += 4
+            else:
+                arg = 0 # don't make it negative
+                arg2 = 0
+            assert arg >= 0
+            assert arg2 >= 0
+            if next_instr == RETURN_NULL:
+                assert frame.stackpos == 0
+                frame.clean(bytecode)
+                return None
+            elif next_instr == RETURN:
+                assert frame.stackpos == 1
+                res = frame.stack[0].deref()
+                frame.clean(bytecode)
+                return res
+            if we_are_translated():
+                for i, name in unrolling_bc:
+                    if i == next_instr:
+                        pc = getattr(self, name)(bytecode, frame, space,
+                                                 arg, arg2, pc)
+                        break
+                else:
+                    assert False
+            else:
+                #print get_printable_location(pc, bytecode, self)
+                pc = getattr(self, BYTECODE_NAMES[next_instr])(bytecode,
+                             frame, space, arg, arg2, pc)
 
     def enter(self, frame):
         frame.f_backref = self.topframeref

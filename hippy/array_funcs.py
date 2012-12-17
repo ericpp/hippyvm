@@ -235,8 +235,8 @@ def array_flip(space, w_arr):
             w_key, w_val = itr.next_item(space)
             if w_key.tp not in (space.tp_int, space.tp_str) or\
                     w_val.tp not in(space.tp_int, space.tp_str):
-                space.ec.report_warning("Warning: array_flip(): Can only flip "
-                                        "STRING and INTEGER values! in %s on line %d\n")
+                space.ec.warn("Warning: array_flip(): Can only flip "
+                              "STRING and INTEGER values!")
             else:
                 pairs.append((w_val, w_key))
     return space.new_array_from_pairs(pairs)

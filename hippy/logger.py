@@ -30,7 +30,7 @@ class Logger(object):
         os.write(2, "  " + source + "\n")
 
     def _log(self, level, msg):
-        print >>sys.stderr, level, msg
+        os.write(2, level + " " + msg + "\n")
     
     def fatal(self, interpreter, msg):
         self.log(interpreter, "FATAL", msg)

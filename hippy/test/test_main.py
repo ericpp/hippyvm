@@ -1,17 +1,19 @@
 
-import py
+import py, re
 from hippy.main import entry_point
 
 class TestMain(object):
     def setup_method(self, meth):
         self.tmpname = meth.im_func.func_name
 
-    def run(self, code, capfd):
+    def run(self, code, capfd, expected_err=False):
         tmpdir = py.path.local.make_numbered_dir('hippy')
         phpfile = tmpdir.join(self.tmpname + '.php')
         phpfile.write(code)        
         r = entry_point(['hippy', str(phpfile)])
         out, err = capfd.readouterr()
+        if expected_err:
+            return out, err
         assert not r
         assert not err
         return out
@@ -48,3 +50,15 @@ class TestMain(object):
         ?>
         ''', capfd)
         assert out == '191817161514131211109876543210'
+
+    def test_traceback(self, capfd):
+        out, err = self.run('''
+        <?php
+        f();
+        ?>
+        ''', capfd, expected_err=True)
+        errlines = err.splitlines()
+        assert re.match('In function <main>, file .*test_traceback.php, '
+                        'line 3', errlines[0])
+        assert re.match(' *f\(\); *', errlines[1])
+        assert errlines[2] == 'FATAL undefined function f'

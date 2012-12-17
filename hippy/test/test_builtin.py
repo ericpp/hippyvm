@@ -81,9 +81,25 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_printf_1(self):
         output = self.run('''
-        printf("a %d b\\n", 12);
+        echo printf("a %d b\\n", 12);
         ''')
+        assert self.space.int_w(output[1]) == len('a 12 b\n')
         assert self.space.str_w(output[0]) == 'a 12 b\n'
+        output = self.run('''
+        echo printf();
+        printf("%d");
+        printf("%a");
+        printf("%");
+        printf("", 1, 2, 3);
+        ''')
+        assert not output[0].boolval
+        assert self.interp.logger.msgs == [
+            ('NOTICE', 'printf(): expects at least 1 parameter, 0 given'),
+            ('WARNING', 'printf(): Too few arguments'),
+            ('HIPPY WARNING', 'printf(): Unknown format char a'),
+            ('HIPPY WARNING', 'printf(): wrong % in string format'),
+            ('HIPPY WARNING', 'printf(): Too many arguments passed')
+        ]
 
     def test_count(self):
         output = self.run('''
@@ -267,10 +283,19 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_defined(self):
         output = self.run('''
-        define("abc", 3);
+        echo define("abc", 3);
         echo defined("abc"), defined("def");
         ''')
-        assert [i.boolval for i in output] == [True, False]
+        assert [i.boolval for i in output] == [True, True, False]
+        output = self.run('''
+        define("abc", 3);
+        echo define("abc", 31);
+        echo abc;
+        ''')
+        assert not output[0].boolval
+        assert self.space.int_w(output[1]) == 3
+        assert self.interp.logger.msgs == [('NOTICE',
+                                            'Constant abc already defined')]
 
     def test_array_diff_key(self):
         output = self.run('''

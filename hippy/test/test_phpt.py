@@ -1,6 +1,7 @@
 
 import py
 import os
+import fnmatch
 from hippy.interpreter import Interpreter, Frame
 from hippy.objspace import ObjSpace
 from hippy.sourceparser import parse
@@ -35,10 +36,12 @@ def parse_phpt(fname):
                 continue
             if l.startswith('?>'):
                 continue
+            if l.startswith('==='):
+                continue
             src.append(l)
         if st == 1:
             exp.append(l)
-    return (tname, " ".join(src), exp)
+    return (tname, " ".join(src), [l for l in exp if l.strip()])
 
 
 class MockInterpreter(Interpreter):
@@ -80,7 +83,8 @@ TEST_DIR = os.path.dirname(__file__)
 PHPT_DIR = os.path.join(TEST_DIR, 'phpts')
 PHPT_FILES = []
 for root, dirs, files in os.walk(PHPT_DIR):
-    PHPT_FILES = [os.path.join(root, f) for f in files]
+    PHPT_FILES = [os.path.join(root, f) for f in files
+                  if fnmatch.fnmatch(f, '*.phpt')]
 
 
 class TestPHPTSuite(BaseTestInterpreter):
@@ -94,4 +98,4 @@ class TestPHPTSuite(BaseTestInterpreter):
         for i, line in enumerate(output):
             if not isinstance(line, str):
                 line = self.space.str_w(line)
-                assert line == exp[i]
+                assert line.strip() == exp[i].strip()

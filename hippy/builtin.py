@@ -95,6 +95,10 @@ def sin(space, f):
 def pow(space, f, f2):
     return space.wrap(math.pow(f, f2))
 
+@wrap(['space', W_Root], name="abs")
+def _abs(space, obj):
+    return space.wrap(space.abs(obj))
+
 @wrap(['space', W_Root])
 def strlen(space, w_obj):
     return space.wrap(space.strlen(space.as_string(w_obj)))

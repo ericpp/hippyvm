@@ -416,6 +416,77 @@ class TestParser(object):
         assert r == Block([StaticDecl([InitializedVariable('x',
                                                         ConstantInt(3))], 1)])
 
+    def test_octal(self):
+        r = parse('''
+        027;
+        ''')
+        assert r == Block([Stmt(ConstantInt(23), 1)])
+
+    def test_ill_octal(self):
+        r = parse('''
+        02792;
+        ''')
+        assert r == Block([Stmt(ConstantInt(23), 1)])
+
+    def test_more_ill_octal(self):
+        r = parse('''
+        -07182;
+        ''')
+        assert r == Block([Stmt(ConstantInt(-57), 1)])
+
+    def test_hex(self):
+        r = parse('''
+        0xff;
+        ''')
+        assert r == Block([Stmt(ConstantInt(255), 1)])
+
+    def test_hex2(self):
+        r = parse('''
+        0xff33ff33f23f;
+        ''')
+        assert r == Block([Stmt(ConstantInt(int('0xff33ff33f23f', 16)), 1)])
+
+    def test_exponent(self):
+        r = parse('''
+        10e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10e1')), 1)])
+
+    def test_exponent_float(self):
+        r = parse('''
+        10.3e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10.3e1')), 1)])
+
+    def test_exponent_float_plus(self):
+        r = parse('''
+        10.3e+1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10.3e+1')), 1)])
+
+    def test_exponent_float_minus(self):
+        r = parse('''
+        10.3e-1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(float('10.3e-1')), 1)])
+
+    def test_exponent_simple(self):
+        r = parse('''
+        2.345e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(23.45), 1)])
+
+    def test_exponent_simple_minus(self):
+        r = parse('''
+        -2.345e1;
+        ''')
+        assert r == Block([Stmt(ConstantFloat(-23.45), 1)])
+
+    def test_minus_octal(self):
+        r = parse('''
+        -027;
+        ''')
+        assert r == Block([Stmt(ConstantInt(-23), 1)])
 
     def test_bug_1(self):
         r = parse('$i < $iter and $Tr;')

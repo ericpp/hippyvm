@@ -28,3 +28,6 @@ class W_BoolObject(W_Root):
         else:
             s = '%sbool(false)\n' % indent
         space.ec.writestr(s)
+
+    def abs(self, space):
+        return abs(self.boolval)

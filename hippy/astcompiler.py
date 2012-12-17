@@ -689,9 +689,15 @@ class __extend__(NamedConstant):
     def wrap(self, space):
         if self.name == 'null':
             return space.w_Null
+        if self.name == 'NULL':
+            return space.w_Null
         elif self.name == 'true':
             return space.w_True
         elif self.name == 'false':
+            return space.w_False
+        elif self.name == 'TRUE':
+            return space.w_True
+        elif self.name == 'FALSE':
             return space.w_False
         else:
             assert False

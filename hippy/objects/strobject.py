@@ -125,6 +125,8 @@ class W_StringObject(W_Root):
 ##        s = self.str_w(space)
 ##        space.ec.writestr('%sstring(%d) "%s"\n' % (indent, len(s), s))
 
+##    def abs(space, self):
+##        return self.as_number(space).abs(space)
 
 
 class StringMixin(object):

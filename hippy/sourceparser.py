@@ -791,6 +791,12 @@ class Parser(object):
     def expr_and_expr(self, p):
         return And(p[0], p[2], lineno=p[1].getsourcepos())
 
+    @pg.production("expr_without_variable : expr ? expr : expr")
+    def expr_if_expr_or_expr(self, p):
+        return If(p[0],
+                  p[2],
+                  elseclause=p[4],
+                  lineno=p[1].getsourcepos())
 
     @pg.production("expr_without_variable : variable T_PLUS_EQUAL expr")
     def expr_variable_inplaceop_expr(self, p):
@@ -937,6 +943,24 @@ class Parser(object):
     def unticked_statement_t_echo_expr_list(self, p):
         return Echo(p[1], lineno=p[0].getsourcepos())
 
+    @pg.production("unticked_statement : T_BREAK expr ;")
+    def unticked_statement_t_break_expr(self, p):
+        raise NotImplementedError(p)
+        # return Break(lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_BREAK ;")
+    def unticked_statement_t_break(self, p):
+        return Break(lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_CONTINUE expr ;")
+    def unticked_statement_t_continue_expr(self, p):
+        raise NotImplementedError(p)
+        # return Continue(lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_CONTINUE ;")
+    def unticked_statement_t_continue(self, p):
+        return Continue(lineno=p[0].getsourcepos())
+
     @pg.production("unticked_statement : T_DO statement "
                    "T_WHILE ( expr ) ;")
     def unticked_statement_t_do(self, p):
@@ -975,7 +999,9 @@ class Parser(object):
                    "( variable T_AS foreach_variable "
                    "foreach_optional_arg ) foreach_statement")
     def unticked_statement_t_for_each_variable(self, p):
-        return ForEach(p[2], p[4], p[7], lineno=p[0].getsourcepos())
+        if p[5] is None:
+            return ForEach(p[2], p[4], p[7], lineno=p[0].getsourcepos())
+        return ForEachKey(p[2], p[4], p[5], p[7], lineno=p[0].getsourcepos())
 
     @pg.production("foreach_variable : variable")
     def foreach_variable_variable(self, p):
@@ -987,7 +1013,7 @@ class Parser(object):
 
     @pg.production("foreach_optional_arg : T_DOUBLE_ARROW foreach_variable")
     def foreach_opt_arg_t_d_arrow_foreach_var(self, p):
-        raise NotImplementedError(p)
+        return p[1]
 
     @pg.production("foreach_optional_arg : empty")
     def foreach_opt_arg_empty(self, p):

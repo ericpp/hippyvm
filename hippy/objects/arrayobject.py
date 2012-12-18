@@ -48,14 +48,15 @@ class W_ArrayObject(W_Root):
         else:
             return self._getitem_str(as_str)
 
-    def setitem(self, space, w_index, w_value):
+    def setitem(self, space, w_arg, w_value):
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
             return self._setitem_int(as_int, w_value)
         else:
             return self._setitem_str(as_str, w_value)
 
-    def setitem_ref(self, space, w_index, w_ref):
+    def setitem_ref(self, space, w_arg, w_ref):
+        #xx
         assert isinstance(w_ref, W_Reference)
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
@@ -88,6 +89,9 @@ class W_ArrayObject(W_Root):
     def arraylen(self):
         raise NotImplementedError("abstract")
 
+    def as_dict(self):
+        raise NotImplementedError("abstract")
+
 
 class W_ListArrayObject(W_ArrayObject):
 
@@ -100,6 +104,12 @@ class W_ListArrayObject(W_ArrayObject):
 
     def arraylen(self):
         return len(self.lst_w)
+
+    def as_dict(self):
+        d = {}
+        for i in range(len(self.lst_w)):
+            d[str(i)] = self.lst_w[i]
+        return d
 
     def _getitem_int(self, index):
         if index >= 0:
@@ -132,12 +142,14 @@ class W_ListArrayObject(W_ArrayObject):
             assert 0 <= index < len(lst_w)   # XXX
             w_old = lst_w[index]
             if isinstance(w_old, W_Reference):
+                #xx
                 w_old.w_value = w_value
             else:
                 lst_w[index] = w_value
         return res
 
     def _setitemref_int(self, index, w_ref):
+        #xx
         res = self.as_unique_arraylist()
         lst_w = res.lst_w
         if index == len(lst_w):
@@ -155,6 +167,9 @@ class W_DictArrayObject(W_ArrayObject):
     def __init__(self, space, dct_w):
         self.space = space
         self.dct_w = dct_w
+
+    def as_dict(self):
+        return self.dct_w
 
     def as_unique_arraydict(self):
         return W_DictArrayObject(self.space, self.dct_w.copy())
@@ -176,15 +191,18 @@ class W_DictArrayObject(W_ArrayObject):
         dct_w = res.dct_w
         w_old = dct_w.get(key, None)
         if isinstance(w_old, W_Reference):   # and is not None
+            #xx
             w_old.w_value = w_value
         else:
             dct_w[key] = w_value
         return res
 
     def _setitemref_int(self, index, w_ref):
+        #xx
         return self._setitemref_str(str(index), w_ref)
 
     def _setitemref_str(self, key, w_ref):
+        #xx
         res = self.as_unique_arraydict()
         res.dct_w[key] = w_ref
         return res

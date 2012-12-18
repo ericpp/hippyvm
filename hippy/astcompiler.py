@@ -597,8 +597,7 @@ class __extend__(Append):
     # note: this is a subclass of GetItem, so inherits all methods not
     # explicitly overridden.
     def compile(self, ctx):
-        self.node.compile(ctx)
-        ctx.emit(consts.GETITEM_APPEND)
+        raise CompilerError("cannot use '[]' when reading items")
 
     def compile_assignment_prepare(self, ctx):
         depth = self.node.compile_assignment_prepare(ctx)

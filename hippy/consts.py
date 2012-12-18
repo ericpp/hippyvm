@@ -58,7 +58,6 @@ BYTECODES = [
     ('RETURN', 0, -1),
     ('CALL', 1, ARGVAL1),
     ('GETITEM', 0, -1),
-    ('GETITEM_APPEND', 0, 0),
     ('FETCHITEM', 1, +1),
     ('FETCHITEM_APPEND', 1, +1),
     ('STOREITEM', 1, -1),

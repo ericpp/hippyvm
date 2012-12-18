@@ -247,13 +247,11 @@ class ObjSpace(object):
         return True
 
     def new_array_from_list(self, lst_w):
-        return W_ArrayObject.new_array_from_list(lst_w)
+        return W_ArrayObject.new_array_from_list(self, lst_w)
 
-    def new_array_from_pairs(self, lst_w):
-        return new_array_from_pairs(self, lst_w)
-
-    def new_map_from_pairs(self, lst_w):
-        return new_map_from_pairs(self, lst_w)
+    def new_array_from_dict(self, dict_w):
+        # 'dict_w' is a dictionary {"rpython string": W_Objects}
+        return W_ArrayObject.new_array_from_dict(self, dict_w)
 
     def iter(self, w_arr):
         return ObjSpaceWithIter(self, w_arr)

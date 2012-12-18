@@ -111,3 +111,11 @@ def convert_string_to_number(space, s):
         return space.newfloat(value_float), fully_processed
     else:
         return space.newint(value_int), fully_processed
+
+def force_float_to_int_in_any_way(f):
+    """This force a float to be converted to an int.
+    Any float is fine.  The result is truncated."""
+    try:
+        return intmask(int(f))
+    except OverflowError:
+        return 0

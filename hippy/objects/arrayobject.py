@@ -19,6 +19,10 @@ class W_ArrayObject(W_Root):
     def new_array_from_list(lst_w):
         return W_ListArrayObject(lst_w)
 
+    def append_index(self, space):
+        # XXX bogus
+        return space.newint(self.arraylen())
+
 
 class ArrayMixin(object):
     """This is a mixin to provide a more efficient implementation for
@@ -33,8 +37,10 @@ class ArrayMixin(object):
 
     def getitem(self, space, w_arg):
         index = space.int_w(w_arg)
-        assert 0 <= index < self.arraylen()
-        return self.w_item(index)
+        if 0 <= index < self.arraylen():
+            return self.w_item(index)
+        else:
+            return space.w_Null
 
     def setitem(self, space, w_index, w_value):
         res = self.as_unique_arraylist()
@@ -49,11 +55,6 @@ class ArrayMixin(object):
     def as_unique_arraylist(self):
         lst_w = [self.w_item(i) for i in range(self.arraylen())]
         return W_ListArrayObject(lst_w)
-
-    def append(self, space, w_item):
-        res = self.as_unique_arraylist()
-        res._lst_w.append(w_item)    # XXX bogus
-        return res
 
 
 class W_ListArrayObject(ArrayMixin, W_ArrayObject):
@@ -82,17 +83,23 @@ class W_ListArrayObject(ArrayMixin, W_ArrayObject):
 
     def _inplace_setitem(self, space, w_arg, w_value):
         index = space.int_w(w_arg)
-        assert 0 <= index < self.arraylen()
         lst_w = self._lst_w
-        w_old = lst_w[index]
-        if isinstance(w_old, W_Reference):
-            w_old.w_value = w_value
+        if index == self.arraylen():
+            lst_w.append(w_value)
         else:
-            lst_w[index] = w_value
+            assert 0 <= index < self.arraylen()
+            w_old = lst_w[index]
+            if isinstance(w_old, W_Reference):
+                w_old.w_value = w_value
+            else:
+                lst_w[index] = w_value
 
     def _inplace_setitem_ref(self, space, w_arg, w_ref):
         index = space.int_w(w_arg)
-        assert 0 <= index < self.arraylen()
         lst_w = self._lst_w
         assert isinstance(w_ref, W_Reference)
-        lst_w[index] = w_ref
+        if index == self.arraylen():
+            lst_w.append(w_ref)
+        else:
+            assert 0 <= index < self.arraylen()
+            lst_w[index] = w_ref

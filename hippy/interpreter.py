@@ -386,6 +386,13 @@ class Interpreter(object):
         frame.push(space.getitem(w_obj, w_item))
         return pc
 
+    def FETCHITEM_APPEND(self, bytecode, frame, space, arg, arg2, pc):
+        w_obj = frame.peek()
+        w_item = space.append_index(w_obj)
+        frame.poke_nth(arg, w_item)
+        frame.push(space.getitem(w_obj, w_item))
+        return pc
+
     def STOREITEM(self, bytecode, frame, space, arg, arg2, pc):
         # strange stack effects, matching the usage of this opcode
         w_value = frame.peek_nth(arg)

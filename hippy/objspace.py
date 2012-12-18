@@ -195,7 +195,7 @@ class ObjSpace(object):
         return w_obj.deref().strlen()
 
     def arraylen(self, w_obj):
-        return w_obj.deref().arraylen(self)
+        return w_obj.deref().arraylen()
 
     def slice(self, w_arr, start, end, keep_keys):
         res_arr = []
@@ -223,8 +223,8 @@ class ObjSpace(object):
             return self.new_array_from_pairs(res_arr)
         return self.new_array_from_list([v for _, v in res_arr])
 
-    def append(self, w_arr, w_val):
-        w_arr.deref().append(self, w_val.deref_for_store())
+    def append_index(self, w_arr):
+        return w_arr.deref().append_index(self)
 
     def getchar(self, w_obj):
         # get first character

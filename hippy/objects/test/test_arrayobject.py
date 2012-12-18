@@ -82,3 +82,13 @@ class TestArrayObject(BaseTestInterpreter):
         w_array = space.new_array_from_list([w_x])
         w_array = space.setitem(w_array, space.newstr("z"), w_y)
         assert w_array.as_dict() == {"0": w_x, "z": w_y}
+        assert w_array._has_string_keys
+
+    def test_setitem_numeric_str(self):
+        space = self.space
+        w_x = space.newstr("x")
+        w_y = space.newstr("y")
+        w_array = space.new_array_from_list([w_x])
+        w_array = space.setitem(w_array, space.newstr("0"), w_y)
+        assert w_array.as_dict() == {"0": w_y}
+        assert not w_array._has_string_keys

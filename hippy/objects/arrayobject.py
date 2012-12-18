@@ -56,7 +56,6 @@ class W_ArrayObject(W_Root):
             return self._setitem_str(as_str, w_value)
 
     def setitem_ref(self, space, w_arg, w_ref):
-        #xx
         assert isinstance(w_ref, W_Reference)
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
@@ -74,16 +73,10 @@ class W_ArrayObject(W_Root):
     def _getitem_str(self, key):
         raise NotImplementedError("abstract")
 
-    def _setitem_int(self, index, w_value):
+    def _setitem_int(self, index, w_value, ref=False):
         raise NotImplementedError("abstract")
 
-    def _setitem_str(self, key, w_value):
-        raise NotImplementedError("abstract")
-
-    def _setitemref_int(self, index, w_ref):
-        raise NotImplementedError("abstract")
-
-    def _setitemref_str(self, key, w_ref):
+    def _setitem_str(self, key, w_value, ref=False):
         raise NotImplementedError("abstract")
 
     def arraylen(self):
@@ -94,6 +87,7 @@ class W_ArrayObject(W_Root):
 
 
 class W_ListArrayObject(W_ArrayObject):
+    _has_string_keys = False
 
     def __init__(self, space, lst_w):
         self.space = space
@@ -119,7 +113,7 @@ class W_ListArrayObject(W_ArrayObject):
                 pass
         return self.space.w_Null
 
-    def _getitem_str(self, key):
+    def _convert_str_to_int(self, key):
         # try to convert 'key' from a string to an int, but carefully:
         # we must not remove any space, make sure the result does not
         # overflows, etc.  In general we have to make sure that the
@@ -128,47 +122,53 @@ class W_ListArrayObject(W_ArrayObject):
         try:
             i = int(key)     # XXX can be done a bit more efficiently
         except (ValueError, OverflowError):
-            return self.space.w_Null
+            raise ValueError
         if str(i) != key:
+            raise ValueError
+        return i
+
+    def _getitem_str(self, key):
+        try:
+            i = self._convert_str_to_int(key)
+        except ValueError:
             return self.space.w_Null
         return self._getitem_int(i)
 
-    def _setitem_int(self, index, w_value):
+    def _setitem_int(self, index, w_value, ref=False):
         if index < 0 or index > self.arraylen():
-            return self._setitem_str(str(index), w_value)
+            return self._setitem_str_fresh(str(index), w_value)
         res = self.as_unique_arraylist()
         lst_w = res.lst_w
         if index == len(lst_w):
             lst_w.append(w_value)
         else:
-            w_old = lst_w[index]
+            if not ref:
+                w_old = lst_w[index]
+            else:
+                w_old = None
             if isinstance(w_old, W_Reference):
-                #xx
                 w_old.w_value = w_value
             else:
                 lst_w[index] = w_value
         return res
 
-    def _setitem_str(self, key, w_value):
-        d = self.as_dict()
+    def _setitem_str(self, key, w_value, ref=False):
+        try:
+            i = self._convert_str_to_int(key)
+        except ValueError:
+            return self._setitem_str_fresh(key, w_value)
+        else:
+            return self._setitem_int(i, w_value, ref)
+
+    def _setitem_str_fresh(self, key, w_value):
+        d = self.as_dict()    # make a fresh dictionary
+        assert key not in d
         d[key] = w_value
         return W_DictArrayObject(self.space, d)
 
-    def _setitemref_int(self, index, w_ref):
-        #xx
-        res = self.as_unique_arraylist()
-        lst_w = res.lst_w
-        if index == len(lst_w):
-            lst_w.append(w_ref)
-        else:
-            assert 0 <= index < len(lst_w)
-            lst_w[index] = w_ref
-        return res
-
-    # XXX missing _setitem_str and _setitemref_str
-
 
 class W_DictArrayObject(W_ArrayObject):
+    _has_string_keys = True
 
     def __init__(self, space, dct_w):
         self.space = space
@@ -189,26 +189,18 @@ class W_DictArrayObject(W_ArrayObject):
     def _getitem_str(self, key):
         return self.dct_w.get(key, self.space.w_Null)
 
-    def _setitem_int(self, index, w_value):
-        return self._setitem_str(str(index), w_value)
+    def _setitem_int(self, index, w_value, ref=False):
+        return self._setitem_str(str(index), w_value, ref)
 
-    def _setitem_str(self, key, w_value):
+    def _setitem_str(self, key, w_value, ref=False):
         res = self.as_unique_arraydict()
         dct_w = res.dct_w
-        w_old = dct_w.get(key, None)
+        if not ref:
+            w_old = dct_w.get(key, None)
+        else:
+            w_old = None
         if isinstance(w_old, W_Reference):   # and is not None
-            #xx
             w_old.w_value = w_value
         else:
             dct_w[key] = w_value
-        return res
-
-    def _setitemref_int(self, index, w_ref):
-        #xx
-        return self._setitemref_str(str(index), w_ref)
-
-    def _setitemref_str(self, key, w_ref):
-        #xx
-        res = self.as_unique_arraydict()
-        res.dct_w[key] = w_ref
         return res

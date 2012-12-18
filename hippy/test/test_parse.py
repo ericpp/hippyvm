@@ -6,8 +6,8 @@ from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
      GetItem, SetItem, Array, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
-     UninitializedVariable, ConstantAppend
-
+     UninitializedVariable, ConstantAppend, Break, Continue
+from rply import ParsingError
 
 class TestParser(object):
 
@@ -654,3 +654,23 @@ class TestParser(object):
                                           Variable(ConstantStr("iter"))),
                                     Variable(ConstantStr("Tr"))))])
         assert r == expected
+
+    def test_break_with_expr(self):
+        raises(ParsingError, lambda : parse("break 1+1;"))
+        raises(ParsingError, lambda : parse("break 1+$x;"))
+        raises(ParsingError, lambda : parse("break $x;"))
+        raises(ParsingError, lambda : parse("break -1;"))
+        r = parse('''
+        break 1;
+        ''')
+        assert r == Block([Break(levels=ConstantInt(1, 1), lineno=1)])
+
+    def test_continue_with_expr(self):
+        raises(ParsingError, lambda : parse("continue 1+1;"))
+        raises(ParsingError, lambda : parse("continue 1+$x;"))
+        raises(ParsingError, lambda : parse("continue $x;"))
+        raises(ParsingError, lambda : parse("continue -1;"))
+        r = parse('''
+        break 1;
+        ''')
+        assert r == Block([Continue(levels=ConstantInt(1, 1), lineno=1)])

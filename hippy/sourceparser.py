@@ -1,5 +1,6 @@
 import sys
 from rply import ParserGenerator
+from rply import ParsingError
 from hippy.lexer import RULES
 from hippy.lexer import PRECEDENCES
 from hippy.lexer import Lexer
@@ -461,7 +462,7 @@ class Break(Node):
         self.lineno = lineno
 
     def repr(self):
-        return "Break"
+        return "Break(%s, %d)" % (self.levels, self.lineno)
 
 
 class Continue(Node):
@@ -668,7 +669,7 @@ def convert_string_to_number(s):
     else:
         return value_int, fully_processed
 
-class Parser(object):
+class SourceParser(object):
 
     def __init__(self, lexer):
         self.lexer = lexer
@@ -1045,6 +1046,9 @@ class Parser(object):
 
     @pg.production("unticked_statement : T_BREAK expr ;")
     def unticked_statement_t_break_expr(self, p):
+        if not isinstance(p[1], ConstantInt):
+            raise ParsingError("'break' operator accepts only positive numbers",
+                               p[0].getsourcepos())
         return Break(levels=p[1], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : T_BREAK ;")
@@ -1053,6 +1057,9 @@ class Parser(object):
 
     @pg.production("unticked_statement : T_CONTINUE expr ;")
     def unticked_statement_t_continue_expr(self, p):
+        if not isinstance(p[1], ConstantInt):
+            raise ParsingError("'continue' operator accepts only positive numbers",
+                               p[0].getsourcepos())
         return Continue(levels=p[1], lineno=p[0].getsourcepos())
 
     @pg.production("unticked_statement : T_CONTINUE ;")
@@ -1594,5 +1601,5 @@ class Parser(object):
 def parse(_source):
     lx = Lexer(RULES, skip_whitespace=False)
     lx.input(_source)
-    parser = Parser(lx.tokens())
+    parser = SourceParser(lx.tokens())
     return parser.parse()

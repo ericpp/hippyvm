@@ -405,7 +405,7 @@ class TestCompiler(object):
         MAKE_REF 3
         STOREITEM_REF 3
         STOREITEM 3
-        STORE 3
+        STORE_REF 3
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -476,7 +476,7 @@ class TestCompiler(object):
         FETCHITEM_APPEND 2   # idx, NULL, Ref$b, Array$b[idx]
         MAKE_REF 2           # idx, NewRef, Ref$b, Array$b[idx]
         STOREITEM_REF 2      # NewArray, NewRef, Ref$b, Array$b[idx]
-        STORE 2              # NewRef
+        STORE_REF 2          # NewRef
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -596,7 +596,7 @@ class TestCompiler(object):
         STOREITEM_REF 4
         STOREITEM 4
         STOREITEM 4
-        STORE 4
+        STORE_REF 4
         DISCARD_TOP
         LOAD_NULL
         RETURN
@@ -617,7 +617,7 @@ class TestCompiler(object):
         MAKE_REF 3
         STOREITEM_REF 3
         STOREITEM 3
-        STORE 3
+        STORE_REF 3
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -639,10 +639,10 @@ class TestCompiler(object):
         FETCHITEM 2
         MAKE_REF 2
         STOREITEM_REF 2
-        STORE 2
+        STORE_REF 2
         LOAD_FAST 1
         STOREITEM_REF 2
-        STORE 2
+        STORE_REF 2
         DISCARD_TOP
         LOAD_NULL
         RETURN

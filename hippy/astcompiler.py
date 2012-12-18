@@ -345,7 +345,7 @@ class __extend__(Assignment):
     # STOREITEM_REF 4    [ 5, 6, NA1, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
     # STOREITEM 4        [ 5, NA2, NA1, Ref$b, Ref$a, Array$a[5] ]
     # STOREITEM 4        [ NA3, NA2, NA1, Ref$b, Ref$a ]
-    # STORE 4            [ Ref$b ]         # "NA" = "NewArray"
+    # STORE_REF 4        [ Ref$b ]         # "NA" = "NewArray"
     #
     # If the expression on the right is more complex than just '$b',
     # say '... =& $b[7][8]', then we use compile_reference() to get code
@@ -360,7 +360,7 @@ class __extend__(Assignment):
     # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM_REF 3    [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
-    # STORE 3            [ NewRef ]
+    # STORE_REF 3        [ NewRef ]
     #
     # The case of '... =& $b;' is done just with a LOAD_FAST, but following
     # the recipe above we would get the following equivalent code:
@@ -368,7 +368,7 @@ class __extend__(Assignment):
     # LOAD_NONE          [ None ]
     # LOAD_FAST $b       [ None, Ref$b ]
     # MAKE_REF 1         [ Ref$b, Ref$b ]     # already a ref
-    # STORE 1            [ Ref$b ]            # stores $b in $b, no-op
+    # STORE_REF 1        [ Ref$b ]            # stores $b in $b, no-op
     #
     def _compile_assign_reference(self, ctx, source):
         depth = self.var.compile_assignment_prepare(ctx)
@@ -467,8 +467,11 @@ class __extend__(Variable):
     def compile_assignment_fetch(self, ctx, depth):
         self.compile(ctx)
 
-    def compile_assignment_store(self, ctx, depth):
-        ctx.emit(consts.STORE, depth + 1)
+    def compile_assignment_store(self, ctx, depth, wants_ref=False):
+        if wants_ref:
+            ctx.emit(consts.STORE_REF, depth + 1)
+        else:
+            ctx.emit(consts.STORE, depth + 1)
 
     def compile_assignment_fetch_ref(self, ctx, depth):
         pass
@@ -575,16 +578,16 @@ class __extend__(GetItem):
         self.node.compile_assignment_fetch(ctx, depth)
         ctx.emit(consts.FETCHITEM, depth + 1)
 
-    def compile_assignment_store(self, ctx, depth):
+    def compile_assignment_store(self, ctx, depth, wants_ref=False):
         ctx.emit(consts.STOREITEM, depth + 1)
-        self.node.compile_assignment_store(ctx, depth)
+        self.node.compile_assignment_store(ctx, depth, wants_ref)
 
     def compile_assignment_fetch_ref(self, ctx, depth):
         self.node.compile_assignment_fetch(ctx, depth)   # and not '.._ref'
 
     def compile_assignment_store_ref(self, ctx, depth):
         ctx.emit(consts.STOREITEM_REF, depth + 1)
-        self.node.compile_assignment_store(ctx, depth)   # and not '.._ref'
+        self.node.compile_assignment_store(ctx, depth, True) # and not '.._ref'
 
     def compile_reference(self, ctx):
         depth = self.compile_assignment_prepare(ctx)

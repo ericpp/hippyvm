@@ -72,6 +72,9 @@ class W_Root(object):
     def setitem(self, space, w_item, w_value):
         raise InterpreterError("unsupported setitem")
 
+    def setitem_ref(self, space, w_item, w_ref):
+        raise InterpreterError("unsupported setitem_ref")
+
     def strlen(self):
         raise InterpreterError("unsupported strlen")
 

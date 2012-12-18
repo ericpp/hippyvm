@@ -51,17 +51,16 @@ class W_ArrayObject(W_Root):
     def setitem(self, space, w_arg, w_value):
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
-            return self._setitem_int(as_int, w_value)
+            return self._setitem_int(as_int, w_value, False)
         else:
-            return self._setitem_str(as_str, w_value)
+            return self._setitem_str(as_str, w_value, False)
 
     def setitem_ref(self, space, w_arg, w_ref):
-        assert isinstance(w_ref, W_Reference)
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
-            return self._setitemref_int(as_int, w_ref)
+            return self._setitem_int(as_int, w_ref, True)
         else:
-            return self._setitemref_str(as_str, w_ref)
+            return self._setitem_str(as_str, w_ref, True)
 
     def append_index(self, space):
         # XXX bogus! fix me!
@@ -73,10 +72,10 @@ class W_ArrayObject(W_Root):
     def _getitem_str(self, key):
         raise NotImplementedError("abstract")
 
-    def _setitem_int(self, index, w_value, ref=False):
+    def _setitem_int(self, index, w_value, as_ref):
         raise NotImplementedError("abstract")
 
-    def _setitem_str(self, key, w_value, ref=False):
+    def _setitem_str(self, key, w_value, as_ref):
         raise NotImplementedError("abstract")
 
     def arraylen(self):
@@ -134,7 +133,7 @@ class W_ListArrayObject(W_ArrayObject):
             return self.space.w_Null
         return self._getitem_int(i)
 
-    def _setitem_int(self, index, w_value, ref=False):
+    def _setitem_int(self, index, w_value, as_ref):
         if index < 0 or index > self.arraylen():
             return self._setitem_str_fresh(str(index), w_value)
         res = self.as_unique_arraylist()
@@ -142,7 +141,7 @@ class W_ListArrayObject(W_ArrayObject):
         if index == len(lst_w):
             lst_w.append(w_value)
         else:
-            if not ref:
+            if not as_ref:
                 w_old = lst_w[index]
             else:
                 w_old = None
@@ -152,13 +151,13 @@ class W_ListArrayObject(W_ArrayObject):
                 lst_w[index] = w_value
         return res
 
-    def _setitem_str(self, key, w_value, ref=False):
+    def _setitem_str(self, key, w_value, as_ref):
         try:
             i = self._convert_str_to_int(key)
         except ValueError:
             return self._setitem_str_fresh(key, w_value)
         else:
-            return self._setitem_int(i, w_value, ref)
+            return self._setitem_int(i, w_value, as_ref)
 
     def _setitem_str_fresh(self, key, w_value):
         d = self.as_dict()    # make a fresh dictionary
@@ -189,13 +188,13 @@ class W_DictArrayObject(W_ArrayObject):
     def _getitem_str(self, key):
         return self.dct_w.get(key, self.space.w_Null)
 
-    def _setitem_int(self, index, w_value, ref=False):
-        return self._setitem_str(str(index), w_value, ref)
+    def _setitem_int(self, index, w_value, as_ref):
+        return self._setitem_str(str(index), w_value, as_ref)
 
-    def _setitem_str(self, key, w_value, ref=False):
+    def _setitem_str(self, key, w_value, as_ref):
         res = self.as_unique_arraydict()
         dct_w = res.dct_w
-        if not ref:
+        if not as_ref:
             w_old = dct_w.get(key, None)
         else:
             w_old = None

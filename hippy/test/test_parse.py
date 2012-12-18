@@ -17,6 +17,7 @@ class TestParser(object):
         r = parse("{1;}")
         assert r == Block([Block([Stmt(ConstantInt(1))])])
 
+
     def test_assign(self):
         r = parse("$x = 3;")
         assert r == Block([Stmt(Assignment(Variable(ConstantStr('x')),

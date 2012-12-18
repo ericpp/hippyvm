@@ -728,6 +728,10 @@ class Parser(object):
     def inner_statement_statement(self, p):
         return p[0]
 
+    @pg.production("inner_statement : function_declaration_statement")
+    def inner_statement_function_declaration_statement(self, p):
+        return p[0]
+
     @pg.production("statement : unticked_statement")
     def statement(self, p):
         return p[0]
@@ -742,6 +746,27 @@ class Parser(object):
         if p[1] is None:
             return Block([], lineno=p[0].getsourcepos())
         return Block(p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("unticked_statement : T_UNSET "
+                   "( unset_variables ) ;")
+    def unticked_statement_t_unset_variables(self, p):
+        return SimpleCall(p[0].getstr(), p[2], lineno=p[0].getsourcepos())
+
+    @pg.production("unset_variables : unset_variables , unset_variable")
+    def unset_vars_unset_vars_unset_var(self, p):
+        if isinstance(p[0], list):
+            p[0].append(p[2])
+            return p[0]
+        raise NotImplementedError(p)
+
+    @pg.production("unset_variables : unset_variable")
+    def unset_vars_unset_var(self, p):
+        return [p[0]]
+
+    @pg.production("unset_variable : variable")
+    def unset_var_var(self, p):
+        return p[0]
+
 
     @pg.production("unticked_statement : ;")
     def unticked_statement_empty_statement(self, p):
@@ -780,12 +805,33 @@ class Parser(object):
     @pg.production("expr_without_variable : expr > expr")
     @pg.production("expr_without_variable : expr < expr")
     @pg.production("expr_without_variable : expr . expr")
+    @pg.production("expr_without_variable : expr | expr")
+    @pg.production("expr_without_variable : expr % expr")
+    @pg.production("expr_without_variable : expr T_IS_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_IS_NOT_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_IS_IDENTICAL expr")
+    @pg.production("expr_without_variable : expr T_IS_NOT_IDENTICAL expr")
+    @pg.production("expr_without_variable : expr T_SL expr")
+    @pg.production("expr_without_variable : expr T_SR expr")
+    @pg.production("expr_without_variable : expr T_IS_GREATER_OR_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_IS_SMALLER_OR_EQUAL expr")
     def expr_oper_expr(self, p):
         return BinOp(p[1].getstr(), p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("expr_without_variable : expr T_BOOLEAN_OR expr")
     def expr_or_expr(self, p):
         return Or(p[0], p[2], lineno=p[1].getsourcepos())
+
+    @pg.production("expr_without_variable : expr T_MINUS_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_PLUS_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_MUL_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_DIV_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_SR_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_SL_EQUAL expr")
+    @pg.production("expr_without_variable : expr T_CONCAT_EQUAL expr")
+    def expr_inplace_op_expr(self, p):
+        return InplaceOp(p[1].getstr(), p[0], p[2], lineno=p[1].getsourcepos())
+
 
     @pg.production("expr_without_variable : expr T_LOGICAL_AND expr")
     @pg.production("expr_without_variable : expr T_BOOLEAN_AND expr")
@@ -807,10 +853,55 @@ class Parser(object):
     def expr_scalar(self, p):
         return p[0]
 
-    @pg.production("expr : - expr", precedence="T_DEC")
-    @pg.production("expr : + expr", precedence="T_INC")
+    @pg.production("expr_without_variable : - expr", precedence="T_DEC")
+    @pg.production("expr_without_variable : + expr", precedence="T_INC")
     def expr_h_minus_expr(self, p):
         return PrefixOp(p[0].getstr(), p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("expr_without_variable : ! expr")
+    @pg.production("expr_without_variable : ~ expr")
+    def expr_excl_tilde_expr(self, p):
+        return PrefixOp(p[0].getstr(), p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("expr_without_variable : internal_function")
+    def expr_internal_functions(self, p):
+        return p[0]
+
+    @pg.production("expr_without_variable : T_INT_CAST expr")
+    @pg.production("expr_without_variable : T_DOUBLE_CAST expr")
+    @pg.production("expr_without_variable : T_STRING_CAST expr")
+    @pg.production("expr_without_variable : T_ARRAY_CAST expr")
+    @pg.production("expr_without_variable : T_OBJECT_CAST expr")
+    @pg.production("expr_without_variable : T_BOOL_CAST expr")
+    @pg.production("expr_without_variable : T_UNSET_CAST expr")
+    def cast_expr(self, p):
+        return Cast(p[0].getstr()[1:-1], p[1], lineno=p[0].getsourcepos())
+
+    @pg.production("internal_function : T_EMPTY ( variable )")
+    @pg.production("internal_function : T_EMPTY ( expr_without_variable )")
+    def internal_f_empty(self, p):
+        return SimpleCall(p[0].getstr(), [p[2]], lineno=p[0].getsourcepos())
+
+    @pg.production("internal_function : T_ISSET ( isset_variables )")
+    def internal_f_isset(self, p):
+        return SimpleCall(p[0].getstr(), p[2], lineno=p[0].getsourcepos())
+
+    @pg.production("isset_variables : isset_variables , isset_variable")
+    def issetvs_issetvs_issetv(self, p):
+        if isinstance(p[0], list):
+            p[0].append(p[2])
+            return p[0]
+        raise NotImplementedError(p)
+
+    @pg.production("isset_variables : isset_variable")
+    def issetvs_issetv(self, p):
+        return [p[0]]
+
+    @pg.production("isset_variable : variable")
+    @pg.production("isset_variable : expr_without_variable")
+    def isset_variable(self, p):
+        return p[0]
+
 
     @pg.production("expr : ( expr )")
     def expr_bracket_expr_bracket(self, p):
@@ -862,10 +953,12 @@ class Parser(object):
             return ConstantStr(p[0].getstr().strip("\"").strip("\'"), lineno=lineno)
         raise Exception("Not implemented yet!")
 
+    @pg.production("common_scalar : T_FALSE")
+    @pg.production("common_scalar : T_TRUE")
+    @pg.production("common_scalar : T_NULL")
+    def commom_scalar_false_null(self, p):
+        return NamedConstant(p[0].getstr(), lineno=p[0].getsourcepos())
 
-    @pg.production("static_scalar : common_scalar")
-    def static_scalar_common_scalar(self, p):
-        return p[0]
 
     @pg.production("static_scalar : namespace_name")
     def static_scalar_namespace_name(self, p):
@@ -878,6 +971,10 @@ class Parser(object):
     @pg.production("static_scalar : + static_scalar")
     def static_scalar_plus_static_scalar(self, p):
         raise NotImplementedError(p)
+
+    @pg.production("static_scalar : common_scalar")
+    def static_scalar_common_scalar(self, p):
+        return p[0]
 
     @pg.production("variable : base_variable_with_function_calls")
     def variable_base_variable_with_function_calls(self, p):
@@ -907,8 +1004,6 @@ class Parser(object):
     @pg.production("reference_variable : "
                    "reference_variable [ dim_offset ]")
     def reference_variable_reference_variable_offset(self, p):
-        if p[2] is None:
-            raise NotImplementedError(p)
         return GetItem(p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("dim_offset : empty")
@@ -917,6 +1012,10 @@ class Parser(object):
 
     @pg.production("dim_offset : expr")
     def dim_offset_expr(self, p):
+        return p[0]
+
+    @pg.production("dim_offset : r_variable")
+    def dim_offset_r_variable(self, p):
         return p[0]
 
     @pg.production("compound_variable : T_VARIABLE")
@@ -1254,8 +1353,10 @@ class Parser(object):
     @pg.production("non_empty_function_call_parameter_list : "
                    "& w_variable")
     def non_empty_function_call_parameter_list_reference_variable(self, p):
-        raise NotImplementedError(p)
+        return [Reference(p[0], lineno=p[1].getsourcepos())]
 
+    @pg.production("non_empty_function_call_parameter_list : "
+                   "non_empty_function_call_parameter_list , variable")
     @pg.production("non_empty_function_call_parameter_list : "
                    "non_empty_function_call_parameter_list , "
                    "expr_without_variable")
@@ -1265,11 +1366,6 @@ class Parser(object):
                 p[0].append(p[2])
                 return p[0]
             return [p[0], p[2]]
-
-    @pg.production("non_empty_function_call_parameter_list : "
-                   "non_empty_function_call_parameter_list , variable")
-    def non_empty_function_call_parameter_list_list_variable(self, p):
-        raise NotImplementedError(p)
 
     @pg.production("non_empty_function_call_parameter_list : "
                    "non_empty_function_call_parameter_list , "
@@ -1349,6 +1445,16 @@ class Parser(object):
                    "non_empty_parameter_list , "
                    "optional_class_type & T_VARIABLE")
     def nepl_nepl_optional_class_type_h_ref_t_var(self, p):
+        lineno = p[3].getsourcepos()
+        tvar = ReferenceArgument(p[3].getstr()[1:], lineno=lineno)
+
+        if p[2] is not None:
+            raise NotImplementedError(p)
+        if p[0] is not None:
+            if isinstance(p[0], list):
+                p[0].append(tvar)
+                return p[0]
+            return [p[0], tvar]
         raise NotImplementedError(p)
 
     @pg.production("non_empty_parameter_list : "

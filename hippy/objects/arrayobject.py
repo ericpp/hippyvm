@@ -134,12 +134,15 @@ class W_ListArrayObject(W_ArrayObject):
         return self._getitem_int(i)
 
     def _setitem_int(self, index, w_value):
+        if index < 0 or index > self.arraylen():
+            d = self.as_dict()
+            d[str(index)] = w_value
+            return W_DictArrayObject(self.space, d)
         res = self.as_unique_arraylist()
         lst_w = res.lst_w
         if index == len(lst_w):
             lst_w.append(w_value)
         else:
-            assert 0 <= index < len(lst_w)   # XXX
             w_old = lst_w[index]
             if isinstance(w_old, W_Reference):
                 #xx

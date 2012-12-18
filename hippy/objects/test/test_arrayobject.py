@@ -66,3 +66,11 @@ class TestArrayObject(BaseTestInterpreter):
         assert w_item is space.w_Null
         w_item = space.getitem(w_array, space.newstr(str(1<<128)))
         assert w_item is space.w_Null
+
+    def test_list2hash_out_of_bound(self):
+        space = self.space
+        w_x = space.newstr("x")
+        w_y = space.newstr("y")
+        w_array = space.new_array_from_list([w_x])
+        w_array = space.setitem(w_array, space.newint(100), w_y)
+        assert w_array.as_dict() == {"0": w_x, "100": w_y}

@@ -135,9 +135,7 @@ class W_ListArrayObject(W_ArrayObject):
 
     def _setitem_int(self, index, w_value):
         if index < 0 or index > self.arraylen():
-            d = self.as_dict()
-            d[str(index)] = w_value
-            return W_DictArrayObject(self.space, d)
+            return self._setitem_str(str(index), w_value)
         res = self.as_unique_arraylist()
         lst_w = res.lst_w
         if index == len(lst_w):
@@ -150,6 +148,11 @@ class W_ListArrayObject(W_ArrayObject):
             else:
                 lst_w[index] = w_value
         return res
+
+    def _setitem_str(self, key, w_value):
+        d = self.as_dict()
+        d[key] = w_value
+        return W_DictArrayObject(self.space, d)
 
     def _setitemref_int(self, index, w_ref):
         #xx

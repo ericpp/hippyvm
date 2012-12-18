@@ -74,3 +74,11 @@ class TestArrayObject(BaseTestInterpreter):
         w_array = space.new_array_from_list([w_x])
         w_array = space.setitem(w_array, space.newint(100), w_y)
         assert w_array.as_dict() == {"0": w_x, "100": w_y}
+
+    def test_list2hash_str(self):
+        space = self.space
+        w_x = space.newstr("x")
+        w_y = space.newstr("y")
+        w_array = space.new_array_from_list([w_x])
+        w_array = space.setitem(w_array, space.newstr("z"), w_y)
+        assert w_array.as_dict() == {"0": w_x, "z": w_y}

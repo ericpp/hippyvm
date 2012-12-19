@@ -9,7 +9,6 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
-from hippy.objects.reference import W_Cell
 from hippy import consts
 from hippy.error import InterpreterError
 from hippy.bytecode import ByteCode

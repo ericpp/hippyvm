@@ -474,23 +474,15 @@ class Interpreter(object):
         return pc
 
     def BINARY_IS(self, bytecode, frame, space, arg, arg2, pc):
-        w_right = frame.pop().deref()
-        w_left = frame.pop().deref()
-        XXX - space.is_w(w_left, w_right)
-        if w_t.tp != w_right.tp:
-            frame.push(space.w_False)
-        else:
-            frame.push(space.eq(w_left, w_right))
+        w_right = frame.pop()
+        w_left = frame.pop()
+        frame.push(space.newbool(space.is_w(w_left, w_right)))
         return pc
 
     def BINARY_ISNOT(self, bytecode, frame, space, arg, arg2, pc):
-        w_right = frame.pop().deref()
-        w_left = frame.pop().deref()
-        XXX - space.is_w(w_left, w_right)
-        if w_left.tp != w_right.tp:
-            frame.push(space.w_True)
-        else:
-            frame.push(space.ne(w_left, w_right))
+        w_right = frame.pop()
+        w_left = frame.pop()
+        frame.push(space.newbool(not space.is_w(w_left, w_right)))
         return pc
 
     def IS_TRUE(self, bytecode, frame, space, arg, arg2, pc):

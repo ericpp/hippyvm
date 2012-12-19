@@ -974,14 +974,12 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.str_w(output[2]) == '\t'
 
     def test_prebuilt_consts(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         echo TRUE, FALSE, NULL;
         ''')
         assert [self.space.is_true(i) for i in output] == [True, False, False]
 
     def test_do_while(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $x = 0;
         do { $x++; } while ($x < 10);
@@ -1000,7 +998,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [1<<2, 1<<1]
 
     def test_mixed_eq(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         echo "abc" == "abc", "abc" != "abc";
         echo "abc" == "abcc", "abc" != "abcc";
@@ -1013,7 +1010,6 @@ class TestInterpreter(BaseTestInterpreter):
             True, True, False]
 
     def test_mixed_str_eq(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = "abc";
         $b = $a;
@@ -1032,14 +1028,12 @@ class TestInterpreter(BaseTestInterpreter):
         # assert did not crash
 
     def test_invariant_global_namespace(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         echo TruE;
         ''')
         assert self.space.is_true(output[0])
 
     def test_triple_eq(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         echo 1.0 === 1;
         echo 1 === 1;
@@ -1050,7 +1044,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert not self.space.is_true(output[2])
 
     def test_triple_ne(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         echo 1.0 !== 1;
         echo 1 !== 1;

@@ -1054,7 +1054,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.is_true(output[2])
 
     def test_dynamic_call(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f($a, $b) {
            return $a + $b;
@@ -1065,7 +1064,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_assignment_in_and(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = 3;
         $a && $b = "x";
@@ -1074,7 +1072,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.str_w(output[0]) == 'x'
 
     def test_global_no_local(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f() {
            global $aa;
@@ -1086,7 +1083,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_global_store(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f() {
            global $a;

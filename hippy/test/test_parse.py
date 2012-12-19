@@ -3,10 +3,10 @@ from py.test import raises
 from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
      Variable, Echo, Return, If, PrefixOp, SuffixOp, While, For, ConstantStr,\
      SimpleCall, DynamicCall, FunctionDecl, Argument, BinOp, ConstantFloat,\
-     GetItem, Array, Append, And, Or, InplaceOp, Global,\
+     GetItem, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
-     UninitializedVariable, ConstantAppend, Break, Continue
+     UninitializedVariable, Break, Continue
 from rply import ParsingError
 
 class TestParser(object):
@@ -384,12 +384,17 @@ class TestParser(object):
         r = parse("array();")
         assert r == Block([Stmt(Hash([]))])
         r = parse("array(1);")
-        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1))]))])
+        assert r == Block([Stmt(Hash([(None, ConstantInt(1))]))])
+        r = parse("array(0 => &$x, 1=> $y);")
+        assert r == Block([Stmt(Hash([
+                                (ConstantInt(0), Reference(Variable(ConstantStr('x')))),
+                                (ConstantInt(1), Variable(ConstantStr('y'))),
+                                ]))])
         r = parse("array(1, 2, 3 + 4);")
         assert r == Block([Stmt(Hash([
-                            (ConstantAppend(), ConstantInt(1)),
-                            (ConstantAppend(), ConstantInt(2)),
-                            (ConstantAppend(), BinOp("+", ConstantInt(3),ConstantInt(4)))
+                            (None, ConstantInt(1)),
+                            (None, ConstantInt(2)),
+                            (None, BinOp("+", ConstantInt(3),ConstantInt(4)))
                             ]))])
 
     def test_array_append(self):
@@ -476,22 +481,22 @@ class TestParser(object):
 
     def test_array_mix_creation(self):
         r = parse("array(1, 'a'=>2, 3, 'b'=>'c');")
-        expected = Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1)),
+        expected = Block([Stmt(Hash([(None, ConstantInt(1)),
                                       (ConstantStr("a"), ConstantInt(2)),
-                                      (ConstantAppend(), ConstantInt(3)),
+                                      (None, ConstantInt(3)),
                                       (ConstantStr('b'), ConstantStr('c'))
                                       ]))])
 
         r = parse("array(14 => 'xcx', 'a'=>2, 3);")
         assert r == Block([Stmt(Hash([(ConstantInt(14), ConstantStr("xcx")),
                                       (ConstantStr("a"), ConstantInt(2)),
-                                      (ConstantAppend(), ConstantInt(3))
+                                      (None, ConstantInt(3))
                                       ]))])
 
         r = parse("array(1, 2, 3, 4 => 5);")
-        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1)),
-                                      (ConstantAppend(), ConstantInt(2)),
-                                      (ConstantAppend(), ConstantInt(3)),
+        assert r == Block([Stmt(Hash([(None, ConstantInt(1)),
+                                      (None, ConstantInt(2)),
+                                      (None, ConstantInt(3)),
                                       (ConstantInt(4), ConstantInt(5))
                                       ]))])
 
@@ -515,7 +520,7 @@ class TestParser(object):
     def test_array_trailing_coma(self):
         # Now we use Hash instead of Array
         r = parse("array(1,);")
-        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1))]))])
+        assert r == Block([Stmt(Hash([(None, ConstantInt(1))]))])
 
     def test_array_single_elem(self):
         r = parse("array(1 => 2);")

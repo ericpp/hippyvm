@@ -617,7 +617,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [3]
 
     def test_references_7(self):
-        py.test.skip("XXX FIXME")
         output = self.run('''
         function foo1(&$a) {
             $a[1] = & $a[0];
@@ -630,7 +629,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [5]
 
     def test_references_function(self):
-        py.test.skip("XXX FIXME")
         output = self.run('''
         function f(&$a) {
            $a = 3;
@@ -642,7 +640,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [3]
 
     def test_references_function_2(self):
-        py.test.skip("XXX FIXME")
         output = self.run('''
         function f(&$a, $b) {
            $a[0] = 3;

@@ -32,6 +32,8 @@ class Frame(object):
     _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos', 'f_backref',
                         'next_instr']
 
+    is_global_level = False
+
     @jit.unroll_safe
     def __init__(self, space, code):
         self = jit.hint(self, fresh_virtualizable=True, access_directly=True)
@@ -131,7 +133,7 @@ class Interpreter(object):
     def setup_globals(self, space):
         pass
 
-    @jit.elidable
+    #@jit.elidable -- XXX redo
     def lookup_global(self, space, name):
         try:
             return self.globals[name]
@@ -139,6 +141,9 @@ class Interpreter(object):
             new_glob = W_Reference(space.w_Null)
             self.globals[name] = new_glob
             return new_glob
+
+    def update_global(self, space, name, w_ref):
+        self.globals[name] = w_ref
 
     @jit.elidable
     def lookup_constant(self, name):
@@ -162,6 +167,7 @@ class Interpreter(object):
         for i, name in enumerate(bytecode.varnames):
             w_ref = self.lookup_global(space, name)
             frame.store_fast_ref(i, w_ref)
+        frame.is_global_level = True
         #
         return self.interpret(space, frame, bytecode)
 
@@ -311,6 +317,11 @@ class Interpreter(object):
     def STORE_FAST_REF(self, bytecode, frame, space, arg, arg2, pc):
         w_ref = frame.peek()
         frame.store_fast_ref(arg, w_ref)
+        if frame.is_global_level:
+            # we just changed the reference stored into a local variable,
+            # but if we are the main level, it means we need to change
+            # too the reference stored in self.globals
+            self.update_global(space, bytecode.varnames[arg], w_ref)
         return pc
 
     @jit.unroll_safe

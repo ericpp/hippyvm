@@ -604,7 +604,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [3]
 
     def test_references_6(self):
-        py.test.skip("XXX FIXME")
         output = self.run('''
         function f() {
            global $x;

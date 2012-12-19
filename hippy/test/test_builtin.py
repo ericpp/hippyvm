@@ -81,9 +81,25 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_printf_1(self):
         output = self.run('''
-        printf("a %d b\\n", 12);
+        echo printf("a %d b\\n", 12);
         ''')
+        assert self.space.int_w(output[1]) == len('a 12 b\n')
         assert self.space.str_w(output[0]) == 'a 12 b\n'
+        output = self.run('''
+        echo printf();
+        printf("%d");
+        printf("%a");
+        printf("%");
+        printf("", 1, 2, 3);
+        ''')
+        assert not output[0].boolval
+        assert self.interp.logger.msgs == [
+            ('NOTICE', 'printf(): expects at least 1 parameter, 0 given'),
+            ('WARNING', 'printf(): Too few arguments'),
+            ('HIPPY WARNING', 'printf(): Unknown format char a'),
+            ('HIPPY WARNING', 'printf(): wrong % in string format'),
+            ('HIPPY WARNING', 'printf(): Too many arguments passed')
+        ]
 
     def test_count(self):
         output = self.run('''
@@ -267,10 +283,19 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_defined(self):
         output = self.run('''
-        define("abc", 3);
+        echo define("abc", 3);
         echo defined("abc"), defined("def");
         ''')
-        assert [i.boolval for i in output] == [True, False]
+        assert [i.boolval for i in output] == [True, True, False]
+        output = self.run('''
+        define("abc", 3);
+        echo define("abc", 31);
+        echo abc;
+        ''')
+        assert not output[0].boolval
+        assert self.space.int_w(output[1]) == 3
+        assert self.interp.logger.msgs == [('NOTICE',
+                                            'Constant abc already defined')]
 
     def test_array_diff_key(self):
         output = self.run('''
@@ -513,22 +538,47 @@ class TestBuiltin(BaseTestInterpreter):
         assert self.space.str_w(output[2]) == "60"
         assert self.space.str_w(output[3]) == "0"
 
-    # def test_array_reverse(self):
-    #     output = self.run('''
-    #     $a = array("php", 4.0, array ("green", "red"));
-    #     $a = array_reverse($a);
-    #     echo $a[2];
-    #     ''')
-    #     assert self.space.str_w(output[0]) == "php"
+    def test_array_reverse(self):
+        py.test.skip("XXX fixme")
+        output = self.run('''
+        $a = array("php", 4.5, array ("green", "red"));
+        $a = array_reverse($a);
+        echo $a[2];
+        echo $a[1];
+        $a = array(0=>1, 2=>4, '3'=>'6');
+        $b = array_reverse($a, true);
+        $c = array_reverse($a, false);
+        echo $b[0];
+        echo $c[0];
+        $a = array(0=>1, 2=>4, '3'=>'6');
+        $b = array_reverse($a, 'x');
+        $c = array_reverse($a, '');
+        echo $b[0];
+        echo $c[0];
+        $a = array(0=>1, 2=>4, '3'=>'6');
+        $b = array_reverse($a, 0.001);
+        $c = array_reverse($a, 0);
+        echo $b[0];
+        echo $c[0];
+
+        ''')
+        assert self.space.str_w(output[0]) == "php"
+        assert self.space.str_w(output[1]) == "4.5"
+        assert self.space.str_w(output[2]) == "1"
+        assert self.space.str_w(output[3]) == "6"
+        assert self.space.str_w(output[4]) == "1"
+        assert self.space.str_w(output[5]) == "6"
+        assert self.space.str_w(output[6]) == "1"
+        assert self.space.str_w(output[7]) == "6"
 
     def test_array_keys(self):
         output = self.run('''
-        $a = array("php", 4.0, "test"=>"test");
+        $a = array("php", 4.5, "test"=>"test");
         $a = array_keys($a);
         echo $a[0];
         echo $a[1];
         echo $a[2];
-        $a = array("php", 4.0, "test"=>"test", "php");
+        $a = array("php", 4.5, "test"=>"test", "php");
         $a = array_keys($a, "php");
         echo $a[0];
         echo $a[1];

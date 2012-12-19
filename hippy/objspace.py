@@ -25,57 +25,17 @@ class ExecutionContext(object):
     def __init__(self):
         self.interpreter = None
 
-    def _append_to_errors(self, lvl, msg):
-        msg = msg[:1024]
-        self.errors.append((lvl, msg))
-        self.writestr(msg)
+    def notice(self, msg):
+        self.interpreter.logger.notice(self.interpreter, msg)
 
-    def report_error(self, msg):
-        self._append_to_errors(1, msg)
+    def warn(self, msg):
+        self.interpreter.logger.warn(self.interpreter, msg)
 
-    def report_warning(self, msg):
-        self._append_to_errors(2, msg)
+    def hippy_warn(self, msg):
+        self.interpreter.logger.hippy_warn(self.interpreter, msg)
 
-    def report_parse(self, msg):
-        self._append_to_errors(4, msg)
-
-    def report_notice(self, msg):
-        self._append_to_errors(8, msg)
-
-    def report_core_error(self, msg):
-        self._append_to_errors(16, msg)
-
-    def report_core_warning(self, msg):
-        self._append_to_errors(32, msg)
-
-    #  this two, do not fits where i think
-    def report_compile_error(self, msg):
-        self._append_to_errors(64, msg)
-
-    def report_compile_warning(self, msg):
-        self._append_to_errors(128, msg)
-    # ^^^^
-
-    def report_user_error(self, msg):
-        self._append_to_errors(256, msg)
-
-    def report_user_warning(self, msg):
-        self._append_to_errors(512, msg)
-
-    def report_user_notice(self, msg):
-        self._append_to_errors(1024, msg)
-
-    def report_strict(self, msg):
-        self._append_to_errors(2048, msg)
-
-    def report_recoverable_error(self, msg):
-        self._append_to_errors(4096, msg)
-
-    def report_deprecated(self, msg):
-        self._append_to_errors(8192, msg)
-
-    def report_user_deprecated(self, msg):
-        self._append_to_errors(16384, msg)
+    def fatal(self, msg):
+        self.interpreter.logger.fatal(self.interpreter, msg)        
 
     def writestr(self, str):
         os.write(1, str)

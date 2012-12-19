@@ -3,7 +3,6 @@ from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
      BINOP_LIST, RETURN, INPLACE_LIST
 from hippy.builtin import setup_builtin_functions
-from hippy import array_funcs     # site-effect of registering functions
 from hippy.error import InterpreterError
 from hippy.objects.reference import W_Variable, W_Cell, W_Reference
 from hippy.objects.base import W_Root
@@ -14,8 +13,7 @@ from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
 
-class FunctionNotFound(InterpreterError):
-    pass
+import hippy.array_funcs     # side-effect of registering functions
 
 def get_printable_location(pc, bytecode, interp):
     lineno = bytecode.bc_mapping[pc]
@@ -32,7 +30,8 @@ class Frame(object):
     """ Frame implementation. Note that vars_w store references, while
     stack stores values (also references)
     """
-    _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos']
+    _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos', 'f_backref',
+                        'next_instr']
 
     @jit.unroll_safe
     def __init__(self, space, code):
@@ -40,6 +39,7 @@ class Frame(object):
         self.stack = [None] * code.stackdepth
         self.stackpos = 0
         self.bytecode = code # for the debugging
+        self.next_instr = 0
         if code.uses_dict:
             # we use dict in case of:
             # * dynamic var access
@@ -147,6 +147,15 @@ class Interpreter(object):
     """ Interpreter keeps the state of the current run. There will be a new
     interpreter instance per run of script
     """
+    def __init__(self, space, logger):
+        self.functions = {}
+        self.constants = {}
+        self.logger = logger
+        self.setup_constants(space)
+        setup_builtin_functions(self, space)
+        space.ec.interpreter = self # one interpreter at a time
+        self.topframeref = jit.vref_None
+
     def setup_constants(self, space):
         self.constants['true'] = space.w_True
         self.constants['false'] = space.w_False
@@ -155,13 +164,6 @@ class Interpreter(object):
     def setup_globals(self, space, dct):
         self.globals = dct
         self.globals_wrapper = new_globals_wrapper(space, dct)
-
-    def __init__(self, space):
-        self.functions = {}
-        self.constants = {}
-        self.setup_constants(space)
-        setup_builtin_functions(self, space)
-        space.ec.interpreter = self # one interpreter at a time
 
     @jit.elidable
     def lookup_global(self, space, name):
@@ -185,58 +187,75 @@ class Interpreter(object):
         try:
             return self.functions[name.lower()]
         except KeyError:
-            raise InterpreterError("undefined function %s" % name)
+            self.logger.fatal(self, "undefined function %s" % name)
 
     def interpret(self, space, frame, bytecode):
         bytecode.setup_functions(self, space)
-        pc = 0
+        self.enter(frame)
         try:
-            while True:
-                driver.jit_merge_point(bytecode=bytecode, frame=frame,
-                                       pc=pc, self=self)
-                code = bytecode.code
-                next_instr = ord(code[pc])
-                # XXX change this to range check
-                numargs = BYTECODE_NUM_ARGS[next_instr]
-                pc += 1
-                if numargs == 1:
-                    arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
-                    arg2 = 0
-                    pc += 2
-                elif numargs == 2:
-                    arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
-                    arg2 = ord(code[pc + 2]) + (ord(code[pc + 3]) << 8)
-                    pc += 4
+            return self._interpret(space, frame, bytecode)
+        finally:
+            self.leave(frame)
+
+    def _interpret(self, space, frame, bytecode):
+        pc = 0
+        while True:
+            driver.jit_merge_point(bytecode=bytecode, frame=frame,
+                                   pc=pc, self=self)
+            code = bytecode.code
+            next_instr = ord(code[pc])
+            frame.next_instr = pc
+            # XXX change this to range check
+            numargs = BYTECODE_NUM_ARGS[next_instr]
+            pc += 1
+            if numargs == 1:
+                arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
+                arg2 = 0
+                pc += 2
+            elif numargs == 2:
+                arg = ord(code[pc]) + (ord(code[pc + 1]) << 8)
+                arg2 = ord(code[pc + 2]) + (ord(code[pc + 3]) << 8)
+                pc += 4
+            else:
+                arg = 0 # don't make it negative
+                arg2 = 0
+            assert arg >= 0
+            assert arg2 >= 0
+            if next_instr == RETURN_NULL:
+                assert frame.stackpos == 0
+                frame.clean(bytecode)
+                return None
+            elif next_instr == RETURN:
+                assert frame.stackpos == 1
+                res = frame.stack[0].deref()
+                frame.clean(bytecode)
+                return res
+            if we_are_translated():
+                for i, name in unrolling_bc:
+                    if i == next_instr:
+                        pc = getattr(self, name)(bytecode, frame, space,
+                                                 arg, arg2, pc)
+                        break
                 else:
-                    arg = 0 # don't make it negative
-                    arg2 = 0
-                assert arg >= 0
-                assert arg2 >= 0
-                if next_instr == RETURN_NULL:
-                    assert frame.stackpos == 0
-                    frame.clean(bytecode)
-                    return None
-                elif next_instr == RETURN:
-                    assert frame.stackpos == 1
-                    res = frame.stack[0].deref()
-                    frame.clean(bytecode)
-                    return res
-                if we_are_translated():
-                    for i, name in unrolling_bc:
-                        if i == next_instr:
-                            pc = getattr(self, name)(bytecode, frame, space,
-                                                     arg, arg2, pc)
-                            break
-                    else:
-                        assert False
-                else:
-                    #print get_printable_location(pc, bytecode, self)
-                    pc = getattr(self, BYTECODE_NAMES[next_instr])(bytecode,
-                                 frame, space, arg, arg2, pc)
-        except InterpreterError:
-            print "Error occured in %s line %d" % (bytecode.name,
-                                   bytecode.bc_mapping[pc])
-            raise
+                    assert False
+            else:
+                #print get_printable_location(pc, bytecode, self)
+                pc = getattr(self, BYTECODE_NAMES[next_instr])(bytecode,
+                             frame, space, arg, arg2, pc)
+
+    def enter(self, frame):
+        frame.f_backref = self.topframeref
+        self.topframeref = jit.virtual_ref(frame)
+
+    def gather_traceback(self, callback, arg):
+        frame = self.topframeref()
+        while frame is not None:
+            callback(arg, frame)
+            frame = frame.f_backref()
+
+    def leave(self, frame):
+        jit.virtual_ref_finish(self.topframeref, frame)
+        self.topframeref = frame.f_backref
 
     def echo(self, space, v):
         # XXX extra copy of the string if mutable

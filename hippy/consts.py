@@ -21,6 +21,7 @@ BYTECODES = [
     ('LOAD_FAST', 1, 1),
     ('BINARY_ADD', 0, -1),
     ('BINARY_OR_', 0, -1),
+    ('BINARY_AND_', 0, -1),
     ('BINARY_SUB', 0, -1),
     ('BINARY_MUL', 0, -1),
     ('BINARY_DIV', 0, -1),
@@ -83,7 +84,7 @@ BYTECODE_STACK_EFFECTS = []
 
 BINOP_COMPARISON_LIST = ['le', 'ge', 'lt', 'gt', 'eq', 'ne']
 BINOP_LIST = ['lshift', 'rshift', 'add', 'mul', 'sub', 'mod',
-              'div', 'or_'] + BINOP_COMPARISON_LIST
+              'div', 'or_', 'and_'] + BINOP_COMPARISON_LIST
 INPLACE_LIST = ['sub', 'add', 'mul', 'div', 'lshift', 'rshift']
 
 def _setup():
@@ -95,7 +96,7 @@ def _setup():
 _setup()
 
 BIN_OP_TO_BC = {'+': BINARY_ADD, '*': BINARY_MUL, '-': BINARY_SUB,
-                '|': BINARY_OR_,
+                '|': BINARY_OR_, '&': BINARY_AND_,
                '/': BINARY_DIV, '>': BINARY_GT, '<': BINARY_LT,
                 '>=': BINARY_GE, '<=': BINARY_LE, '==': BINARY_EQ,
                 '!=': BINARY_NE, '.': BINARY_CONCAT, '>>': BINARY_RSHIFT,

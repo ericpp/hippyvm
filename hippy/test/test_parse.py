@@ -418,11 +418,6 @@ class TestParser(object):
         assert r == Block([DoWhile(Block([Stmt(ConstantInt(1))]),
                                    NamedConstant('TRUE'))])
 
-    def test_reference(self):
-        py.test.skip("XXX FIXME")
-        r = parse('&$a;')
-        assert r == Block([Stmt(Reference(Variable(ConstantStr("a"))))])
-
     def test_assign_array_element_2(self):
         py.test.skip("XXX FIXME")
         r = parse("$x[0][0];")
@@ -464,7 +459,6 @@ class TestParser(object):
                                       (ConstantAppend(), ConstantInt(3)),
                                       (ConstantInt(4), ConstantInt(5))
                                       ]))])
-
 
 
     def test_iterator(self):

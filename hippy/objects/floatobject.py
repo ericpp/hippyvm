@@ -72,6 +72,10 @@ class W_FloatObject(W_Root):
         assert isinstance(w_other, W_FloatObject)
         return self._truncate(space).or_(space, w_other._truncate(space))
 
+    def and_(self, space, w_other):
+        assert isinstance(w_other, W_FloatObject)
+        return self._truncate(space).and_(space, w_other._truncate(space))
+
     def __repr__(self):
         return 'W_FloatObject(%s)' % self.floatval
 

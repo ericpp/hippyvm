@@ -14,6 +14,7 @@ if __name__ == '__main__':
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
 from hippy.interpreter import Interpreter, Frame
+from hippy.logger import Logger, InterpreterError
 from hippy.objspace import getspace
 from pypy.rlib.streamio import open_file_as_stream
 from pypy.rlib.objectmodel import we_are_translated
@@ -28,7 +29,8 @@ def entry_point(argv):
     if len(argv) < 2:
         print __doc__
         return 1
-    f = open_file_as_stream(argv[1])
+    filename = argv[1]
+    f = open_file_as_stream(filename)
     data = f.readall()
     f.close()
     c = 0
@@ -63,19 +65,18 @@ def entry_point(argv):
         return 1
 
     extra_offset = data[:start].count("\n") + 1
-    data = data[start:end]
+    source_data = data[start:end]
     space = getspace()
-    bc = compile_ast(parse(data), space, extra_offset)
-    interp = Interpreter(space)
+    bc = compile_ast(filename, source_data, parse(source_data), space,
+                     extra_offset)
+    interp = Interpreter(space, Logger())
     frame = Frame(space, bc)
-    if not we_are_translated():
-        try:
-            interp.interpret(space, frame, bc)
-        except Exception, e:
-            print e
-            pdb.post_mortem(sys.exc_info()[2])
-    else:
+    try:
         interp.interpret(space, frame, bc)
+    except InterpreterError:
+        # the traceback should already have been printed,
+        # including the error msg
+        pass
     if len(argv) >= 4 and argv[2] == '--gcdump':
         f = os.open(argv[3], os.O_CREAT | os.O_WRONLY, 0777)
         dump_rpy_heap(f)

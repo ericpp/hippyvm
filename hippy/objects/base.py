@@ -19,9 +19,6 @@ class W_Root(object):
     def str_w(self, space):
         raise InterpreterError("TypeError: casting to string of wrong type")
 
-    def conststr_w(self, space):
-        raise InterpreterError("TypeError: casting to string of wrong type")
-
     def getchar(self, space):
         raise InterpreterError("TypeError: casting to string of wrong type")
         # XXX cast to string, get first char
@@ -75,6 +72,9 @@ class W_Root(object):
     def setitem(self, space, w_item, w_value):
         raise InterpreterError("unsupported setitem")
 
+    def setitem_ref(self, space, w_item, w_ref):
+        raise InterpreterError("unsupported setitem_ref")
+
     def strlen(self):
         raise InterpreterError("unsupported strlen")
 
@@ -96,9 +96,6 @@ class W_Root(object):
 
 
 class W_NullObject(W_Root):
-    def copy(self, space):
-        return self
-
     def is_true(self, space):
         return False
 

@@ -7,9 +7,6 @@ class W_BoolObject(W_Root):
     def __init__(self, boolval):
         self.boolval = boolval
 
-    def copy(self, space):
-        return self # immutable object
-
     def is_true(self, space):
         return self.boolval
 

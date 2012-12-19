@@ -107,8 +107,8 @@ class TestArrayDirect(object):
 
     def test_hashes(self):
         space = ObjSpace()
-        assert space.wrap(1).hash() == space.newstrconst("1").hash()
-        assert space.wrap(123).hash() == space.newstrconst("123").hash()
+        assert space.wrap(1).hash(space) == space.newstrconst("1").hash(space)
+        assert space.wrap(123).hash(space) == space.newstrconst("123").hash(space)
 
     def test_map(self):
         space = ObjSpace()

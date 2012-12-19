@@ -9,8 +9,7 @@ from hippy.objects.base import W_NullObject
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject
-from hippy.objects.arrayobject import new_array_from_list, W_ArrayObject,\
-     new_array_from_pairs, new_map_from_pairs, W_FakeIndex
+from hippy.objects.arrayobject import W_ArrayObject
 
 
 @specialize.memo()
@@ -56,13 +55,11 @@ class ObjSpace(object):
     """ This implements all the operations on the object. Since this is
     prebuilt, it should not contain any state
     """
-    (tp_int, tp_float, tp_str, tp_array,
-     tp_cell, tp_null, tp_reference, tp_bool, tp_fakeindex) = range(9)
+    (tp_int, tp_float, tp_str, tp_array, tp_null, tp_bool) = range(6)
 
     # in the same order as the types above
     TYPENAMES = ["integer", "double", "string", "array",
-                 "unknown type", "NULL", "unknown type",
-                 "boolean", "unknown type"]
+                 "NULL", "boolean"]
 
     def __init__(self):
         self.w_True = W_BoolObject(True)
@@ -81,6 +78,9 @@ class ObjSpace(object):
 
     def int_w(self, w_obj):
         return w_obj.deref().int_w(self)
+
+    def is_w(self, w_a, w_b):
+        return w_a.tp == w_b.tp and w_a.eq_w(self, w_b)
 
     def is_valid_number(self, w_obj):
         return w_obj.deref().is_valid_number(self)
@@ -108,14 +108,10 @@ class ObjSpace(object):
     @specialize.argtype(1)
     def newstr(self, v):
         if isinstance(v, str):
-            return W_StringObject.newstr(list(v))
-        return W_StringObject.newstr(v)
+            return W_StringObject.newconststr(v)
+        return W_StringObject.newliststr(v)
 
-    def newstrconst(self, v):
-        return W_StringObject(v)
-
-    def conststr_w(self, w_v):
-        return self.as_string(w_v).conststr_w(self)
+    newstrconst = newstr
 
     def str_w(self, w_v):
         return self.as_string(w_v).str_w(self)
@@ -146,12 +142,11 @@ class ObjSpace(object):
     def getitem(self, w_obj, w_item):
         return w_obj.deref().getitem(self, w_item.deref())
 
-    def itemreference(self, w_obj, w_item):
-        return w_obj.deref().itemreference(self, w_item.deref())
-
     def setitem(self, w_obj, w_item, w_value):
-        return w_obj.deref().setitem(self, w_item.deref(),
-                                     w_value.deref_for_store())
+        return w_obj.deref().setitem(self, w_item.deref(), w_value.deref())
+
+    def setitem_ref(self, w_obj, w_item, w_ref):
+        return w_obj.deref().setitem_ref(self, w_item.deref(), w_ref)
 
     def concat(self, w_left, w_right):
         return self.as_string(w_left).strconcat(self, self.as_string(w_right))
@@ -160,7 +155,7 @@ class ObjSpace(object):
         return w_obj.deref().strlen()
 
     def arraylen(self, w_obj):
-        return w_obj.deref().arraylen(self)
+        return w_obj.deref().arraylen()
 
     def slice(self, w_arr, start, end, keep_keys):
         res_arr = []
@@ -188,8 +183,8 @@ class ObjSpace(object):
             return self.new_array_from_pairs(res_arr)
         return self.new_array_from_list([v for _, v in res_arr])
 
-    def append(self, w_arr, w_val):
-        w_arr.deref().append(self, w_val.deref_for_store())
+    def append_index(self, w_arr):
+        return w_arr.deref().append_index(self)
 
     def getchar(self, w_obj):
         # get first character
@@ -212,13 +207,11 @@ class ObjSpace(object):
         return True
 
     def new_array_from_list(self, lst_w):
-        return new_array_from_list(self, lst_w)
+        return W_ArrayObject.new_array_from_list(self, lst_w)
 
-    def new_array_from_pairs(self, lst_w):
-        return new_array_from_pairs(self, lst_w)
-
-    def new_map_from_pairs(self, lst_w):
-        return new_map_from_pairs(self, lst_w)
+    def new_array_from_dict(self, dict_w):
+        # 'dict_w' is a dictionary {"rpython string": W_Objects}
+        return W_ArrayObject.new_array_from_dict(self, dict_w)
 
     def iter(self, w_arr):
         return ObjSpaceWithIter(self, w_arr)
@@ -281,7 +274,4 @@ W_BoolObject.tp = ObjSpace.tp_bool
 W_IntObject.tp = ObjSpace.tp_int
 W_StringObject.tp = ObjSpace.tp_str
 W_ArrayObject.tp = ObjSpace.tp_array
-W_Cell.tp = ObjSpace.tp_cell
 W_NullObject.tp = ObjSpace.tp_null
-W_Reference.tp = ObjSpace.tp_reference
-W_FakeIndex.tp = ObjSpace.tp_fakeindex

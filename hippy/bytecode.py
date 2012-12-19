@@ -9,13 +9,12 @@ class ByteCode(object):
     """
     _immutable_fields_ = ['code', 'consts[*]', 'varnames[*]',
                           'functions[*]', 'names[*]', 'stackdepth',
-                          'var_to_pos', 'names_to_pos', 'user_functions',
-                          'is_main', 'uses_dict']
-    
+                          'var_to_pos', 'names_to_pos', 'user_functions']
+    _marker = None
+
     def __init__(self, code, consts, names, varnames, user_functions,
                  static_vars, filename, sourcelines, line_start_offset,
-                 startlineno=0, bc_mapping=None, name='<main>',
-                 uses_GLOBALS=False, is_main=False):
+                 startlineno=0, bc_mapping=None, name='<main>'):
         self.code = code
         self.filename = filename
         self.sourcelines = sourcelines
@@ -30,14 +29,11 @@ class ByteCode(object):
         self.startlineno = startlineno
         self.bc_mapping = bc_mapping
         self.name = name
-        self.uses_GLOBALS = uses_GLOBALS
         for i, v in enumerate(varnames):
             assert i >= 0
             self.var_to_pos[v] = i
         for i, v in enumerate(names):
             self.names_to_pos[v] = i
-        self.is_main = is_main
-        self.uses_dict = is_main
         self.static_vars = static_vars
 
     def getline(self, no):
@@ -92,8 +88,12 @@ class ByteCode(object):
         i = 0
         lines = []
         while i < len(self.code):
+            if i == self._marker:   # not translated
+                line = ' ===> '
+            else:
+                line = '%4d  ' % (i,)
             c = ord(self.code[i])
-            line = BYTECODE_NAMES[c]
+            line += BYTECODE_NAMES[c]
             i += 1
             for k in range(BYTECODE_NUM_ARGS[c]):
                 line += " %s" % (ord(self.code[i]) +
@@ -101,3 +101,6 @@ class ByteCode(object):
                 i += 2
             lines.append(line)
         return "\n".join(lines)
+
+    def show(self):
+        print self.dump()

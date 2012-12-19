@@ -1,14 +1,14 @@
 
 from hippy.rpython.rdict import RDict
-from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES, RETURN_NULL,\
-     BINOP_LIST, RETURN, INPLACE_LIST
+from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES,\
+     BINOP_LIST, RETURN
 from hippy.builtin import setup_builtin_functions
 from hippy.error import InterpreterError
-from hippy.objects.reference import W_Variable, W_Cell, W_Reference
+from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
-from hippy.objects.strobject import W_StrInterpolation
+from hippy.objects.interpolate import W_StrInterpolation
 from hippy.objects.arrayiter import BaseArrayIterator
-from hippy.objects.arrayobject import new_globals_wrapper
+#from hippy.objects.arrayobject import new_globals_wrapper
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -40,23 +40,7 @@ class Frame(object):
         self.stackpos = 0
         self.bytecode = code # for the debugging
         self.next_instr = 0
-        if code.uses_dict:
-            # we use dict in case of:
-            # * dynamic var access
-            # * global namespace
-            self.vars_dict = RDict(W_Root)
-            for v in code.varnames:
-                self.vars_dict[v] = W_Cell(space.w_Null)
-            # create a global dict on the interpreter
-            if code.is_main:
-                space.ec.interpreter.setup_globals(space, self.vars_dict)
-            if code.uses_GLOBALS:
-                self.vars_dict['GLOBALS'] = space.get_globals_wrapper()
-            self.vars_w = []
-        else:
-            self.vars_w = [space.w_Null for v in code.varnames]
-            if code.uses_GLOBALS:
-                self.vars_w[code.lookup_var_pos('GLOBALS')] = space.get_globals_wrapper()
+        self.vars_w = [W_Reference(space.w_Null) for v in code.varnames]
 
     def push(self, w_v):
         stackpos = jit.hint(self.stackpos, promote=True)
@@ -67,14 +51,22 @@ class Frame(object):
         stackpos = jit.hint(self.stackpos, promote=True) - 1
         assert stackpos >= 0
         res = self.stack[stackpos]
-        if self.stack[stackpos] is not None:
-            self.stack[stackpos].mark_invalid()
+        #if self.stack[stackpos] is not None:
+        #    self.stack[stackpos].mark_invalid()
         self.stack[stackpos] = None # don't artificially keep alive stuff
         self.stackpos = stackpos
         return res
 
+    def pop_n(self, count):
+        stackpos = jit.hint(self.stackpos, promote=True) - count
+        assert stackpos >= 0
+        for i in range(count):
+            self.stack[stackpos + i] = None
+        self.stackpos = stackpos
+
     @jit.unroll_safe
     def clean(self, bytecode):
+        return # XXX
         if not bytecode.uses_dict:
             for i in range(len(bytecode.varnames)):
                 self.vars_w[i].mark_invalid()
@@ -84,61 +76,35 @@ class Frame(object):
         assert stackpos >= 0
         return self.stack[stackpos]
 
-    def store_var_by_name(self, space, bc, name, w_value):
-        if bc.uses_dict:
-            self.vars_dict[name].store_var(space, w_value)
-        else:
-            pos = bc.lookup_var_pos(name)
-            return self.simple_store_var(space, pos, w_value)
+    def peek_nth(self, n):
+        # peek() == peek_nth(0)
+        stackpos = jit.hint(self.stackpos, promote=True) + ~n
+        assert stackpos >= 0
+        return self.stack[stackpos]
 
-    def simple_store_var(self, space, pos, w_value):
-        pos = jit.hint(pos, promote=True)
-        if isinstance(w_value, W_Reference):
-            self.vars_w[pos] = W_Cell(w_value)
-        else:
-            w_copy = w_value.deref_for_store().copy(space)
-            self.vars_w[pos] = w_copy
-            return w_copy
+    def poke_nth(self, n, w_obj):
+        stackpos = jit.hint(self.stackpos, promote=True) + ~n
+        assert stackpos >= 0
+        self.stack[stackpos] = w_obj
 
     def store_var(self, space, w_v, w_value):
-        if isinstance(w_v, W_Variable):
-            self.simple_store_var(space, w_v.pos, w_value)
+        if not isinstance(w_v, W_Reference):
+            raise InterpreterError(
+                "Reference to something that's not a variable")
         else:
-            w_v.store_var(space, w_value)
+            w_v.w_value = w_value.deref()
 
     @jit.elidable
     def lookup_var_pos(self, name):
         return self.vars_dict[name]
 
-    def load_var(self, space, bytecode, name):
-        if bytecode.uses_dict:
-            return self.lookup_var_pos(name)
-        pos = jit.hint(bytecode.lookup_var_pos(name), promote=True)
-        w_v = self.vars_w[pos]
-        if w_v.tp == space.tp_cell:
-            return w_v
-        return W_Variable(self, pos)
+    def load_fast(self, no):
+        return self.vars_w[no]
 
-    def load_fast(self, space, bytecode, no):
-        w_v = self.vars_w[no]
-        if w_v.tp == space.tp_cell:
-            return w_v
-        return W_Variable(self, no)
+    def store_fast(self, no, w_ref):
+        assert isinstance(w_ref, W_Reference)
+        self.vars_w[no] = w_ref
 
-    def upgrade_to_cell(self, w_var):
-        if self.bytecode.uses_dict:
-            return w_var
-        if isinstance(w_var, W_Reference):
-            w_var = w_var.deref()
-        elif isinstance(w_var, W_Cell):
-            return w_var
-        elif not isinstance(w_var, W_Variable):
-            raise InterpreterError("Reference to something that's not a variable")
-        assert isinstance(w_var, W_Variable)
-        new_var = W_Cell(w_var.deref())
-        pos = jit.hint(w_var.pos, promote=True)
-        self.vars_w[pos] = new_var
-        return new_var
 
 class IllegalInstruction(InterpreterError):
     pass
@@ -163,7 +129,7 @@ class Interpreter(object):
 
     def setup_globals(self, space, dct):
         self.globals = dct
-        self.globals_wrapper = new_globals_wrapper(space, dct)
+        #self.globals_wrapper = new_globals_wrapper(space, dct)
 
     @jit.elidable
     def lookup_global(self, space, name):
@@ -203,6 +169,8 @@ class Interpreter(object):
             driver.jit_merge_point(bytecode=bytecode, frame=frame,
                                    pc=pc, self=self)
             code = bytecode.code
+            if not we_are_translated():
+                bytecode._marker = pc
             next_instr = ord(code[pc])
             frame.next_instr = pc
             # XXX change this to range check
@@ -221,11 +189,7 @@ class Interpreter(object):
                 arg2 = 0
             assert arg >= 0
             assert arg2 >= 0
-            if next_instr == RETURN_NULL:
-                assert frame.stackpos == 0
-                frame.clean(bytecode)
-                return None
-            elif next_instr == RETURN:
+            if next_instr == RETURN:
                 assert frame.stackpos == 1
                 res = frame.stack[0].deref()
                 frame.clean(bytecode)
@@ -258,21 +222,19 @@ class Interpreter(object):
         self.topframeref = frame.f_backref
 
     def echo(self, space, v):
-        # XXX extra copy of the string if mutable
-        space.ec.writestr(space.conststr_w(space.as_string(v)))
+        space.ec.writestr(space.str_w(space.as_string(v)))
 
     def ILLEGAL(self, bytecode, frame, space, arg, arg2, pc):
         raise IllegalInstruction()
 
-    RETURN_NULL = ILLEGAL # handled separately
     RETURN = ILLEGAL      # handled separately
+
+    def LOAD_NULL(self, bytecode, frame, space, arg, arg2, pc):
+        frame.push(space.w_Null)
+        return pc
 
     def LOAD_CONST(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(bytecode.consts[arg])
-        return pc
-
-    def LOAD_MUTABLE_CONST(self, bytecode, frame, space, arg, arg2, pc):
-        frame.push(bytecode.consts[arg].copy(space))
         return pc
 
     def LOAD_CONST_INTERPOLATE(self, bytecode, frame, space, arg, arg2, pc):
@@ -286,10 +248,21 @@ class Interpreter(object):
         return pc
 
     def STORE(self, bytecode, frame, space, arg, arg2, pc):
-        w_val = frame.pop()
+        w_val = frame.peek_nth(arg)
         w_var = frame.pop()
+        w_keep = frame.peek().deref()
+        frame.pop_n(arg)
         frame.store_var(space, w_var, w_val)
-        frame.push(w_val)
+        frame.push(w_keep)
+        return pc
+
+    def STORE_REF(self, bytecode, frame, space, arg, arg2, pc):
+        w_val = frame.peek_nth(arg)
+        w_var = frame.pop()
+        w_keep = frame.peek()    # <== difference with STORE
+        frame.pop_n(arg)
+        frame.store_var(space, w_var, w_val)
+        frame.push(w_keep)
         return pc
 
     def DISCARD_TOP(self, bytecode, frame, space, arg, arg2, pc):
@@ -302,6 +275,17 @@ class Interpreter(object):
         frame.push(w_v)
         return pc
 
+    def DUP_TOP_AND_NTH(self, bytecode, frame, space, arg, arg2, pc):
+        w_v = frame.peek_nth(arg)
+        frame.push(frame.peek())
+        frame.push(w_v)
+        return pc
+
+    def POP_AND_POKE_NTH(self, bytecode, frame, space, arg, arg2, pc):
+        w_v = frame.pop()
+        frame.poke_nth(arg, w_v)
+        return pc
+
     def LOAD_NAME(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(space.newstrconst(bytecode.names[arg]))
         return pc
@@ -311,12 +295,17 @@ class Interpreter(object):
         return pc
 
     def LOAD_VAR(self, bytecode, frame, space, arg, arg2, pc):
-        name = space.conststr_w(frame.pop())
+        name = space.str_w(frame.pop())
         frame.push(frame.load_var(space, bytecode, name))
         return pc
 
     def LOAD_FAST(self, bytecode, frame, space, arg, arg2, pc):
-        frame.push(frame.load_fast(space, bytecode, arg))
+        frame.push(frame.load_fast(arg))
+        return pc
+
+    def STORE_FAST_REF(self, bytecode, frame, space, arg, arg2, pc):
+        w_ref = frame.peek()
+        frame.store_fast(arg, w_ref)
         return pc
 
     @jit.unroll_safe
@@ -367,28 +356,28 @@ class Interpreter(object):
 
     def SUFFIX_PLUSPLUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.push(w_var.deref().copy(space))
+        frame.push(w_var.deref())
         frame.store_var(space, w_var, space.uplusplus(w_var))
         return pc
 
     def SUFFIX_MINUSMINUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.push(w_var.deref().copy(space))
+        frame.push(w_var.deref())
         frame.store_var(space, w_var, space.uminusminus(w_var))
         return pc
 
     def PREFIX_PLUSPLUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.store_var(space, w_var,
-                        space.uplusplus(w_var.deref().copy(space)))
-        frame.push(w_var.deref())
+        w_newval = space.uplusplus(w_var.deref())
+        frame.store_var(space, w_var, w_newval)
+        frame.push(w_newval)
         return pc
 
     def PREFIX_MINUSMINUS(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
-        frame.store_var(space, w_var,
-                        space.uminusminus(w_var.deref().copy(space)))
-        frame.push(w_var.deref())
+        w_newval = space.uminusminus(w_var.deref())
+        frame.store_var(space, w_var, w_newval)
+        frame.push(w_newval)
         return pc
 
     def UNARY_PLUS(self, bytecode, frame, space, arg, arg2, pc):
@@ -418,18 +407,48 @@ class Interpreter(object):
         frame.push(space.getitem(w_obj, w_item))
         return pc
 
-    def ITEMREFERENCE(self, bytecode, frame, space, arg, arg2, pc):
-        w_item = frame.pop()
-        w_obj = frame.pop()
-        frame.push(space.itemreference(w_obj, w_item))
+    def FETCHITEM(self, bytecode, frame, space, arg, arg2, pc):
+        # like GETITEM, but without destroying the input argument
+        w_obj = frame.peek()
+        w_item = frame.peek_nth(arg)
+        frame.push(space.getitem(w_obj, w_item))
         return pc
 
-    def SETITEM(self, bytecode, frame, space, arg, arg2, pc):
-        w_value = frame.pop()
-        w_item = frame.pop()
+    def FETCHITEM_APPEND(self, bytecode, frame, space, arg, arg2, pc):
+        w_obj = frame.peek()
+        w_item = space.append_index(w_obj)
+        frame.poke_nth(arg, w_item)
+        frame.push(space.getitem(w_obj, w_item))
+        return pc
+
+    def STOREITEM(self, bytecode, frame, space, arg, arg2, pc):
+        # strange stack effects, matching the usage of this opcode
+        w_value = frame.peek_nth(arg)
+        w_target = frame.pop()
+        w_item = frame.peek_nth(arg)
+        w_obj = frame.peek()
+        if isinstance(w_target, W_Reference):
+            w_target.w_value = w_value.deref()
+            w_newobj = w_obj
+        else:
+            w_newobj = space.setitem(w_obj, w_item, w_value)
+        frame.poke_nth(arg, w_newobj)
+        return pc
+
+    def STOREITEM_REF(self, bytecode, frame, space, arg, arg2, pc):
+        w_ref = frame.peek_nth(arg - 1)
+        assert isinstance(w_ref, W_Reference)
+        w_item = frame.peek_nth(arg)
+        w_obj = frame.peek()
+        w_newvalue = space.setitem_ref(w_obj, w_item, w_ref)
+        frame.poke_nth(arg, w_newvalue)
+        return pc
+
+    def MAKE_REF(self, bytecode, frame, space, arg, arg2, pc):
         w_obj = frame.pop()
-        space.setitem(w_obj, w_item, w_value)
-        frame.push(w_value)
+        if not isinstance(w_obj, W_Reference):
+            w_obj = W_Reference(w_obj)
+        frame.poke_nth(arg - 1, w_obj)
         return pc
 
     def BINARY_CONCAT(self, bytecode, frame, space, arg, arg2, pc):
@@ -441,7 +460,8 @@ class Interpreter(object):
     def BINARY_IS(self, bytecode, frame, space, arg, arg2, pc):
         w_right = frame.pop().deref()
         w_left = frame.pop().deref()
-        if w_left.tp != w_right.tp:
+        XXX - space.is_w(w_left, w_right)
+        if w_t.tp != w_right.tp:
             frame.push(space.w_False)
         else:
             frame.push(space.eq(w_left, w_right))
@@ -450,6 +470,7 @@ class Interpreter(object):
     def BINARY_ISNOT(self, bytecode, frame, space, arg, arg2, pc):
         w_right = frame.pop().deref()
         w_left = frame.pop().deref()
+        XXX - space.is_w(w_left, w_right)
         if w_left.tp != w_right.tp:
             frame.push(space.w_True)
         else:
@@ -476,13 +497,6 @@ class Interpreter(object):
             w_k = frame.pop()
             args_w[i] = (w_k, w_v)
         frame.push(space.new_array_from_pairs(args_w))
-        return pc
-
-    def APPEND(self, bytecode, frame, space, arg, arg2, pc):
-        w_val = frame.pop()
-        arr = frame.pop()
-        frame.push(w_val)
-        space.append(arr, w_val)
         return pc
 
     @jit.unroll_safe
@@ -514,14 +528,6 @@ class Interpreter(object):
         w_var = frame.pop()
         w_var = frame.upgrade_to_cell(w_var)
         frame.push(W_Reference(w_var))
-        return pc
-
-    def INPLACE_CONCAT(self, bytecode, frame, space, arg, arg2, pc):
-        w_value = frame.pop()
-        w_var = frame.pop()
-        frame.store_var(space, w_var,
-                        space.inplace_concat(w_var, w_value))
-        frame.push(w_var)
         return pc
 
     def CREATE_ITER(self, bytecode, frame, space, arg, arg2, pc):
@@ -567,22 +573,7 @@ def _new_binop(name):
     BINARY.func_name = new_name
     return new_name, BINARY
 
-def _new_inplace_op(name):
-    def INPLACE(self, bytecode, frame, space, arg, arg2, pc):
-        w_value = frame.pop()
-        w_var = frame.pop()
-        w_newval = getattr(space, name)(w_var, w_value)
-        frame.store_var(space, w_var, w_newval)
-        frame.push(w_newval)
-        return pc
-    new_name = 'INPLACE_' + name.upper()
-    INPLACE.func_name = new_name
-    return new_name, INPLACE
-
 for _name in BINOP_LIST:
     setattr(Interpreter, *_new_binop(_name))
-
-for _name in INPLACE_LIST:
-    setattr(Interpreter, *_new_inplace_op(_name))
 
 unrolling_bc = unrolling_iterable(enumerate(BYTECODE_NAMES))

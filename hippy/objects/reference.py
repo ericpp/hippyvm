@@ -36,22 +36,20 @@ class W_Reference(W_Root):
     """ This is a reference got by &$stuff. It changes semantics of writing
     to a variable. Note that a reference to arrayitem is different
     """
-    def __init__(self, v):
-        #assert isinstance(v, W_Cell)
-        self.v = v
+    _COUNTER = 0
 
-    def store_var(self, space, w_value):
-        # we ignore args
-        self.v.store_var(space, w_value)
+    def __init__(self, w_value):
+        assert not isinstance(w_value, W_Reference)
+        self.w_value = w_value
 
-    def deref_for_store(self):
-        return self
-    
     def deref(self):
-        return self.v.deref() # can be nested
+        return self.w_value
 
-    def copy(self, space):
-        return self
+    def __repr__(self):
+        if not hasattr(self, '_counter'):
+            self._counter = W_Reference._COUNTER
+            W_Reference._COUNTER += 1
+        return '<Ref%d: %s>' % (self._counter, self.w_value)
 
 class W_BaseContainerReference(W_Reference):
     pass

@@ -32,9 +32,6 @@ class W_IntObject(W_Root):
     def is_valid_number(self, space):
         return True
 
-    def copy(self, space):
-        return self # immutable object
-
     def as_number(self, space):
         return self
 
@@ -94,7 +91,7 @@ class W_IntObject(W_Root):
         assert isinstance(w_other, W_IntObject)
         return self.intval == w_other.intval
 
-    def hash(self):
+    def hash(self, space):
         return hash_int(self.intval)
 
     def __repr__(self):

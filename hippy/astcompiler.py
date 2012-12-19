@@ -1,16 +1,16 @@
 
 from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Variable, ConstantStr, Echo, ConstantFloat, If, SuffixOp, PrefixOp,\
-     While, SimpleCall, For, GetItem, SetItem, Array, FunctionDecl, Argument,\
+     While, SimpleCall, For, GetItem, Array, FunctionDecl, Argument,\
      Return, Append, And, Or, InplaceOp, Global, NamedConstant, DoWhile,\
-     Reference, ReferenceArgument, Break, InplaceSetItem, Hash, IfExpr,\
+     Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
      UninitializedVariable, InitializedVariable, DefaultArgument,\
-     GetItemReference, ConstantAppend
+     ConstantAppend
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
-from hippy.objects.strobject import W_StrInterpolation
-from hippy.objects.arrayobject import W_FakeIndex
+from hippy.objects.interpolate import W_StrInterpolation
+#from hippy.objects.arrayobject import W_FakeIndex
 from hippy.objects.reference import W_Cell
 from hippy import consts
 from hippy.error import InterpreterError
@@ -24,7 +24,8 @@ def compile_ast(filename, source, mainnode, space, extra_offset=0,
                         extra_offset=extra_offset,
                         print_exprs=print_exprs)
     mainnode.compile(c)
-    c.emit(consts.RETURN_NULL)
+    c.emit(consts.LOAD_NULL)
+    c.emit(consts.RETURN)
     return c.create_bytecode()
 
 class CompilerError(InterpreterError):
@@ -44,8 +45,7 @@ class CompilerContext(object):
     """ Context for compiling a piece of bytecode. It'll store the necessary
     """
     def __init__(self, filename, sourcelines, startlineno, space, name='<main>',
-                 is_main=True, extra_offset=0, print_exprs=False):
-        self.sourcelines = sourcelines
+                 extra_offset=0, print_exprs=False):
         self.space = space
         self.filename = filename
         self.data = []
@@ -65,15 +65,12 @@ class CompilerContext(object):
         self.cur_lineno = startlineno
         self.lineno_map = []
         self.name = name
-        self.uses_GLOBALS = False
-        self.is_main = is_main
         self.extra_offset = extra_offset
         self.print_exprs = print_exprs
         self.static_vars = {}
 
     def register_superglobal(self, name):
         assert name == 'GLOBALS' # not supporting anything else for now
-        self.uses_GLOBALS = True
 
     def set_lineno(self, lineno):
         self.cur_lineno = lineno
@@ -189,8 +186,7 @@ class CompilerContext(object):
                         self.varnames[:], self.functions, self.static_vars,
                         self.filename, self.sourcelines, self.extra_offset,
                         self.startlineno,
-                        self.lineno_map, self.name, self.uses_GLOBALS,
-                        is_main=self.is_main)
+                        self.lineno_map, self.name)
 
     def preprocess_str(self, s):
         i = 0
@@ -252,10 +248,10 @@ class __extend__(Stmt):
 class __extend__(Return):
     def compile(self, ctx):
         if self.expr is None:
-            ctx.emit(consts.RETURN_NULL)
+            ctx.emit(consts.LOAD_NULL)
         else:
             self.expr.compile(ctx)
-            ctx.emit(consts.RETURN)
+        ctx.emit(consts.RETURN)
 
 class __extend__(Echo):
     def compile(self, ctx):
@@ -266,9 +262,156 @@ class __extend__(Echo):
 
 class __extend__(Assignment):
     def compile(self, ctx):
-        self.var.compile(ctx)
+        expr = self.expr
+        if isinstance(expr, Reference):
+            self._compile_assign_reference(ctx, expr.item)
+        else:
+            self._compile_assign_regular(ctx)
+
+    # A simple assignment like "$a = 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 42      [ 42 ]
+    # LOAD_FAST $a       [ 42, Ref$a ]
+    # STORE 1            [ 42 ]
+    #
+    # The 'STORE 1' pops the reference Ref$a, and store into it the
+    # next value from the stack.  The argument to the STORE is always 1
+    # in simple assignments, but see below.
+    #
+    # An expression like "$a[5][6] = 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_CONST 6       [ 5, 6 ]
+    # LOAD_CONST 42      [ 5, 6, 42 ]
+    # LOAD_FAST $a       [ 5, 6, 42, Ref$a ]
+    # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5] ]
+    # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5], OldValue$a[5][6] ]
+    # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
+    # STORE 3            [ 42 ]
+    #
+    # In more details, 'FETCHITEM N' fetches from the array at position 0
+    # the item at position N, and pushes the result without popping any
+    # argument.
+    #
+    # 'STOREITEM N' depends on four stack arguments, at position 0, 1, N
+    # and N+1.  In the first case above:
+    #
+    #  - OldValue$a[5][6] is checked for being a reference.
+    #
+    #  - If it is not, then its value is ignored, and we compute
+    #    NewArray1 = Array$a[5] with the 6th item replaced with 42.
+    #
+    #  - If it is, then 42 is stored into this existing reference
+    #    and NewArray1 is just Array$a[5].
+    #
+    #  - NewArray1 is put back in the stack at position N+1, and
+    #    finally the stack item 0 is popped.
+    #
+    # 'STORE N' has also strange stack effects: it stores the item at
+    # position N into the reference at position 0, then kill the item
+    # at position 0 and all items at positions 2 to N inclusive.
+    # Above, it leaves 42 untouched, which (although not used by STORE)
+    # is the result of the whole expression.
+    #
+    # Append: "$a[5][] = 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_NULL          [ 5, NULL ]
+    # LOAD_CONST 42      [ 5, NULL, 42 ]
+    # LOAD_FAST $a       [ 5, NULL, 42, Ref$a ]
+    # FETCHITEM 3        [ 5, NULL, 42, Ref$a, Array$a[5] ]
+    # FETCHITEM_APPEND 3 [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
+    # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
+    # STORE 3            [ 42 ]
+    #
+    def _compile_assign_regular(self, ctx):
+        depth = self.var.compile_assignment_prepare(ctx)
         self.expr.compile(ctx)
-        ctx.emit(consts.STORE)
+        self.var.compile_assignment_fetch(ctx, depth)
+        self.var.compile_assignment_store(ctx, depth)
+
+    # A simple assignment like '$a =& $b' becomes this:
+    #                 stack:
+    # LOAD_FAST $b       [ Ref$b ]
+    # STORE_FAST_REF $a  [ Ref$b ]
+    #
+    # If the expression on the left is more complex, like '$a[5][6][7] =& $b':
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_CONST 6       [ 5, 6 ]
+    # LOAD_CONST 7       [ 5, 6, 7 ]
+    # LOAD_FAST $b       [ 5, 6, 7, Ref$b ]
+    # LOAD_FAST $a       [ 5, 6, 7, Ref$b, Ref$a ]
+    # FETCHITEM 4        [ 5, 6, 7, Ref$b, Ref$a, Array$a[5] ]
+    # FETCHITEM 4        [ 5, 6, 7, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
+    # STOREITEM_REF 4    [ 5, 6, NA1, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
+    # STOREITEM 4        [ 5, NA2, NA1, Ref$b, Ref$a, Array$a[5] ]
+    # STOREITEM 4        [ NA3, NA2, NA1, Ref$b, Ref$a ]
+    # STORE_REF 4        [ Ref$b ]         # "NA" = "NewArray"
+    #
+    # If the expression on the right is more complex than just '$b',
+    # say '... =& $b[7][8]', then we use compile_reference() to get code
+    # like that to load it:
+    #
+    # LOAD_CONST 7       [ 7 ]
+    # LOAD_CONST 8       [ 7, 8 ]
+    # LOAD_NULL          [ 7, 8, NULL ]
+    # LOAD_FAST $b       [ 7, 8, NULL, Ref$b ]
+    # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7] ]
+    # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7], Array$b[7][8] ]
+    # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7] ]
+    # STOREITEM_REF 3    [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
+    # STORE_REF 3        [ NewRef ]
+    #
+    # The case of '... =& $b;' is done just with a LOAD_FAST, but following
+    # the recipe above we would get the following equivalent code:
+    #
+    # LOAD_NONE          [ None ]
+    # LOAD_FAST $b       [ None, Ref$b ]
+    # MAKE_REF 1         [ Ref$b, Ref$b ]     # already a ref
+    # STORE_REF 1        [ Ref$b ]            # stores $b in $b, no-op
+    #
+    def _compile_assign_reference(self, ctx, source):
+        depth = self.var.compile_assignment_prepare(ctx)
+        source.compile_reference(ctx)
+        self.var.compile_assignment_fetch_ref(ctx, depth)
+        self.var.compile_assignment_store_ref(ctx, depth)
+
+class __extend__(InplaceOp):
+    # In-place operators: "$a += 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 42      [ 42 ]
+    # LOAD_FAST $a       [ 42, Ref$a ]
+    # DUP_TOP_AND_NTH 1  [ 42, Ref$a, Ref$a, 42 ]
+    # BINARY_ADD         [ 42, Ref$a, $a+42 ]
+    # POP_AND_POKE_NTH 1 [ $a+42, Ref$a ]
+    # STORE 1            [ $a+42 ]
+    #
+    # "$a[5] += 42" becomes this:
+    #                 stack:
+    # LOAD_CONST 5       [ 5 ]
+    # LOAD_CONST 42      [ 5, 42 ]
+    # LOAD_FAST $a       [ 5, 42, Ref$a ]
+    # FETCHITEM 2        [ 5, 42, Ref$a, OldValue$a[5] ]
+    # DUP_TOP_AND_NTH 2  [ 5, 42, Ref$a, OldValue$a[5], OldValue$a[5], 42 ]
+    # BINARY_ADD         [ 5, 42, Ref$a, OldValue$a[5], old+42 ]
+    # POP_AND_POKE_NTH 2 [ 5, old+42, Ref$a, OldValue$a[5] ]
+    # STOREITEM 2        [ NewArray1, old+42, Ref$a ]
+    # STORE 2            [ old+42 ]
+    #
+    def compile(self, ctx):
+        assert self.op.endswith('=')
+        op = self.op[:-1]
+        depth = self.var.compile_assignment_prepare(ctx)
+        self.expr.compile(ctx)
+        self.var.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.DUP_TOP_AND_NTH, depth + 1)
+        ctx.emit(consts.BIN_OP_TO_BC[op])
+        ctx.emit(consts.POP_AND_POKE_NTH, depth + 1)
+        self.var.compile_assignment_store(ctx, depth)
 
 class __extend__(ConstantInt):
     def compile(self, ctx):
@@ -306,12 +449,6 @@ class __extend__(BinOp):
         self.right.compile(ctx)
         ctx.emit(consts.BIN_OP_TO_BC[self.op])
 
-class __extend__(InplaceOp):
-    def compile(self, ctx):
-        self.var.compile(ctx)
-        self.expr.compile(ctx)
-        ctx.emit(consts.INPLACE_OP_TO_BC[self.op])
-
 class __extend__(Variable):
     def compile(self, ctx):
         # note that in the fast case (a variable) we could precache the name
@@ -319,14 +456,36 @@ class __extend__(Variable):
         # interpreter
         node = self.node
         if isinstance(node, ConstantStr):
-            if ctx.is_main:
-                ctx.emit(consts.LOAD_VAR_NAME, ctx.create_var_name(node.strval))
-            else:
-                ctx.emit(consts.LOAD_FAST, ctx.create_var_name(node.strval))
-                return # fast path
+            ctx.emit(consts.LOAD_FAST, ctx.create_var_name(node.strval))
+            return # fast path
         else:
             self.node.compile(ctx)
         ctx.emit(consts.LOAD_VAR)
+
+    def compile_reference(self, ctx):
+        self.compile(ctx)
+
+    def compile_assignment_prepare(self, ctx):
+        return 0
+
+    def compile_assignment_fetch(self, ctx, depth):
+        self.compile(ctx)
+
+    def compile_assignment_store(self, ctx, depth, wants_ref=False):
+        if wants_ref:
+            ctx.emit(consts.STORE_REF, depth + 1)
+        else:
+            ctx.emit(consts.STORE, depth + 1)
+
+    def compile_assignment_fetch_ref(self, ctx, depth):
+        pass
+
+    def compile_assignment_store_ref(self, ctx, depth):
+        node = self.node
+        if isinstance(node, ConstantStr):
+            ctx.emit(consts.STORE_FAST_REF, ctx.create_var_name(node.strval))
+            return # fast path
+        raise NotImplementedError
 
 class __extend__(SuffixOp):
     def compile(self, ctx):
@@ -345,9 +504,12 @@ class __extend__(If):
         ctx.emit(consts.JUMP_IF_FALSE, 0)
         pos = ctx.get_pos()
         self.body.compile(ctx)
+        jump_after_list = []
 
         if self.elseiflist:
             for elem in self.elseiflist:
+                ctx.emit(consts.JUMP_FORWARD, 0)
+                jump_after_list.append(ctx.get_pos())
                 ctx.patch_pos(pos)
                 elem.cond.compile(ctx)
                 ctx.emit(consts.JUMP_IF_FALSE, 0)
@@ -356,13 +518,12 @@ class __extend__(If):
 
         if self.elseclause is not None:
             ctx.emit(consts.JUMP_FORWARD, 0)
-            elsepos = ctx.get_pos()
-        else:
-            elsepos = -1 # help the annotator
+            jump_after_list.append(ctx.get_pos())
         ctx.patch_pos(pos)
         if self.elseclause is not None:
             self.elseclause.compile(ctx)
-            ctx.patch_pos(elsepos)
+        for pos in jump_after_list:
+            ctx.patch_pos(pos)
 
 class __extend__(While):
     def compile(self, ctx):
@@ -412,27 +573,47 @@ class __extend__(GetItem):
         self.item.compile(ctx)
         ctx.emit(consts.GETITEM)
 
-class __extend__(GetItemReference):
-    def compile(self, ctx):
-        self.node.compile(ctx)
+    def compile_assignment_prepare(self, ctx):
+        depth = self.node.compile_assignment_prepare(ctx)
         self.item.compile(ctx)
-        ctx.emit(consts.ITEMREFERENCE)
+        return depth + 1
 
-class __extend__(SetItem):
-    def compile(self, ctx):
-        self.node.compile(ctx)
-        self.item.compile(ctx)
-        ctx.emit(consts.ITEMREFERENCE)
-        self.value.compile(ctx)
-        ctx.emit(consts.STORE)
+    def compile_assignment_fetch(self, ctx, depth):
+        self.node.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.FETCHITEM, depth + 1)
 
-class __extend__(InplaceSetItem):
+    def compile_assignment_store(self, ctx, depth, wants_ref=False):
+        ctx.emit(consts.STOREITEM, depth + 1)
+        self.node.compile_assignment_store(ctx, depth, wants_ref)
+
+    def compile_assignment_fetch_ref(self, ctx, depth):
+        self.node.compile_assignment_fetch(ctx, depth)   # and not '.._ref'
+
+    def compile_assignment_store_ref(self, ctx, depth):
+        ctx.emit(consts.STOREITEM_REF, depth + 1)
+        self.node.compile_assignment_store(ctx, depth, True) # and not '.._ref'
+
+    def compile_reference(self, ctx):
+        depth = self.compile_assignment_prepare(ctx)
+        ctx.emit(consts.LOAD_NULL)
+        self.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.MAKE_REF, depth + 1)
+        self.compile_assignment_store_ref(ctx, depth)
+
+class __extend__(Append):
+    # note: this is a subclass of GetItem, so inherits all methods not
+    # explicitly overridden.
     def compile(self, ctx):
-        self.node.compile(ctx)
-        self.item.compile(ctx)
-        ctx.emit(consts.ITEMREFERENCE)
-        self.value.compile(ctx)
-        ctx.emit(consts.INPLACE_OP_TO_BC[self.op])
+        raise CompilerError("cannot use '[]' when reading items")
+
+    def compile_assignment_prepare(self, ctx):
+        depth = self.node.compile_assignment_prepare(ctx)
+        ctx.emit(consts.LOAD_NULL)
+        return depth + 1
+
+    def compile_assignment_fetch(self, ctx, depth):
+        self.node.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.FETCHITEM_APPEND, depth + 1)
 
 class __extend__(Array):
     def compile(self, ctx):
@@ -444,10 +625,10 @@ class __extend__(FunctionDecl):
     def compile(self, ctx):
         new_context = CompilerContext(ctx.filename, ctx.sourcelines,
                                       self.lineno, ctx.space, self.name,
-                                      is_main=False,
                                       extra_offset=ctx.extra_offset)
         self.body.compile(new_context)
-        new_context.emit(consts.RETURN_NULL) # optimization! or lack of
+        new_context.emit(consts.LOAD_NULL)
+        new_context.emit(consts.RETURN)
         args = []
         for arg in self.argdecls:
             if isinstance(arg, Argument):
@@ -464,12 +645,6 @@ class __extend__(FunctionDecl):
                 assert False
             new_context.create_var_name(name) # make sure those are in vars
         ctx.register_function(self.name, args, new_context.create_bytecode())
-
-class __extend__(Append):
-    def compile(self, ctx):
-        self.node.compile(ctx)
-        self.expr.compile(ctx)
-        ctx.emit(consts.APPEND)
 
 class __extend__(And):
     def compile(self, ctx):
@@ -543,11 +718,6 @@ class __extend__(DoWhile):
         self.expr.compile(ctx)
         ctx.emit(consts.JUMP_BACK_IF_TRUE, jmp_pos)
         ctx.pop_label(lbl)
-
-class __extend__(Reference):
-    def compile(self, ctx):
-        self.item.compile(ctx)
-        ctx.emit(consts.REFERENCE)
 
 class __extend__(Break):
     def compile(self, ctx):

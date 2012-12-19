@@ -54,7 +54,7 @@ class Stmt(Node):
 
 
 class Assignment(Node):
-    """ Simple assignment to statically named variable
+    """ Assignment, both for '=' and '=&'.
     """
     def __init__(self, var, expr, lineno=0):
         self.var = var
@@ -68,11 +68,13 @@ class Assignment(Node):
 
 
 class InplaceOp(Node):
+    """ In-place assignment operators: '+=' and friends.
+    """
     def __init__(self, op, var, expr, lineno=0):
         self.op = op
         self.var = var
         self.expr = expr
-        self.lineno = 0
+        self.lineno = lineno
 
     def repr(self):
         return "InplaceOp(%s, %s, %s)" % (self.op, self.var.repr(),
@@ -122,7 +124,7 @@ class BinOp(Node):
         self.op = op
         self.left = left
         self.right = right
-        self.lineno = 0
+        self.lineno = lineno
 
     def repr(self):
         return "BinOp(%s %s %s, %d)" % (
@@ -328,38 +330,6 @@ class GetItem(Node):
     def repr(self):
         return 'GetItem(%s, %s)' % (self.node.repr(), self.item.repr())
 
-
-class GetItemReference(GetItem):
-    pass
-
-
-class SetItem(Node):
-    def __init__(self, node, item, value, lineno=0):
-        self.node = node
-        self.item = item
-        self.value = value
-        self.lineno = lineno
-
-
-    def repr(self):
-        return 'SetItem(%s, %s, %s)' % (self.node.repr(), self.item.repr(),
-                                        self.value.repr())
-
-
-class InplaceSetItem(Node):
-    def __init__(self, op, node, item, value, lineno=0):
-        self.op = op
-        self.node = node
-        self.item = item
-        self.value = value
-        self.lineno = lineno
-
-    def repr(self):
-        return 'InplaceSetItem(%s, %s, %s, %s)' % (self.op, self.node.repr(),
-                                                   self.item.repr(),
-                                                   self.value.repr())
-
-
 class Array(Node):
     def __init__(self, initializers, lineno=0):
         self.initializers = initializers
@@ -381,15 +351,14 @@ class Hash(Node):
                 (k.repr(), v.repr()) for k, v in self.initializers])
 
 
-class Append(Node):
-    def __init__(self, node, expr, lineno=0):
+class Append(GetItem):
+    def __init__(self, node, lineno=0):
         self.node = node
-        self.expr = expr
         self.lineno = lineno
-
+        # no self.item
 
     def repr(self):
-        return 'Append(%s, %s)' % (self.node.repr(), self.expr.repr())
+        return 'Append(%s)' % (self.node.repr(),)
 
 
 class And(Node):
@@ -668,6 +637,7 @@ def convert_string_to_number(s):
         return value_float, fully_processed
     else:
         return value_int, fully_processed
+
 
 class SourceParser(object):
 

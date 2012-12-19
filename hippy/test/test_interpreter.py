@@ -365,14 +365,17 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [2, 1, 0]
 
     def test_declare_function_call(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f($a, $b) {
+           echo $a;
+           echo $b;
            return $a + $b;
         }
-        echo f(1, 2);
+        echo f(10, 20);
         ''')
-        assert self.space.int_w(output[0]) == 3
+        assert self.space.int_w(output[0]) == 10
+        assert self.space.int_w(output[1]) == 20
+        assert self.space.int_w(output[2]) == 30
 
     def test_declare_function_call_2(self):
         py.test.skip("XXX REDO")

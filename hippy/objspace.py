@@ -213,6 +213,9 @@ class ObjSpace(object):
         # 'dict_w' is a dictionary {"rpython string": W_Objects}
         return W_ArrayObject.new_array_from_dict(self, dict_w)
 
+    def new_array_from_pairs(self, pairs_ww):
+        return W_ArrayObject.new_array_from_pairs(self, pairs_ww)
+
     def iter(self, w_arr):
         return ObjSpaceWithIter(self, w_arr)
 

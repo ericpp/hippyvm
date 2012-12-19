@@ -387,7 +387,8 @@ class TestCompiler(object):
         LOAD_CONST 0
         LOAD_CONST 1
         LOAD_FAST 0
-        ARRAY 3
+        DEREF
+        MAKE_ARRAY 3
         LOAD_FAST 1
         STORE 1
         DISCARD_TOP
@@ -399,7 +400,7 @@ class TestCompiler(object):
         self.check_compile("$a = & $b[0][0];", """
         LOAD_CONST 0
         LOAD_CONST 0
-        LOAD_NULL
+        LOAD_NONE
         LOAD_FAST 0
         FETCHITEM 3
         FETCHITEM 3
@@ -456,7 +457,7 @@ class TestCompiler(object):
         self.check_compile("""
         $a[] = 3;
         """, """
-        LOAD_NULL
+        LOAD_NONE
         LOAD_CONST 0
         LOAD_FAST 0
         FETCHITEM_APPEND 2
@@ -471,8 +472,8 @@ class TestCompiler(object):
         self.check_compile("""
         $a = &$b[];
         """, """
-        LOAD_NULL            # NULL
-        LOAD_NULL            # NULL, NULL
+        LOAD_NONE            # NULL
+        LOAD_NONE            # NULL, NULL
         LOAD_FAST 0          # NULL, NULL, Ref$b
         FETCHITEM_APPEND 2   # idx, NULL, Ref$b, Array$b[idx]
         MAKE_REF 2           # idx, NewRef, Ref$b, Array$b[idx]
@@ -612,7 +613,7 @@ class TestCompiler(object):
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
-        LOAD_NULL
+        LOAD_NONE
         LOAD_FAST 0
         FETCHITEM 3
         FETCHITEM 3
@@ -636,7 +637,7 @@ class TestCompiler(object):
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
-        LOAD_NULL
+        LOAD_NONE
         LOAD_FAST 0
         FETCHITEM 2
         MAKE_REF 2
@@ -811,6 +812,7 @@ class TestCompiler(object):
         """, """
         LOAD_CONST 0
         LOAD_FAST 0
+        DEREF
         MAKE_HASH 1
         DISCARD_TOP
         LOAD_NULL
@@ -819,20 +821,43 @@ class TestCompiler(object):
         assert bc.stackdepth == 2
 
     def test_make_hash_const(self):
-        py.test.skip("XXX REDO")
         bc = self.check_compile("""
         array(1=>2, 5=>null, 6=>true, 4=>3.5, 'abc'=>'def',
               'h'=>false);
         """, """
-        LOAD_MUTABLE_CONST 0
+        LOAD_CONST 0
         DISCARD_TOP
-        RETURN_NULL
+        LOAD_NULL
+        RETURN
         """)
         assert bc.stackdepth == 1
         arr = bc.consts[0]
         space = self.space
         assert arr.tp == space.tp_array
         assert space.str_w(space.getitem(arr, space.newstrconst('abc'))) == "def"
+
+    def test_make_array_ref(self):
+        bc = self.check_compile("""
+        array(&$a);
+        """, """
+        LOAD_FAST 0
+        MAKE_ARRAY 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_make_hash_ref(self):
+        bc = self.check_compile("""
+        array(5=>&$a);
+        """, """
+        LOAD_CONST 0
+        LOAD_FAST 0
+        MAKE_HASH 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
 
     def test_extra_offset(self):
         bc = self.check_compile("""

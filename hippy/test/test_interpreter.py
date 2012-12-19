@@ -1411,3 +1411,31 @@ class TestInterpreter(BaseTestInterpreter):
         py.test.skip("XXX FIXME")
         output = self.run('$a="x"; echo gettype($a[0]=5);')
         assert self.space.str_w(output[0]) == "string"
+
+    def test_array_collisions(self):
+        output = self.run('$a = array(0=>5, 0=>6); echo $a[0];')
+        assert self.space.int_w(output[0]) == 6
+        output = self.run('''
+        $b = 5;
+        $a = array(0=>&$a, 0=>6);
+        echo $b;
+        ''')
+        assert self.space.int_w(output[0]) == 5
+        output = self.run('''
+        $b = 5;
+        $a = array($b, $b=7);
+        echo $a[0];
+        ''')
+        assert self.space.int_w(output[0]) == 5
+        output = self.run('''
+        $key = "key";
+        $a = array($key=>5, $key="bar");
+        echo $a["key"];
+        ''')
+        assert self.space.int_w(output[0]) == 5
+        output = self.run('''
+        $key = "key";
+        $a = array($key="bar", $key=>5);
+        echo $a["bar"];
+        ''')
+        assert self.space.int_w(output[0]) == 5

@@ -25,10 +25,23 @@ class W_ArrayObject(W_Root):
     def new_array_from_dict(space, dct_w):
         return W_DictArrayObject(space, dct_w)
 
+    @staticmethod
+    def new_array_from_pairs(space, pairs_ww):
+        dct_w = {}
+        for w_key, w_value in pairs_ww:
+            if w_key is not None:
+                as_int, as_str = W_ArrayObject._getindex(space, w_key)
+            else:
+                as_int, as_str = len(dct_w), None   # XXX FIX ME
+            if as_str is None:
+                as_str = str(as_int)
+            dct_w[as_str] = w_value
+        return W_DictArrayObject(space, dct_w)
+
     def is_true(self, space):
         return self.arraylen() > 0
 
-    def _getindex(self, space, w_arg):
+    def _getindex(space, w_arg):
         "Returns a pair (int, str), where only one of the two is meaningful"
         if w_arg.tp == space.tp_int:
             return space.int_w(w_arg), None
@@ -40,6 +53,22 @@ class W_ArrayObject(W_Root):
             # XXX make a real warning
             raise Exception("Warning: Illegal offset type")
     _getindex._always_inline_ = True
+    _getindex = staticmethod(_getindex)
+
+    def _convert_str_to_int(key):
+        # try to convert 'key' from a string to an int, but carefully:
+        # we must not remove any space, make sure the result does not
+        # overflows, etc.  In general we have to make sure that the
+        # result, when converted back to a string, would give exactly
+        # the original string.
+        try:
+            i = int(key)     # XXX can be done a bit more efficiently
+        except (ValueError, OverflowError):
+            raise ValueError
+        if str(i) != key:
+            raise ValueError
+        return i
+    _convert_str_to_int = staticmethod(_convert_str_to_int)
 
     def getitem(self, space, w_arg):
         as_int, as_str = self._getindex(space, w_arg)
@@ -111,20 +140,6 @@ class W_ListArrayObject(W_ArrayObject):
             except IndexError:
                 pass
         return self.space.w_Null
-
-    def _convert_str_to_int(self, key):
-        # try to convert 'key' from a string to an int, but carefully:
-        # we must not remove any space, make sure the result does not
-        # overflows, etc.  In general we have to make sure that the
-        # result, when converted back to a string, would give exactly
-        # the original string.
-        try:
-            i = int(key)     # XXX can be done a bit more efficiently
-        except (ValueError, OverflowError):
-            raise ValueError
-        if str(i) != key:
-            raise ValueError
-        return i
 
     def _getitem_str(self, key):
         try:

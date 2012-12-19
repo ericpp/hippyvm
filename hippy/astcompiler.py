@@ -1,16 +1,14 @@
 
 from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Variable, ConstantStr, Echo, ConstantFloat, If, SuffixOp, PrefixOp,\
-     While, SimpleCall, For, GetItem, Array, FunctionDecl, Argument,\
+     While, SimpleCall, For, GetItem, FunctionDecl, Argument,\
      Return, Append, And, Or, InplaceOp, Global, NamedConstant, DoWhile,\
      Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
-     UninitializedVariable, InitializedVariable, DefaultArgument,\
-     ConstantAppend
+     UninitializedVariable, InitializedVariable, DefaultArgument
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
-#from hippy.objects.arrayobject import W_FakeIndex
 from hippy.objects.reference import W_Cell
 from hippy import consts
 from hippy.error import InterpreterError
@@ -58,7 +56,6 @@ class CompilerContext(object):
         self.int_cache = {}
         self.float_cache = {}
         self.string_cache = {}
-        self.other_cache = {}
         self.functions = {}
         self.labels = [] # stack of labels
         self.jumps_to_patch = {} # label -> list of jumps to patch
@@ -137,13 +134,10 @@ class CompilerContext(object):
             return a
 
     def create_other_const(self, w_v):
-        try:
-            return self.other_cache[w_v]
-        except KeyError:
-            a = len(self.consts)
-            self.consts.append(w_v)
-            self.other_cache[w_v] = a
-            return a
+        # xxx no caching for now, which should not really be a problem
+        a = len(self.consts)
+        self.consts.append(w_v)
+        return a
 
     def create_float_const(self, v):
         try:
@@ -318,10 +312,10 @@ class __extend__(Assignment):
     # Append: "$a[5][] = 42" becomes this:
     #                 stack:
     # LOAD_CONST 5       [ 5 ]
-    # LOAD_NULL          [ 5, NULL ]
-    # LOAD_CONST 42      [ 5, NULL, 42 ]
-    # LOAD_FAST $a       [ 5, NULL, 42, Ref$a ]
-    # FETCHITEM 3        [ 5, NULL, 42, Ref$a, Array$a[5] ]
+    # LOAD_NONE          [ 5, None ]
+    # LOAD_CONST 42      [ 5, None, 42 ]
+    # LOAD_FAST $a       [ 5, None, 42, Ref$a ]
+    # FETCHITEM 3        [ 5, None, 42, Ref$a, Array$a[5] ]
     # FETCHITEM_APPEND 3 [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
     # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
     # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
@@ -358,10 +352,10 @@ class __extend__(Assignment):
     #
     # LOAD_CONST 7       [ 7 ]
     # LOAD_CONST 8       [ 7, 8 ]
-    # LOAD_NULL          [ 7, 8, NULL ]
-    # LOAD_FAST $b       [ 7, 8, NULL, Ref$b ]
-    # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7] ]
-    # FETCHITEM 3        [ 7, 8, NULL, Ref$b, Array$b[7], Array$b[7][8] ]
+    # LOAD_NONE          [ 7, 8, None ]
+    # LOAD_FAST $b       [ 7, 8, None, Ref$b ]
+    # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7] ]
+    # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7], Array$b[7][8] ]
     # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM_REF 3    [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
@@ -420,12 +414,6 @@ class __extend__(ConstantInt):
 
     def wrap(self, space):
         return space.wrap(self.intval)
-
-class __extend__(ConstantAppend):
-
-    def wrap(self, space):
-        #return W_FakeIndex()
-        return None
 
 class __extend__(ConstantFloat):
     def compile(self, ctx):
@@ -597,7 +585,7 @@ class __extend__(GetItem):
 
     def compile_reference(self, ctx):
         depth = self.compile_assignment_prepare(ctx)
-        ctx.emit(consts.LOAD_NULL)
+        ctx.emit(consts.LOAD_NONE)
         self.compile_assignment_fetch(ctx, depth)
         ctx.emit(consts.MAKE_REF, depth + 1)
         self.compile_assignment_store_ref(ctx, depth)
@@ -610,18 +598,12 @@ class __extend__(Append):
 
     def compile_assignment_prepare(self, ctx):
         depth = self.node.compile_assignment_prepare(ctx)
-        ctx.emit(consts.LOAD_NULL)
+        ctx.emit(consts.LOAD_NONE)
         return depth + 1
 
     def compile_assignment_fetch(self, ctx, depth):
         self.node.compile_assignment_fetch(ctx, depth)
         ctx.emit(consts.FETCHITEM_APPEND, depth + 1)
-
-class __extend__(Array):
-    def compile(self, ctx):
-        for item in self.initializers:
-            item.compile(ctx) # XXX order?
-        ctx.emit(consts.ARRAY, len(self.initializers))
 
 class __extend__(FunctionDecl):
     def compile(self, ctx):
@@ -734,23 +716,77 @@ class __extend__(Continue):
 
 class __extend__(Hash):
     def compile(self, ctx):
-        if True:
+        # Can be compiled in several ways:
+        # If no key is specified, it becomes an array
+        for key, value in self.initializers:
+            if key is not None:
+                break
+        else:
+            self._compile_array(ctx)
+            return
+        # Otherwise, it becomes a hash
+        self._compile_hash(ctx)
+
+    def _generate_code(self, ctx, value):
+        if value is None:
+            ctx.emit(consts.LOAD_NONE)
+        elif isinstance(value, Reference):
+            value.item.compile(ctx)
+        else:
+            value.compile(ctx)
+            if not value.is_constant():   # otherwise, not useful
+                ctx.emit(consts.DEREF)
+
+    def _compile_array(self, ctx):
+        # If all values are constants, then it's a constant array
+        for key, value in self.initializers:
+            if not value.is_constant():
+                break
+        else:
+            values = [value.wrap(ctx.space)
+                      for key, value in self.initializers]
+            w_array = ctx.space.new_array_from_list(values)
+            ctx.emit(consts.LOAD_CONST, ctx.create_other_const(w_array))
+            return
+        # Else, generate for "array($a, &$b, $c)":
+        #        ...load $a...
+        #        DEREF
+        #        ...load $b...
+        #        (no DEREF here)
+        #        ...load $c...
+        #        DEREF
+        #        MAKE_ARRAY 3
+        for key, value in self.initializers:
+            self._generate_code(ctx, value)
+        ctx.emit(consts.MAKE_ARRAY, len(self.initializers))
+
+    def _compile_hash(self, ctx):
+        # If all keys and values are constants, then it's a constant hash
+        for key, value in self.initializers:
+            if key is not None and not key.is_constant():
+                break
+            if not value.is_constant():
+                break
+        else:
+            pairs_ww = []
             for key, value in self.initializers:
-                if not key.is_constant():
-                    break
-                if not value.is_constant():
-                    break
-            else:
-                # just precompile it
-                pairs = []
-                for key, value in self.initializers:
-                    pairs.append((key.wrap(ctx.space), value.wrap(ctx.space)))
-                w_arr = ctx.space.new_map_from_pairs(pairs)
-                ctx.emit(consts.LOAD_MUTABLE_CONST, ctx.create_other_const(w_arr))
-                return
-        for key, v in self.initializers:
-            key.compile(ctx)
-            v.compile(ctx)
+                if key is not None:
+                    w_key = key.wrap(ctx.space)
+                else:
+                    w_key = None
+                w_value = value.wrap(ctx.space)
+                pairs_ww.append((w_key, w_value))
+            w_array = ctx.space.new_array_from_pairs(pairs_ww)
+            ctx.emit(consts.LOAD_CONST, ctx.create_other_const(w_array))
+            return
+        # Else, for every item:
+        #     load the key...
+        #     DEREF
+        #     load the value...
+        #     maybe DEREF
+        for key, value in self.initializers:
+            self._generate_code(ctx, key)
+            self._generate_code(ctx, value)
         ctx.emit(consts.MAKE_HASH, len(self.initializers))
 
 class __extend__(IfExpr):

@@ -113,12 +113,6 @@ class ConstantFloat(Const):
         return str(self.floatval)
 
 
-class ConstantAppend(Const):
-
-    def repr(self):
-        return 'fake_index'
-
-
 class BinOp(Node):
     def __init__(self, op, left, right, lineno=0):
         self.op = op
@@ -329,14 +323,6 @@ class GetItem(Node):
 
     def repr(self):
         return 'GetItem(%s, %s)' % (self.node.repr(), self.item.repr())
-
-class Array(Node):
-    def __init__(self, initializers, lineno=0):
-        self.initializers = initializers
-        self.lineno = lineno
-
-    def repr(self):
-        return 'Array([%s])' % ', '.join([i.repr() for i in self.initializers])
 
 
 class Hash(Node):
@@ -1545,13 +1531,13 @@ class SourceParser(object):
                    "non_empty_array_pair_list , expr")
     def non_empty_array_pair_list_list_expr(self, p):
         if p[0] is not None:
-            p[0].append((ConstantAppend(), p[2]))
+            p[0].append((None, p[2]))
             return p[0]
         raise NotImplementedError(p)
 
     @pg.production("non_empty_array_pair_list : expr")
     def non_empty_array_pair_list_expr(self, p):
-        return [(ConstantAppend(), p[0])]
+        return [(None, p[0])]
 
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , expr T_DOUBLE_ARROW & w_variable")
@@ -1562,7 +1548,7 @@ class SourceParser(object):
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , & w_variable")
     def non_empty_array_pair_list_list_ref_w_variable(self, p):
-        p[0].append((ConstantAppend(), Reference(p[3], lineno=p[0].getsourcepos())))
+        p[0].append((None, Reference(p[3], lineno=p[0].getsourcepos())))
         return p[0]
 
     @pg.production("non_empty_array_pair_list : expr T_DOUBLE_ARROW & w_variable")
@@ -1571,7 +1557,7 @@ class SourceParser(object):
 
     @pg.production("non_empty_array_pair_list : & w_variable")
     def non_empty_array_pair_list_ref_w_variable(self, p):
-        return [(ConstantAppend(), Reference(p[1], lineno=p[0].getsourcepos()))]
+        return [(None, Reference(p[1], lineno=p[0].getsourcepos()))]
 
     @pg.production("possible_comma : empty")
     def possible_comma_empty(self, p):

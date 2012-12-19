@@ -745,7 +745,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[2]) == 5
 
     def test_dense_array_not_from_0(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = array();
         $a[10] = 5;
@@ -816,7 +815,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.is_w(output[0], self.space.newint(25))
 
     def test_reference_array_obscure1(self):
-        py.test.skip("XXX fix me")
         # just like test_array_obscure1, but because $a[0] is a reference,
         # the assignment $a[0]=5 really changes it in-place and then the
         # load of the value of the left-hand side of the '*' returns the
@@ -829,7 +827,7 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.is_w(output[0], self.space.newint(25))
 
     def test_reference_array_obscure2(self):
-        py.test.skip("XXX fix me")
+        py.test.skip("XXX REFCOUNTING NEEDED")
         output = self.run('''
         $v = 10;
         $a = array(&$v);
@@ -845,7 +843,7 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.is_w(output[0], self.space.newint(50))
 
     def test_reference_array_obscure3(self):
-        py.test.skip("XXX fix me")
+        py.test.skip("XXX REFCOUNTING NEEDED")
         # no no, this test really makes "sense" in the PHP world,
         # with enough levels of quotes around "sense"
         output = self.run('''
@@ -883,7 +881,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.is_w(output[0], self.space.newint(42))
 
     def test_inplace_concat(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = "x";
         $a .= "y";
@@ -892,7 +889,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.str_w(output[0]) == "xy"
 
     def test_function_var_unused(self):
-        py.test.skip("XXX REDO")
         self.run('''
         function f($a) {}
         f(3);
@@ -900,7 +896,6 @@ class TestInterpreter(BaseTestInterpreter):
         # this used to explode
 
     def test_inplace_str_concat(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = "abc";
         $b = $a;
@@ -929,7 +924,6 @@ class TestInterpreter(BaseTestInterpreter):
 
 
     def test_globals_locals(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f() {
             $x = 3;
@@ -946,7 +940,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [4, 3, 4, 5]
 
     def test_const(self):
-        py.test.skip("XXX REDO")
         output = self.run("""
         define('x', 13);
         echo x;
@@ -954,7 +947,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 13
 
     def test_const_2(self):
-        py.test.skip("XXX REDO")
         output = self.run("""
         function f() {
             define('x', 13);
@@ -975,11 +967,11 @@ class TestInterpreter(BaseTestInterpreter):
         output = self.run('''
         $s = "\\n";
         echo $s;
-        echo "$s \$s";
+        echo "$s :-) \$s";
         echo "\\t";
         ''')
         assert self.space.str_w(output[0]) == '\n'
-        assert self.space.str_w(output[1]) == '\n $s'
+        assert self.space.str_w(output[1]) == '\n :-) $s'
         assert self.space.str_w(output[2]) == '\t'
 
     def test_prebuilt_consts(self):

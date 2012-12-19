@@ -143,6 +143,7 @@ class ObjSpace(object):
         return w_obj.deref().getitem(self, w_item.deref())
 
     def setitem(self, w_obj, w_item, w_value):
+        # returns a pair (w_newobj, w_newvalue)
         return w_obj.deref().setitem(self, w_item.deref(), w_value.deref())
 
     def setitem_ref(self, w_obj, w_item, w_ref):

@@ -254,16 +254,7 @@ class Interpreter(object):
     def STORE(self, bytecode, frame, space, arg, arg2, pc):
         w_val = frame.peek_nth(arg)
         w_var = frame.pop()
-        w_keep = frame.peek().deref()
-        frame.pop_n(arg)
-        frame.store_var(space, w_var, w_val)
-        frame.push(w_keep)
-        return pc
-
-    def STORE_REF(self, bytecode, frame, space, arg, arg2, pc):
-        w_val = frame.peek_nth(arg)
-        w_var = frame.pop()
-        w_keep = frame.peek()    # <== difference with STORE
+        w_keep = frame.peek()
         frame.pop_n(arg)
         frame.store_var(space, w_var, w_val)
         frame.push(w_keep)
@@ -435,7 +426,8 @@ class Interpreter(object):
             w_target.w_value = w_value.deref()
             w_newobj = w_obj
         else:
-            w_newobj = space.setitem(w_obj, w_item, w_value)
+            w_newobj, w_newvalue = space.setitem(w_obj, w_item, w_value)
+            frame.poke_nth(arg - 1, w_newvalue)
         frame.poke_nth(arg, w_newobj)
         return pc
 
@@ -444,8 +436,8 @@ class Interpreter(object):
         assert isinstance(w_ref, W_Reference)
         w_item = frame.peek_nth(arg)
         w_obj = frame.peek()
-        w_newvalue = space.setitem_ref(w_obj, w_item, w_ref)
-        frame.poke_nth(arg, w_newvalue)
+        w_newobj = space.setitem_ref(w_obj, w_item, w_ref)
+        frame.poke_nth(arg, w_newobj)
         return pc
 
     def MAKE_REF(self, bytecode, frame, space, arg, arg2, pc):

@@ -263,27 +263,29 @@ class __extend__(Assignment):
         else:
             self._compile_assign_regular(ctx)
 
-    # A simple assignment like "$a = 42" becomes this:
+    # A simple assignment like "$a = $b" becomes this:
     #                 stack:
-    # LOAD_CONST 42      [ 42 ]
-    # LOAD_FAST $a       [ 42, Ref$a ]
-    # STORE 1            [ 42 ]
+    # LOAD_FAST $b       [ Ref$b ]
+    # DEREF              [ Value$b ]
+    # LOAD_FAST $a       [ Value$b, Ref$a ]
+    # STORE 1            [ Value$b ]
     #
     # The 'STORE 1' pops the reference Ref$a, and store into it the
     # next value from the stack.  The argument to the STORE is always 1
     # in simple assignments, but see below.
     #
-    # An expression like "$a[5][6] = 42" becomes this:
+    # An expression like "$a[5][6] = $b" becomes this:
     #                 stack:
     # LOAD_CONST 5       [ 5 ]
     # LOAD_CONST 6       [ 5, 6 ]
-    # LOAD_CONST 42      [ 5, 6, 42 ]
-    # LOAD_FAST $a       [ 5, 6, 42, Ref$a ]
-    # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5] ]
-    # FETCHITEM 3        [ 5, 6, 42, Ref$a, Array$a[5], OldValue$a[5][6] ]
-    # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
-    # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
-    # STORE 3            [ 42 ]
+    # LOAD_FAST $b       [ 5, 6, Ref$b ]
+    # DEREF              [ 5, 6, Value$b ]
+    # LOAD_FAST $a       [ 5, 6, Value$b, Ref$a ]
+    # FETCHITEM 3        [ 5, 6, Value$b, Ref$a, Array$a[5] ]
+    # FETCHITEM 3        [ 5, 6, Value$b, Ref$a, Array$a[5], OldValue$a[5][6] ]
+    # STOREITEM 3        [ 5, NewArray1, Value$b, Ref$a, Array$a[5] ]
+    # STOREITEM 3        [ NewArray2, NewArray1, Value$b, Ref$a ]
+    # STORE 3            [ Value$b ]
     #
     # In more details, 'FETCHITEM N' fetches from the array at position 0
     # the item at position N, and pushes the result without popping any
@@ -295,9 +297,9 @@ class __extend__(Assignment):
     #  - OldValue$a[5][6] is checked for being a reference.
     #
     #  - If it is not, then its value is ignored, and we compute
-    #    NewArray1 = Array$a[5] with the 6th item replaced with 42.
+    #    NewArray1 = Array$a[5] with the 6th item replaced with Value$b.
     #
-    #  - If it is, then 42 is stored into this existing reference
+    #  - If it is, then Value$b is stored into this existing reference
     #    and NewArray1 is just Array$a[5].
     #
     #  - NewArray1 is put back in the stack at position N+1, and
@@ -306,7 +308,7 @@ class __extend__(Assignment):
     # 'STORE N' has also strange stack effects: it stores the item at
     # position N into the reference at position 0, then kill the item
     # at position 0 and all items at positions 2 to N inclusive.
-    # Above, it leaves 42 untouched, which (although not used by STORE)
+    # Above, it leaves Value$b untouched, which (although not used by STORE)
     # is the result of the whole expression.
     #
     # Append: "$a[5][] = 42" becomes this:
@@ -314,6 +316,7 @@ class __extend__(Assignment):
     # LOAD_CONST 5       [ 5 ]
     # LOAD_NONE          [ 5, None ]
     # LOAD_CONST 42      [ 5, None, 42 ]
+    # (DEREF -- not actually needed after a LOAD_CONST)
     # LOAD_FAST $a       [ 5, None, 42, Ref$a ]
     # FETCHITEM 3        [ 5, None, 42, Ref$a, Array$a[5] ]
     # FETCHITEM_APPEND 3 [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
@@ -324,6 +327,8 @@ class __extend__(Assignment):
     def _compile_assign_regular(self, ctx):
         depth = self.var.compile_assignment_prepare(ctx)
         self.expr.compile(ctx)
+        if not self.expr.is_constant():   # otherwise, not useful
+            ctx.emit(consts.DEREF)
         self.var.compile_assignment_fetch(ctx, depth)
         self.var.compile_assignment_store(ctx, depth)
 
@@ -344,7 +349,7 @@ class __extend__(Assignment):
     # STOREITEM_REF 4    [ 5, 6, NA1, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
     # STOREITEM 4        [ 5, NA2, NA1, Ref$b, Ref$a, Array$a[5] ]
     # STOREITEM 4        [ NA3, NA2, NA1, Ref$b, Ref$a ]
-    # STORE_REF 4        [ Ref$b ]         # "NA" = "NewArray"
+    # STORE 4            [ Ref$b ]         # "NA" = "NewArray"
     #
     # If the expression on the right is more complex than just '$b',
     # say '... =& $b[7][8]', then we use compile_reference() to get code
@@ -359,7 +364,7 @@ class __extend__(Assignment):
     # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM_REF 3    [ 7, NewArray1, NewRef, Ref$b, Array$b[7] ]
     # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
-    # STORE_REF 3        [ NewRef ]
+    # STORE 3            [ NewRef ]
     #
     # The case of '... =& $b;' is done just with a LOAD_FAST, but following
     # the recipe above we would get the following equivalent code:
@@ -367,7 +372,7 @@ class __extend__(Assignment):
     # LOAD_NONE          [ None ]
     # LOAD_FAST $b       [ None, Ref$b ]
     # MAKE_REF 1         [ Ref$b, Ref$b ]     # already a ref
-    # STORE_REF 1        [ Ref$b ]            # stores $b in $b, no-op
+    # STORE 1            [ Ref$b ]            # stores $b in $b, no-op
     #
     def _compile_assign_reference(self, ctx, source):
         depth = self.var.compile_assignment_prepare(ctx)
@@ -461,11 +466,8 @@ class __extend__(Variable):
     def compile_assignment_fetch(self, ctx, depth):
         self.compile(ctx)
 
-    def compile_assignment_store(self, ctx, depth, wants_ref=False):
-        if wants_ref:
-            ctx.emit(consts.STORE_REF, depth + 1)
-        else:
-            ctx.emit(consts.STORE, depth + 1)
+    def compile_assignment_store(self, ctx, depth):
+        ctx.emit(consts.STORE, depth + 1)
 
     def compile_assignment_fetch_ref(self, ctx, depth):
         pass
@@ -572,16 +574,16 @@ class __extend__(GetItem):
         self.node.compile_assignment_fetch(ctx, depth)
         ctx.emit(consts.FETCHITEM, depth + 1)
 
-    def compile_assignment_store(self, ctx, depth, wants_ref=False):
+    def compile_assignment_store(self, ctx, depth):
         ctx.emit(consts.STOREITEM, depth + 1)
-        self.node.compile_assignment_store(ctx, depth, wants_ref)
+        self.node.compile_assignment_store(ctx, depth)
 
     def compile_assignment_fetch_ref(self, ctx, depth):
         self.node.compile_assignment_fetch(ctx, depth)   # and not '.._ref'
 
     def compile_assignment_store_ref(self, ctx, depth):
         ctx.emit(consts.STOREITEM_REF, depth + 1)
-        self.node.compile_assignment_store(ctx, depth, True) # and not '.._ref'
+        self.node.compile_assignment_store(ctx, depth)   # and not '.._ref'
 
     def compile_reference(self, ctx):
         depth = self.compile_assignment_prepare(ctx)

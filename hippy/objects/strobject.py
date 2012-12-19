@@ -151,7 +151,7 @@ class StringMixin(object):
         c = space.getchar(w_value)
         res = self.as_unique_strlist()
         res.set_char_at(index, c)
-        return res
+        return res, SINGLE_CHAR_STRING[ord(c)]
 
     def str_w(self, space):
         # note: always overriden so far

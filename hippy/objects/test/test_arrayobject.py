@@ -31,26 +31,29 @@ class TestArrayObject(BaseTestInterpreter):
         space = self.space
         w_array = space.new_array_from_list([])
         w_item = space.newstr("bok")
-        w_array = space.setitem(w_array, space.newint(0), w_item)
+        w_array, w_x = space.setitem(w_array, space.newint(0), w_item)
+        assert w_x is w_item
         assert w_array.as_dict() == {"0": w_item}
         w_item2 = space.newstr("bok2")
-        w_array = space.setitem(w_array, space.newint(0), w_item2)
+        w_array, w_x = space.setitem(w_array, space.newint(0), w_item2)
+        assert w_x is w_item2
         assert w_array.as_dict() == {"0": w_item2}
         w_item3 = space.newstr("bok3")
-        w_array = space.setitem(w_array, space.newint(1), w_item3)
+        w_array, w_x = space.setitem(w_array, space.newint(1), w_item3)
+        assert w_x is w_item3
         assert w_array.as_dict() == {"0": w_item2, "1": w_item3}
 
     def test_setitem_hash(self):
         space = self.space
         w_array = space.new_array_from_dict({})
         w_item = space.newstr("bok")
-        w_array = space.setitem(w_array, space.newint(0), w_item)
+        w_array, _ = space.setitem(w_array, space.newint(0), w_item)
         assert w_array.as_dict() == {"0": w_item}
         w_item2 = space.newstr("bok2")
-        w_array = space.setitem(w_array, space.newstr("0"), w_item2)
+        w_array, _ = space.setitem(w_array, space.newstr("0"), w_item2)
         assert w_array.as_dict() == {"0": w_item2}
         w_item3 = space.newstr("bok3")
-        w_array = space.setitem(w_array, space.newstr("aAa"), w_item3)
+        w_array, _ = space.setitem(w_array, space.newstr("aAa"), w_item3)
         assert w_array.as_dict() == {"0": w_item2, "aAa": w_item3}
 
     def test_getitem_str(self):
@@ -72,7 +75,7 @@ class TestArrayObject(BaseTestInterpreter):
         w_x = space.newstr("x")
         w_y = space.newstr("y")
         w_array = space.new_array_from_list([w_x])
-        w_array = space.setitem(w_array, space.newint(100), w_y)
+        w_array, _ = space.setitem(w_array, space.newint(100), w_y)
         assert w_array.as_dict() == {"0": w_x, "100": w_y}
 
     def test_list2hash_str(self):
@@ -80,7 +83,7 @@ class TestArrayObject(BaseTestInterpreter):
         w_x = space.newstr("x")
         w_y = space.newstr("y")
         w_array = space.new_array_from_list([w_x])
-        w_array = space.setitem(w_array, space.newstr("z"), w_y)
+        w_array, _ = space.setitem(w_array, space.newstr("z"), w_y)
         assert w_array.as_dict() == {"0": w_x, "z": w_y}
         assert w_array._has_string_keys
 
@@ -89,6 +92,6 @@ class TestArrayObject(BaseTestInterpreter):
         w_x = space.newstr("x")
         w_y = space.newstr("y")
         w_array = space.new_array_from_list([w_x])
-        w_array = space.setitem(w_array, space.newstr("0"), w_y)
+        w_array, _ = space.setitem(w_array, space.newstr("0"), w_y)
         assert w_array.as_dict() == {"0": w_y}
         assert not w_array._has_string_keys

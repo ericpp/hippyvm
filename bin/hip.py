@@ -35,15 +35,11 @@ def repl(argv):
         try:
             pc = parse(line)
             bc = compile_ast("<input>", line, pc, space, 0, print_exprs=True)
-            assert bc.uses_dict
         except Exception, e:
             print >> sys.stderr, '%s: %s' % (e.__class__.__name__, e)
             continue
         try:
-            frame = Frame(space, bc)
-            frame.vars_dict.d.update(namespace)
-            namespace = frame.vars_dict.d
-            interp.interpret(space, frame, bc)
+            interp.run_main(space, bc)
         except Exception, e:
             print e
             pdb.post_mortem(sys.exc_info()[2])

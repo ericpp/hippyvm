@@ -70,9 +70,8 @@ def entry_point(argv):
     bc = compile_ast(filename, source_data, parse(source_data), space,
                      extra_offset)
     interp = Interpreter(space, Logger())
-    frame = Frame(space, bc)
     try:
-        interp.interpret(space, frame, bc)
+        interp.run_main(bc)
     except InterpreterError:
         # the traceback should already have been printed,
         # including the error msg

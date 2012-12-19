@@ -59,7 +59,7 @@ class BaseTestInterpreter(object):
         try:
             #self.new_mutable_strings = []
             #strobject._new_mutable_string = self._new_mutable_string
-            interp.interpret(self.space, Frame(self.space, bc), bc)
+            interp.run_main(self.space, bc)
         finally:
             pass #strobject._new_mutable_string = old
         return interp.output
@@ -592,7 +592,7 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [3]
 
     def test_references_5(self):
-        py.test.skip("XXX FIXME")
+        py.test.skip("Removed in PHP 5.4")
         output = self.run('''
         function f($x) {
            $x = 3;

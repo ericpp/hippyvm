@@ -8,7 +8,6 @@ from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 from hippy.objects.interpolate import W_StrInterpolation
 from hippy.objects.arrayiter import BaseArrayIterator
-#from hippy.objects.arrayobject import new_globals_wrapper
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -155,6 +154,16 @@ class Interpreter(object):
             return self.functions[name.lower()]
         except KeyError:
             self.logger.fatal(self, "undefined function %s" % name)
+
+    def run_main(self, space, bytecode):
+        frame = Frame(space, bytecode)
+        # The global 'frame' needs to have its local variables be references
+        # to the real global variables.
+        for i, name in enumerate(bytecode.varnames):
+            w_ref = self.lookup_global(space, name)
+            frame.store_fast_ref(i, w_ref)
+        #
+        return self.interpret(space, frame, bytecode)
 
     def interpret(self, space, frame, bytecode):
         bytecode.setup_functions(self, space)
@@ -500,7 +509,6 @@ class Interpreter(object):
         frame.push(space.new_array_from_pairs(args_w))
         return pc
 
-    @jit.unroll_safe
     def DECLARE_GLOBAL(self, bytecode, frame, space, arg, arg2, pc):
         name = bytecode.varnames[arg]
         w_ref = self.lookup_global(space, name)

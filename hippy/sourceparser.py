@@ -1556,21 +1556,22 @@ class SourceParser(object):
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , expr T_DOUBLE_ARROW & w_variable")
     def non_empty_array_pair_list_list_expr_da_ref_w_variable(self, p):
-        raise NotImplementedError(p)
+        p[0].append((p[2], Reference(p[5], lineno=p[0].getsourcepos())))
+        return p[0]
 
     @pg.production("non_empty_array_pair_list : "
                    "non_empty_array_pair_list , & w_variable")
     def non_empty_array_pair_list_list_ref_w_variable(self, p):
-        raise NotImplementedError(p)
+        p[0].append((ConstantAppend(), Reference(p[3], lineno=p[0].getsourcepos())))
+        return p[0]
 
     @pg.production("non_empty_array_pair_list : expr T_DOUBLE_ARROW & w_variable")
     def non_empty_array_pair_list_expr_da_ref_w_variable(self, p):
-        raise NotImplementedError(p)
+        return [(p[0], Reference(p[3], lineno=p[1].getsourcepos()))]
 
     @pg.production("non_empty_array_pair_list : & w_variable")
     def non_empty_array_pair_list_ref_w_variable(self, p):
-        # return [(ConstantAppend(), Reference(p[1], lineno=p[0].getsourcepos()))]
-        raise NotImplementedError(p)
+        return [(ConstantAppend(), Reference(p[1], lineno=p[0].getsourcepos()))]
 
     @pg.production("possible_comma : empty")
     def possible_comma_empty(self, p):

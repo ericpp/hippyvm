@@ -11,6 +11,7 @@ if __name__ == '__main__':
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
 from hippy.interpreter import Interpreter, Frame
+from hippy.logger import Logger
 from hippy.objspace import getspace
 
 
@@ -18,7 +19,7 @@ def repl(argv):
     if len(argv) > 1:
         print "XXX arguments ignored"
     space = getspace()
-    interp = Interpreter(space)
+    interp = Interpreter(space, Logger())
     namespace = {}
     print
     print '-=- Hippy -=-'
@@ -33,7 +34,7 @@ def repl(argv):
             continue
         try:
             pc = parse(line)
-            bc = compile_ast(pc, space, 0, print_exprs=True)
+            bc = compile_ast("<input>", line, pc, space, 0, print_exprs=True)
             assert bc.uses_dict
         except Exception, e:
             print >> sys.stderr, '%s: %s' % (e.__class__.__name__, e)

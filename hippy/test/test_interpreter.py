@@ -1408,12 +1408,11 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[1]) == 9
 
     def test_store_character(self):
-        py.test.skip("XXX FIXME")
-        output = self.run('$a="x"; echo gettype($a[0]=5);')
+        output = self.run('$a="x";\necho gettype($a[0]=5);')
         assert self.space.str_w(output[0]) == "string"
 
     def test_array_collisions(self):
-        output = self.run('$a = array(0=>5, 0=>6); echo $a[0];')
+        output = self.run('$a = array(0=>5, 0=>6);\necho $a[0];')
         assert self.space.int_w(output[0]) == 6
         output = self.run('''
         $b = 5;

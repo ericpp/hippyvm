@@ -66,6 +66,18 @@ class TestCompiler(object):
         assert c.intval == 3
         assert bc.stackdepth == 2
 
+    def test_assign_nonconst(self):
+        bc = self.check_compile("$x = $y;", """
+        LOAD_FAST 0
+        DEREF
+        LOAD_FAST 1
+        STORE 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 2
+
     def test_addition(self):
         self.check_compile("3 + $x;", """
         LOAD_CONST 0
@@ -172,14 +184,15 @@ class TestCompiler(object):
         LOAD_FAST 0
         STORE 1
         DISCARD_TOP
-        JUMP_FORWARD 33
+        JUMP_FORWARD 34
      19 LOAD_CONST 0
         LOAD_CONST 1
         BINARY_ADD
+        DEREF
         LOAD_FAST 0
         STORE 1
         DISCARD_TOP
-     33 LOAD_FAST 0
+     34 LOAD_FAST 0
         ECHO 1
         LOAD_NULL
         RETURN
@@ -389,6 +402,7 @@ class TestCompiler(object):
         LOAD_FAST 0
         DEREF
         MAKE_ARRAY 3
+        DEREF
         LOAD_FAST 1
         STORE 1
         DISCARD_TOP
@@ -407,7 +421,7 @@ class TestCompiler(object):
         MAKE_REF 3
         STOREITEM_REF 3
         STOREITEM 3
-        STORE_REF 3
+        STORE 3
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -455,11 +469,12 @@ class TestCompiler(object):
 
     def test_append(self):
         self.check_compile("""
-        $a[] = 3;
+        $a[] = $b;
         """, """
         LOAD_NONE
-        LOAD_CONST 0
         LOAD_FAST 0
+        DEREF
+        LOAD_FAST 1
         FETCHITEM_APPEND 2
         STOREITEM 2
         STORE 2
@@ -478,7 +493,7 @@ class TestCompiler(object):
         FETCHITEM_APPEND 2   # idx, NULL, Ref$b, Array$b[idx]
         MAKE_REF 2           # idx, NewRef, Ref$b, Array$b[idx]
         STOREITEM_REF 2      # NewArray, NewRef, Ref$b, Array$b[idx]
-        STORE_REF 2          # NewRef
+        STORE 2              # NewRef
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -551,6 +566,7 @@ class TestCompiler(object):
         $x = c;
         """, """
         LOAD_NAMED_CONSTANT 0
+        DEREF
         LOAD_FAST 0
         STORE 1
         DISCARD_TOP
@@ -599,7 +615,7 @@ class TestCompiler(object):
         STOREITEM_REF 4
         STOREITEM 4
         STOREITEM 4
-        STORE_REF 4
+        STORE 4
         DISCARD_TOP
         LOAD_NULL
         RETURN
@@ -620,7 +636,7 @@ class TestCompiler(object):
         MAKE_REF 3
         STOREITEM_REF 3
         STOREITEM 3
-        STORE_REF 3
+        STORE 3
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -642,10 +658,10 @@ class TestCompiler(object):
         FETCHITEM 2
         MAKE_REF 2
         STOREITEM_REF 2
-        STORE_REF 2
+        STORE 2
         LOAD_FAST 1
         STOREITEM_REF 2
-        STORE_REF 2
+        STORE 2
         DISCARD_TOP
         LOAD_NULL
         RETURN
@@ -719,7 +735,8 @@ class TestCompiler(object):
         LOAD_CONST 1
         JUMP_FORWARD 15
      12 LOAD_CONST 2
-     15 LOAD_FAST 0
+     15 DEREF
+        LOAD_FAST 0
         STORE 1
         DISCARD_TOP
         LOAD_NULL

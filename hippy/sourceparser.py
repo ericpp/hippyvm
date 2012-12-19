@@ -990,7 +990,7 @@ class SourceParser(object):
                    "reference_variable [ dim_offset ]")
     def reference_variable_reference_variable_offset(self, p):
         if p[2] is None:
-            return GetItem(p[0], ConstantInt(0), lineno=p[1].getsourcepos())
+            return Append(p[0], lineno=p[1].getsourcepos())
         return GetItem(p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("dim_offset : empty")
@@ -1510,17 +1510,10 @@ class SourceParser(object):
     @pg.production("combined_scalar : T_ARRAY ( array_pair_list )")
     def combined_scalar_t_array_array_pair_list(self, p):
         pairs = p[2]
-        arr_pairs = []
-        is_hash = False
+        _dict = {}
         for k, v in pairs:
-            if not isinstance(k, ConstantAppend):
-                is_hash = True
-                break
-            arr_pairs.append(v)
-        if is_hash:
-            return Hash(pairs, p[0].getsourcepos())
-        else:
-            return Array(arr_pairs, p[0].getsourcepos())
+            _dict[k] = v
+        return Hash(pairs, p[0].getsourcepos())
 
     @pg.production("combined_scalar : [ array_pair_list ]")
     def combined_scalar_square_bracket_array_pair_list(self, p):

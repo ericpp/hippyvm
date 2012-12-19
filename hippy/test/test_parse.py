@@ -374,27 +374,29 @@ class TestParser(object):
                             Variable(ConstantStr("x")),ConstantInt(1)), ConstantInt(3)))])
 
     def test_inplacesetitem(self):
-        py.test.skip("XXX FIXME")
         r = parse("$x[1] += 3;")
-        assert r == Block([Stmt(InplaceSetItem('+=',
-                                        Variable(ConstantStr("x")),
-                                        ConstantInt(1), ConstantInt(3)))])
+        assert r == Block([Stmt(InplaceOp('+=',
+                                        GetItem(Variable(ConstantStr("x")),
+                                        ConstantInt(1)), ConstantInt(3)))])
 
     def test_array(self):
+        # Now we use Hash instead Array
         r = parse("array();")
-        assert r == Block([Stmt(Array([]))])
+        assert r == Block([Stmt(Hash([]))])
         r = parse("array(1);")
-        assert r == Block([Stmt(Array([ConstantInt(1)]))])
+        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1))]))])
         r = parse("array(1, 2, 3 + 4);")
-        assert r == Block([Stmt(Array([ConstantInt(1), ConstantInt(2),
-                                       BinOp("+", ConstantInt(3),
-                                             ConstantInt(4))]))])
+        assert r == Block([Stmt(Hash([
+                            (ConstantAppend(), ConstantInt(1)),
+                            (ConstantAppend(), ConstantInt(2)),
+                            (ConstantAppend(), BinOp("+", ConstantInt(3),ConstantInt(4)))
+                            ]))])
 
     def test_array_append(self):
-        py.test.skip("XXX FIXME")
         r = parse("$a[] = 3;")
-        expected = Block([Stmt(Append(Variable(ConstantStr("a")),
-                                       ConstantInt(3)))])
+        expected = Block([Stmt(Assignment(
+                        Append(Variable(ConstantStr("a"))),
+                                          ConstantInt(3)))])
         assert r == expected
 
     def test_and_or(self):
@@ -432,19 +434,39 @@ class TestParser(object):
                                    NamedConstant('TRUE'))])
 
     def test_assign_array_element_2(self):
-        py.test.skip("XXX FIXME")
+        # py.test.skip("XXX FIXME")
         r = parse("$x[0][0];")
-        assert r == Block([Stmt(GetItem(GetItem(Variable(ConstantStr("x")),
-                                                ConstantInt(0)),
-                                        ConstantInt(0)))])
+        expected =  Block([Stmt(
+                    GetItem(
+                        GetItem(
+                            Variable(ConstantStr("x")),
+                            ConstantInt(0)
+                            ),
+                        ConstantInt(0)
+                        )
+                    )])
+
+        assert r == expected
+
         r = parse("$x[0][0] = 1;")
-        assert r == Block([Stmt(SetItem(GetItem(Variable(ConstantStr("x")),
-                                                ConstantInt(0)),
-                                        ConstantInt(0), ConstantInt(1)))])
+        assert r == Block([Stmt(
+                    Assignment(
+                        GetItem(
+                            GetItem(
+                                Variable(ConstantStr("x")),
+                                ConstantInt(0)
+                                ),
+                            ConstantInt(0)
+                            ),
+                        ConstantInt(1)))])
         r = parse("$x[0][] = 1;")
-        assert r == Block([Stmt(Append(GetItem(Variable(ConstantStr("x")),
-                                                ConstantInt(0)),
-                                        ConstantInt(1)))])
+        assert r == Block([Stmt(Assignment(
+                        Append(
+                            GetItem(
+                                Variable(ConstantStr("x")),
+                                ConstantInt(0)
+                                )),
+                        ConstantInt(1)))])
 
     def test_hash_creation(self):
         r = parse('array("x" => "y", "b" => "a", "z" => 3);')
@@ -487,13 +509,13 @@ class TestParser(object):
                                       ReferenceArgument("z"), Block([]))])
 
     def test_array_cast(self):
-        py.test.skip("XXX: fix me")
         r = parse('(array)3;')
         assert r == Block([Stmt(Cast("array", ConstantInt(3)))])
 
     def test_array_trailing_coma(self):
+        # Now we use Hash instead of Array
         r = parse("array(1,);")
-        assert r == Block([Stmt(Array([ConstantInt(1)]))])
+        assert r == Block([Stmt(Hash([(ConstantAppend(), ConstantInt(1))]))])
 
     def test_array_single_elem(self):
         r = parse("array(1 => 2);")

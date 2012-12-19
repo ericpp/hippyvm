@@ -119,8 +119,8 @@ class CompilerContext(object):
         self.data[pos] = chr(v & 0xff)
         self.data[pos + 1] = chr(v >> 8)
 
-    def create_interpolation_const(self, strings, vars):
-        self.consts.append(W_StrInterpolation(strings[:], vars[:]))
+    def create_interpolation_const(self, strings, var_nums):
+        self.consts.append(W_StrInterpolation(strings[:], var_nums))
         return len(self.consts) - 1
 
     def create_int_const(self, v):
@@ -193,7 +193,7 @@ class CompilerContext(object):
         has_vars = False
         r = []
         strings = []
-        vars = []
+        var_nums = []
         while i < len(s):
             c = s[i]
             if c == '\\':
@@ -216,7 +216,7 @@ class CompilerContext(object):
                     has_vars = True
                     strings.append(''.join(r))
                     v = m.group(0)
-                    vars.append(v)
+                    var_nums.append(self.create_var_name(v))
                     i += 1 + len(v)
                     r = []
             else:
@@ -226,7 +226,7 @@ class CompilerContext(object):
             return self.create_name(''.join(r)), False
         else:
             strings.append(''.join(r))
-            return self.create_interpolation_const(strings, vars), True
+            return self.create_interpolation_const(strings, var_nums), True
 
 class __extend__(Block):
     def compile(self, ctx):

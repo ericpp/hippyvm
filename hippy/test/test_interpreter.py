@@ -963,7 +963,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [1, 0]
 
     def test_string_interpolation_newline_var(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $s = "\\n";
         echo $s;

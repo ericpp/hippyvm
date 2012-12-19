@@ -4,7 +4,6 @@ from pypy.rlib import jit
 from hippy.error import InterpreterError
 from hippy.objects.base import W_Root
 from hippy.objects.arrayobject import W_ArrayObject
-from hippy.objects.reference import W_BaseContainerReference
 from pypy.rlib.rstring import StringBuilder
 from pypy.rlib.streamio import open_file_as_stream
 

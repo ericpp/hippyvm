@@ -3,7 +3,7 @@ import os, operator
 from pypy.rlib.objectmodel import specialize
 from hippy.consts import BINOP_LIST
 from hippy.objects.base import W_Root
-from hippy.objects.reference import W_Reference, W_Cell
+from hippy.objects.reference import W_Reference
 from hippy.objects.boolobject import W_BoolObject
 from hippy.objects.base import W_NullObject
 from hippy.objects.intobject import W_IntObject

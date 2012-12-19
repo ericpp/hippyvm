@@ -2,7 +2,7 @@
 from hippy.builtin import AbstractFunction, ArgumentError
 from hippy.interpreter import Frame
 from hippy import consts
-from hippy.objects.reference import W_Reference, W_Cell
+from hippy.objects.reference import W_Reference
 from pypy.rlib import jit
 
 class Function(AbstractFunction):

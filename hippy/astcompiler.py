@@ -9,7 +9,6 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
-from hippy.objects.reference import W_Cell
 from hippy import consts
 from hippy.error import InterpreterError
 from hippy.bytecode import ByteCode
@@ -658,8 +657,7 @@ class __extend__(Global):
     def compile(self, ctx):
         ctx.set_lineno(self.lineno)
         for name in self.names:
-            ctx.emit(consts.LOAD_VAR_NAME, ctx.create_var_name(name))
-        ctx.emit(consts.DECLARE_GLOBAL, len(self.names))
+            ctx.emit(consts.DECLARE_GLOBAL, ctx.create_var_name(name))
 
 class __extend__(StaticDecl):
     def compile(self, ctx):

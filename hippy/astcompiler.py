@@ -424,7 +424,8 @@ class __extend__(ConstantInt):
 class __extend__(ConstantAppend):
 
     def wrap(self, space):
-        return W_FakeIndex()
+        #return W_FakeIndex()
+        return None
 
 class __extend__(ConstantFloat):
     def compile(self, ctx):

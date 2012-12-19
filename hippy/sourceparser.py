@@ -334,7 +334,7 @@ class Hash(Node):
     def repr(self):
         return 'Hash([%s])' % ', '.join([
                 "(%s => %s)" %
-                (k.repr(), v.repr()) for k, v in self.initializers])
+                (k , v.repr()) for k, v in self.initializers])
 
 
 class Append(GetItem):

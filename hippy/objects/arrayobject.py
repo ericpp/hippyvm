@@ -28,11 +28,15 @@ class W_ArrayObject(W_Root):
     @staticmethod
     def new_array_from_pairs(space, pairs_ww):
         dct_w = {}
+        next_idx = 0
         for w_key, w_value in pairs_ww:
             if w_key is not None:
                 as_int, as_str = W_ArrayObject._getindex(space, w_key)
+                if as_int > next_idx:
+                    next_idx = as_int + 1
             else:
-                as_int, as_str = len(dct_w), None   # XXX FIX ME
+                as_int, as_str = next_idx, None   # XXX FIX ME XXX Setting next index
+                next_idx += 1
             if as_str is None:
                 as_str = str(as_int)
             dct_w[as_str] = w_value

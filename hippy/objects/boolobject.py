@@ -29,5 +29,12 @@ class W_BoolObject(W_Root):
             s = '%sbool(false)\n' % indent
         space.ec.writestr(s)
 
+    def eq_w(self, space, w_other):
+        assert isinstance(w_other, W_BoolObject)
+        return self.boolval == w_other.boolval
+
+    def as_number(self, space):
+        return space.newint(0)
+
     def abs(self, space):
         return abs(self.boolval)

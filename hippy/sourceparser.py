@@ -823,6 +823,18 @@ class SourceParser(object):
     def expr_or_expr(self, p):
         return Or(p[0], p[2], lineno=p[1].getsourcepos())
 
+    @pg.production("expr_without_variable : expr T_BOOLEAN_AND expr")
+    def expr_and_expr(self, p):
+        return And(p[0], p[2], lineno=p[1].getsourcepos())
+
+    @pg.production("expr_without_variable : expr T_LOGICAL_OR expr")
+    def expr_logical_or_expr(self, p):
+        return Or(p[0], p[2], lineno=p[1].getsourcepos())
+
+    @pg.production("expr_without_variable : expr T_LOGICAL_AND expr")
+    def expr_logical_and_expr(self, p):
+        return And(p[0], p[2], lineno=p[1].getsourcepos())
+
     @pg.production("expr_without_variable : expr T_MINUS_EQUAL expr")
     @pg.production("expr_without_variable : expr T_PLUS_EQUAL expr")
     @pg.production("expr_without_variable : expr T_MUL_EQUAL expr")
@@ -832,12 +844,6 @@ class SourceParser(object):
     @pg.production("expr_without_variable : expr T_CONCAT_EQUAL expr")
     def expr_inplace_op_expr(self, p):
         return InplaceOp(p[1].getstr(), p[0], p[2], lineno=p[1].getsourcepos())
-
-
-    @pg.production("expr_without_variable : expr T_LOGICAL_AND expr")
-    @pg.production("expr_without_variable : expr T_BOOLEAN_AND expr")
-    def expr_and_expr(self, p):
-        return And(p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("expr_without_variable : expr ? expr : expr")
     def expr_if_expr_or_expr(self, p):
@@ -1199,20 +1205,26 @@ class SourceParser(object):
         return [InitializedVariable(p[0].getstr()[1:], p[2],
                                    lineno=p[0].getsourcepos())]
 
-    @pg.production("unticked_statement : T_IF ( expr ) "
+    @pg.production("unticked_statement : T_IF parenthesis_expr "
                    "statement elseif_list else_single")
     def unticked_statement_if_statement_elseif_else_single(self, p):
-        return If(p[2],
-                  p[4],
-                  elseiflist=p[5],
-                  elseclause=p[6],
+        return If(p[1],
+                  p[2],
+                  elseiflist=p[3],
+                  elseclause=p[4],
                   lineno=p[0].getsourcepos())
 
-    @pg.production("unticked_statement : T_IF ( expr ) : "
+    @pg.production("unticked_statement : T_IF parenthesis_expr : "
                    "inner_statement_list new_elseif_list "
                    "new_else_single T_ENDIF ;")
     def unticked_statement_if_inner_statement_elseif_else_single(self, p):
         raise NotImplementedError(p)
+
+
+    @pg.production("parenthesis_expr : ( expr )")
+    def parenthesis_expr_expr(self, p):
+        return p[1]
+
 
     @pg.production("elseif_list : empty")
     def elseif_list_empty(self, p):
@@ -1599,7 +1611,7 @@ class SourceParser(object):
 
 
 def parse(_source):
-    lx = Lexer(RULES, skip_whitespace=False)
+    lx = Lexer(RULES)
     lx.input(_source)
     parser = SourceParser(lx.tokens())
     return parser.parse()

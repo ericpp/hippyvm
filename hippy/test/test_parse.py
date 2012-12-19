@@ -74,6 +74,18 @@ class TestParser(object):
         r = parse("5 * 1 + 3;")
         assert r == Block([Stmt(
                     BinOp("+", BinOp("*", ConstantInt(5), ConstantInt(1)), ConstantInt(3)))])
+        r = parse("5 / 1 + 3;")
+        assert r == Block([Stmt(
+                    BinOp("+", BinOp("/", ConstantInt(5), ConstantInt(1)), ConstantInt(3)))])
+        r = parse("5 + 1 / 3;")
+        assert r == Block([Stmt(
+                    BinOp("+", ConstantInt(5), BinOp("/", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 + 1 * 3;")
+        assert r == Block([Stmt(
+                    BinOp("+", ConstantInt(5), BinOp("*", ConstantInt(1), ConstantInt(3))))])
+        r = parse("5 || 1 && 3;")
+        assert r == Block([Stmt(
+                    Or(ConstantInt(5), And(ConstantInt(1), ConstantInt(3))))])
 
 
     def test_multi(self):
@@ -374,8 +386,11 @@ class TestParser(object):
 
     def test_and_or(self):
         r = parse("1 && 2 || 3;")
-        assert r == Block([Stmt(And(ConstantInt(1),
-                           Or(ConstantInt(2), ConstantInt(3))))])
+        assert r == Block([Stmt(Or(And(ConstantInt(1), ConstantInt(2)), ConstantInt(3)))])
+
+    def test_and_or2(self):
+        r = parse("2 || 3 && 1;")
+        assert r == Block([Stmt(Or(ConstantInt(2), And(ConstantInt(3), ConstantInt(1))))])
 
     def test_inplace_oper(self):
         r = parse("$x += 2;")
@@ -671,6 +686,6 @@ class TestParser(object):
         raises(ParsingError, lambda : parse("continue $x;"))
         raises(ParsingError, lambda : parse("continue -1;"))
         r = parse('''
-        break 1;
+        continue 1;
         ''')
         assert r == Block([Continue(levels=ConstantInt(1, 1), lineno=1)])

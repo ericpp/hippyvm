@@ -1,5 +1,5 @@
-import re
 from rply import Token
+from pypy.rlib.rsre.rsre_re import compile
 
 KEYWORDS = {
     "print": 'T_PRINT',
@@ -74,6 +74,77 @@ KEYWORDS = {
 
 RULES = [
     ("[a-zA-Z_]+[0-9]*[a-zA-Z_]*", 'T_STRING'),
+
+
+    # ("print", 'T_PRINT'),
+    # ("echo", 'T_ECHO'),
+    # ("instanceof", 'T_INSTANCEOF'),
+    # ("new", 'T_NEW'),
+    # ("clone", 'T_CLONE'),
+    # ("exit", 'T_EXIT'),
+    # ("if", 'T_IF'),
+    # ("elseif", 'T_ELSEIF'),
+    # ("else", 'T_ELSE'),
+    # ("endif", 'T_ENDIF'),
+    # ("array", 'T_ARRAY'),
+    # ("include", 'T_INCLUDE'),
+    # ("include_once", 'T_INCLUDE_ONCE'),
+    # ("eval", 'T_EVAL'),
+    # ("require", 'T_REQUIRE'),
+    # ("require_once", 'T_REQUIRE_ONCE'),
+    # ("or", 'T_LOGICAL_OR'),
+    # ("xor", 'T_LOGICAL_XOR'),
+    # ("and", 'T_LOGICAL_AND'),
+    # ("foreach", 'T_FOREACH'),
+    # ("endforeach", 'T_ENDFOREACH'),
+    # ("do", 'T_DO'),
+    # ("while", 'T_WHILE'),
+    # ("endwhile", 'T_ENDWHILE'),
+    # ("for", 'T_FOR'),
+    # ("endfor", 'T_ENDFOR'),
+    # ("declare", 'T_DECLARE'),
+    # ("enddeclare", 'T_ENDDECLARE'),
+    # ("as", 'T_AS'),
+    # ("switch", 'T_SWITCH'),
+    # ("endswitch", 'T_ENDSWITCH'),
+    # ("case", 'T_CASE'),
+    # ("default", 'T_DEFAULT'),
+    # ("break", 'T_BREAK'),
+    # ("continue", 'T_CONTINUE'),
+    # ("goto", 'T_GOTO'),
+    # ("function", 'T_FUNCTION'),
+    # ("const", 'T_CONST'),
+    # ("return", 'T_RETURN'),
+    # ("try", 'T_TRY'),
+    # ("catch", 'T_CATCH'),
+    # ("throw", 'T_THROW'),
+    # ("use", 'T_USE'),
+    # ("insteadof", 'T_INSTEADOF'),
+    # ("global", 'T_GLOBAL'),
+    # ("static", 'T_STATIC'),
+    # ("abstract", 'T_ABSTRACT'),
+    # ("final", 'T_FINAL'),
+    # ("private", 'T_PRIVATE'),
+    # ("protected", 'T_PROTECTED'),
+    # ("public", 'T_PUBLIC'),
+    # ("var", 'T_VAR'),
+    # ("unset", 'T_UNSET'),
+    # ("isset", 'T_ISSET'),
+    # ("empty", 'T_EMPTY'),
+    # ("class", 'T_CLASS'),
+    # ("trait", 'T_TRAIT'),
+    # ("interface", 'T_INTERFACE'),
+    # ("extends", 'T_EXTENDS'),
+    # ("implements", 'T_IMPLEMENTS'),
+    # ("list", 'T_LIST'),
+    # ("callable", 'T_CALLABLE'),
+    # ("null", 'T_NULL'),
+    # ("NULL", 'T_NULL'),
+    # ("true", 'T_TRUE'),
+    # ("TRUE", 'T_TRUE'),
+    # ("false", 'T_FALSE'),
+    # ("FALSE", 'T_FALSE'),
+
 
     ("\+\=", 'T_PLUS_EQUAL'),
     ("\-\=", 'T_MINUS_EQUAL'),
@@ -183,19 +254,43 @@ RULES = [
 
     ]
 
-RULES = RULES + KEYWORDS.items()
+RULES = RULES  + KEYWORDS.items()
 
 PRECEDENCES = [
+    ("left", ["T_INCLUDE", "T_INCLUDE_ONCE", "T_EVAL", "T_REQUIRE", "T_REQUIRE_ONCE"]),
     ("left", [","]),
-    ("left", ["=",]),
+    ("left", ["T_LOGICAL_OR",]),
+    ("left", ["T_LOGICAL_XOR",]),
     ("left", ["T_LOGICAL_AND",]),
-    ("nonassoc", ['<', "T_IS_SMALLER_OR_EQUAL", '>', "T_IS_GREATER_OR_EQUAL"]),
+    ("right", ["T_PRINT",]),
+    #("right", ["T_YIELD",]),
+    ("left", ['=', "T_PLUS_EQUAL", "T_MINUS_EQUAL", "T_MUL_EQUAL",
+              "T_DIV_EQUAL", "T_CONCAT_EQUAL", "T_MOD_EQUAL",
+              "T_AND_EQUAL", "T_OR_EQUAL", "T_XOR_EQUAL",
+              "T_SL_EQUAL", "T_SR_EQUAL"]),
     ("left", ["?", ":"]),
+    ("left", ["T_BOOLEAN_OR"]),
+    ("left", ["T_BOOLEAN_AND"]),
+    ("left", ["|"]),
+    ("left", ["^"]),
+    ("left", ["&"]),
+    ("nonassoc", ["T_IS_EQUAL", "T_IS_NOT_EQUAL", "T_IS_IDENTICAL", "T_IS_NOT_IDENTICAL"]),
+    ("nonassoc", ['<', "T_IS_SMALLER_OR_EQUAL", '>', "T_IS_GREATER_OR_EQUAL"]),
+    ("left", ["T_SL", "T_SR"]),
     ("left", ["+", "-", "."]),
-    ("left", ["*", "/"]),
+    ("left", ["*", "/", "%"]),
+    ("nonassoc", ["T_INSTANCEOF"]),
     ("right", ['~', 'T_INC', 'T_DEC', 'T_INT_CAST', 'T_DOUBLE_CAST', 'T_STRING_CAST',
                'T_UNICODE_CAST', 'T_BINARY_CAST', 'T_ARRAY_CAST',
                'T_OBJECT_CAST', 'T_BOOL_CAST', 'T_UNSET_CAST', '@']),
+    ("right", ["["]),
+    ("nonassoc", ["T_NEW", "T_CLONE"]),
+    # XXX TODO: find out why this doesnt work
+    # ("left", ["T_ELSEIF"]),
+    # ("left", ["T_ELSE"]),
+    # ("left", ["T_ENDIF"]),
+    ("right", ["T_STATIC", "T_ABSTRACT", "T_FINAL", "T_PRIVATE", "T_PROTECTED", "T_PUBLIC"]),
+
 ]
 
 
@@ -214,7 +309,7 @@ class Lexer(object):
 
         See below for an example of usage.
     """
-    def __init__(self, rules, skip_whitespace=True):
+    def __init__(self, rules, skip_whitespace=False):
         """ Create a lexer.
 
             rules:
@@ -229,13 +324,14 @@ class Lexer(object):
                 specify your rules for whitespace, or it will be
                 flagged as an error.
         """
-        self.rules = []
-
+        self.rules = [0] * len(rules)
         for regex, type in rules:
-            self.rules.append((re.compile(regex), type))
+            #self.rules.append((compile(regex), type))
+            self.rules[i] = (compile(regex), type)
+            i += 1
 
         self.skip_whitespace = skip_whitespace
-        self.re_ws_skip = re.compile('\S')
+        self.re_ws_skip = compile('\S')
 
     def input(self, buf):
         """ Initialize the lexer with a buffer as input.
@@ -291,13 +387,3 @@ class Lexer(object):
                 if tok is None:
                     break
             yield tok
-
-
-if __name__ == '__main__':
-    lx = Lexer(RULES, skip_whitespace=False)
-    lx.input('$$x;')
-    try:
-        for tok in lx.tokens():
-            print tok
-    except LexerError, err:
-        print 'LexerError at position', err.pos

@@ -378,7 +378,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[2]) == 30
 
     def test_declare_function_call_2(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f($a) {
            return $a + 1;
@@ -386,6 +385,29 @@ class TestInterpreter(BaseTestInterpreter):
         echo f(1);
         ''')
         assert self.space.int_w(output[0]) == 2
+
+    def test_declare_function_call_3(self):
+        output = self.run('''
+        function f($a) {
+           $b = 2;
+           return $a + $b;
+        }
+        $b = 5;
+        echo f(10);
+        echo $b;
+        ''')
+        assert self.space.int_w(output[0]) == 12
+        assert self.space.int_w(output[1]) == 5
+
+    def test_declare_function_call_4(self):
+        output = self.run('''
+        function f($a, $a, $b) {    // ugh! supported
+           echo $a, $b;
+        }
+        f(10, 20, 30);
+        ''')
+        assert self.space.int_w(output[0]) == 20
+        assert self.space.int_w(output[1]) == 30
 
     def test_declare_inside(self):
         py.test.raises(FatalError, self.run, '''

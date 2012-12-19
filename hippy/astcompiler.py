@@ -169,6 +169,12 @@ class CompilerContext(object):
             self.varnames.append(name)
             return r
 
+    def force_var_name(self, name, i):
+        name = intern(name)
+        assert i == len(self.varnames)
+        self.varnames_to_nums[name] = i
+        self.varnames.append(name)
+
     def register_function(self, name, args, bytecode):
         name = name.lower()
         if name in self.functions:
@@ -611,11 +617,8 @@ class __extend__(FunctionDecl):
         new_context = CompilerContext(ctx.filename, ctx.sourcelines,
                                       self.lineno, ctx.space, self.name,
                                       extra_offset=ctx.extra_offset)
-        self.body.compile(new_context)
-        new_context.emit(consts.LOAD_NULL)
-        new_context.emit(consts.RETURN)
         args = []
-        for arg in self.argdecls:
+        for i, arg in enumerate(self.argdecls):
             if isinstance(arg, Argument):
                 name = arg.name
                 args.append((consts.ARG_ARGUMENT, name, None))
@@ -628,7 +631,10 @@ class __extend__(FunctionDecl):
                              arg.value.wrap(ctx.space)))
             else:
                 assert False
-            new_context.create_var_name(name) # make sure those are in vars
+            new_context.force_var_name(name, i)
+        self.body.compile(new_context)
+        new_context.emit(consts.LOAD_NULL)
+        new_context.emit(consts.RETURN)
         ctx.register_function(self.name, args, new_context.create_bytecode())
 
 class __extend__(And):

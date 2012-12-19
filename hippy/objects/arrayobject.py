@@ -80,9 +80,10 @@ class W_ArrayObject(W_Root):
     def setitem(self, space, w_arg, w_value):
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
-            return self._setitem_int(as_int, w_value, False)
+            res = self._setitem_int(as_int, w_value, False)
         else:
-            return self._setitem_str(as_str, w_value, False)
+            res = self._setitem_str(as_str, w_value, False)
+        return res, w_value
 
     def setitem_ref(self, space, w_arg, w_ref):
         as_int, as_str = self._getindex(space, w_arg)

@@ -117,6 +117,27 @@ class W_ArrayObject(W_Root):
     def as_dict(self):
         raise NotImplementedError("abstract")
 
+    def var_dump(self, space, indent, recursion):
+        if self in recursion:
+            space.ec.writestr('%s*RECURSION*\n' % indent)
+            return
+        recursion[self] = None
+        space.ec.writestr('%sarray(%d) {\n' % (indent, self.arraylen()))
+        subindent = indent + '  '
+        with space.iter(self) as itr:
+            while not itr.done():
+                w_key, w_value = itr.next_item(space)
+                if w_key.tp == space.tp_int:
+                    key = space.int_w(w_key)
+                    s = '%s[%d]=>\n' % (subindent, key)
+                else:
+                    key = space.str_w(w_key)
+                    s = '%s["%s"]=>\n' % (subindent, key)
+                space.ec.writestr(s)
+                w_value.var_dump(space, subindent, recursion)
+        space.ec.writestr('%s}\n' % indent)
+        del recursion[self]
+
 
 class W_ListArrayObject(W_ArrayObject):
     _has_string_keys = False

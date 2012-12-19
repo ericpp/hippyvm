@@ -778,6 +778,7 @@ class SourceParser(object):
     @pg.production("expr_without_variable : expr . expr")
     @pg.production("expr_without_variable : expr | expr")
     @pg.production("expr_without_variable : expr % expr")
+    @pg.production("expr_without_variable : expr & expr")
     @pg.production("expr_without_variable : expr T_IS_EQUAL expr")
     @pg.production("expr_without_variable : expr T_IS_NOT_EQUAL expr")
     @pg.production("expr_without_variable : expr T_IS_IDENTICAL expr")

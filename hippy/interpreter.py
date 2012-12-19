@@ -229,6 +229,10 @@ class Interpreter(object):
 
     RETURN = ILLEGAL      # handled separately
 
+    def LOAD_NONE(self, bytecode, frame, space, arg, arg2, pc):
+        frame.push(None)
+        return pc
+
     def LOAD_NULL(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(space.w_Null)
         return pc
@@ -481,8 +485,13 @@ class Interpreter(object):
         frame.push(space.newbool(space.is_true(frame.pop())))
         return pc
 
+    def DEREF(self, bytecode, frame, space, arg, arg2, pc):
+        w_x = frame.pop()
+        frame.push(w_x.deref())
+        return pc
+
     @jit.unroll_safe
-    def ARRAY(self, bytecode, frame, space, arg, arg2, pc):
+    def MAKE_ARRAY(self, bytecode, frame, space, arg, arg2, pc):
         args_w = [None] * arg
         for i in range(arg - 1, -1, -1):
             args_w[i] = frame.pop()
@@ -494,7 +503,7 @@ class Interpreter(object):
         args_w = [(None, None)] * arg
         for i in range(arg -1, -1, -1):
             w_v = frame.pop()
-            w_k = frame.pop()
+            w_k = frame.pop()     # <= may be None
             args_w[i] = (w_k, w_v)
         frame.push(space.new_array_from_pairs(args_w))
         return pc

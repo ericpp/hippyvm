@@ -442,7 +442,6 @@ class TestInterpreter(BaseTestInterpreter):
                                          ('<input>', 'f', 2, '   g();')]
 
     def test_recursion(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f($n) {
            if ($n == 0)
@@ -454,7 +453,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 5 + 4 + 3 + 2 + 1
 
     def test_and_or(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         echo 1 && 0 || 3;
         echo 1 && 2;
@@ -562,7 +560,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[1]) == 18
 
     def test_references_2(self):
-        py.test.skip("XXX FIXME")
         output = self.run('''
         function f() {
         $a = 3;

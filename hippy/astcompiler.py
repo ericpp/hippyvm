@@ -48,6 +48,7 @@ class CompilerContext(object):
                  extra_offset=0, print_exprs=False):
         self.space = space
         self.filename = filename
+        self.sourcelines = sourcelines
         self.data = []
         self.consts = []
         self.names = []

@@ -855,6 +855,13 @@ class SourceParser(object):
     def cast_expr(self, p):
         return Cast(p[0].getstr()[1:-1], p[1], lineno=p[0].getsourcepos())
 
+
+    @pg.production("expr_without_variable : variable = & variable")
+    def expr_variable_is_ref_variable(self, p):
+        return Assignment(p[0],
+                          Reference(p[3], lineno=p[1].getsourcepos()),
+                          lineno=p[1].getsourcepos())
+
     @pg.production("internal_function : T_EMPTY ( variable )")
     @pg.production("internal_function : T_EMPTY ( expr_without_variable )")
     def internal_f_empty(self, p):
@@ -982,6 +989,8 @@ class SourceParser(object):
     @pg.production("reference_variable : "
                    "reference_variable [ dim_offset ]")
     def reference_variable_reference_variable_offset(self, p):
+        if p[2] is None:
+            return GetItem(p[0], ConstantInt(0), lineno=p[1].getsourcepos())
         return GetItem(p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("dim_offset : empty")
@@ -1552,11 +1561,23 @@ class SourceParser(object):
         return [(ConstantAppend(), p[0])]
 
     @pg.production("non_empty_array_pair_list : "
-                   "non_empty_array_pair_list , "
-                   "static_scalar T_DOUBLE_ARROW static_scalar")
-    def non_empty_array_pair_list_list_scalar_assign_scalar(self, p):
+                   "non_empty_array_pair_list , expr T_DOUBLE_ARROW & w_variable")
+    def non_empty_array_pair_list_list_expr_da_ref_w_variable(self, p):
         raise NotImplementedError(p)
 
+    @pg.production("non_empty_array_pair_list : "
+                   "non_empty_array_pair_list , & w_variable")
+    def non_empty_array_pair_list_list_ref_w_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_array_pair_list : expr T_DOUBLE_ARROW & w_variable")
+    def non_empty_array_pair_list_expr_da_ref_w_variable(self, p):
+        raise NotImplementedError(p)
+
+    @pg.production("non_empty_array_pair_list : & w_variable")
+    def non_empty_array_pair_list_ref_w_variable(self, p):
+        # return [(ConstantAppend(), Reference(p[1], lineno=p[0].getsourcepos()))]
+        raise NotImplementedError(p)
 
     @pg.production("possible_comma : empty")
     def possible_comma_empty(self, p):

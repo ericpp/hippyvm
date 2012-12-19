@@ -367,6 +367,12 @@ class TestParser(object):
         assert r == Block([Stmt(SetItem(Variable(ConstantStr("x")),
                                         ConstantInt(1), ConstantInt(3)))])
 
+    def test_setitem_new_approach(self):
+        r = parse("$x[1] = 3;")
+        assert r == Block([Stmt(Assignment(
+                        GetItem(
+                            Variable(ConstantStr("x")),ConstantInt(1)), ConstantInt(3)))])
+
     def test_inplacesetitem(self):
         py.test.skip("XXX FIXME")
         r = parse("$x[1] += 3;")

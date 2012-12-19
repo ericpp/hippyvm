@@ -572,7 +572,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [5, 5]
 
     def test_references_3(self):
-        py.test.skip("XXX FIXME")
         output = self.run('''
         $a = 5;         // [Int(5), None]
         $x = array();   // [Int(5), Array([],c=1)]

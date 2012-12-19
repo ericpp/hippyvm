@@ -475,7 +475,8 @@ class TestCompiler(object):
         LOAD_FAST 0
         DEREF
         LOAD_FAST 1
-        FETCHITEM_APPEND 2
+        APPEND_INDEX 2
+        FETCHITEM 2
         STOREITEM 2
         STORE 2
         DISCARD_TOP
@@ -490,11 +491,27 @@ class TestCompiler(object):
         LOAD_NONE            # NULL
         LOAD_NONE            # NULL, NULL
         LOAD_FAST 0          # NULL, NULL, Ref$b
-        FETCHITEM_APPEND 2   # idx, NULL, Ref$b, Array$b[idx]
+        APPEND_INDEX 2       # idx, NULL, Ref$b
+        FETCHITEM 2          # idx, NULL, Ref$b, Array$b[idx]
         MAKE_REF 2           # idx, NewRef, Ref$b, Array$b[idx]
         STOREITEM_REF 2      # NewArray, NewRef, Ref$b, Array$b[idx]
         STORE 2              # NewRef
         STORE_FAST_REF 1
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_reference_append(self):
+        self.check_compile("""
+        $a[] = &$b;
+        """, """
+        LOAD_NONE            # NULL
+        LOAD_FAST 0          # NULL, Ref$b
+        LOAD_FAST 1          # NULL, Ref$b, Ref$a
+        APPEND_INDEX 2       # idx, Ref$b, Ref$a
+        STOREITEM_REF 2      # NewArray, Ref$b, Ref$a ]
+        STORE 2              # Ref$b
         DISCARD_TOP
         LOAD_NULL
         RETURN

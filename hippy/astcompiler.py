@@ -324,7 +324,8 @@ class __extend__(Assignment):
     # (DEREF -- not actually needed after a LOAD_CONST)
     # LOAD_FAST $a       [ 5, None, 42, Ref$a ]
     # FETCHITEM 3        [ 5, None, 42, Ref$a, Array$a[5] ]
-    # FETCHITEM_APPEND 3 [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
+    # APPEND_INDEX 3     [ 5, idx, 42, Ref$a, Array$a[5] ]
+    # FETCHITEM 3        [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
     # STOREITEM 3        [ 5, NewArray1, 42, Ref$a, Array$a[5] ]
     # STOREITEM 3        [ NewArray2, NewArray1, 42, Ref$a ]
     # STORE 3            [ 42 ]
@@ -610,7 +611,12 @@ class __extend__(Append):
 
     def compile_assignment_fetch(self, ctx, depth):
         self.node.compile_assignment_fetch(ctx, depth)
-        ctx.emit(consts.FETCHITEM_APPEND, depth + 1)
+        ctx.emit(consts.APPEND_INDEX, depth + 1)
+        ctx.emit(consts.FETCHITEM, depth + 1)
+
+    def compile_assignment_fetch_ref(self, ctx, depth):
+        self.node.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.APPEND_INDEX, depth + 1)
 
 class __extend__(FunctionDecl):
     def compile(self, ctx):

@@ -1018,7 +1018,6 @@ class TestInterpreter(BaseTestInterpreter):
             True, True, True, True]
 
     def test_global_in_global(self):
-        py.test.skip("XXX REDO")
         self.run('''
         global $x;
         ''')

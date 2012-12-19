@@ -101,7 +101,7 @@ class Frame(object):
     def load_fast(self, no):
         return self.vars_w[no]
 
-    def store_fast(self, no, w_ref):
+    def store_fast_ref(self, no, w_ref):
         assert isinstance(w_ref, W_Reference)
         self.vars_w[no] = w_ref
 
@@ -116,8 +116,10 @@ class Interpreter(object):
     def __init__(self, space, logger):
         self.functions = {}
         self.constants = {}
+        self.globals = {}
         self.logger = logger
         self.setup_constants(space)
+        self.setup_globals(space)
         setup_builtin_functions(self, space)
         space.ec.interpreter = self # one interpreter at a time
         self.topframeref = jit.vref_None
@@ -127,16 +129,15 @@ class Interpreter(object):
         self.constants['false'] = space.w_False
         self.constants['null'] = space.w_Null
 
-    def setup_globals(self, space, dct):
-        self.globals = dct
-        #self.globals_wrapper = new_globals_wrapper(space, dct)
+    def setup_globals(self, space):
+        pass
 
     @jit.elidable
     def lookup_global(self, space, name):
         try:
             return self.globals[name]
         except KeyError:
-            new_glob = W_Cell(space.w_Null)
+            new_glob = W_Reference(space.w_Null)
             self.globals[name] = new_glob
             return new_glob
 
@@ -300,7 +301,7 @@ class Interpreter(object):
 
     def STORE_FAST_REF(self, bytecode, frame, space, arg, arg2, pc):
         w_ref = frame.peek()
-        frame.store_fast(arg, w_ref)
+        frame.store_fast_ref(arg, w_ref)
         return pc
 
     @jit.unroll_safe
@@ -502,15 +503,9 @@ class Interpreter(object):
 
     @jit.unroll_safe
     def DECLARE_GLOBAL(self, bytecode, frame, space, arg, arg2, pc):
-        for i in range(arg):
-            name = space.str_w(frame.pop())
-            glob = self.lookup_global(space, name)
-            if bytecode.uses_dict:
-                # XXX check if it's there
-                frame.vars_dict[name] = W_Cell(glob)
-            else:
-                pos = jit.hint(bytecode.lookup_var_pos(name), promote=True)
-                frame.vars_w[pos] = glob
+        name = bytecode.varnames[arg]
+        w_ref = self.lookup_global(space, name)
+        frame.store_fast_ref(arg, w_ref)
         return pc
 
     @jit.unroll_safe

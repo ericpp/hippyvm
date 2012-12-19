@@ -657,8 +657,7 @@ class __extend__(Global):
     def compile(self, ctx):
         ctx.set_lineno(self.lineno)
         for name in self.names:
-            ctx.emit(consts.LOAD_VAR_NAME, ctx.create_var_name(name))
-        ctx.emit(consts.DECLARE_GLOBAL, len(self.names))
+            ctx.emit(consts.DECLARE_GLOBAL, ctx.create_var_name(name))
 
 class __extend__(StaticDecl):
     def compile(self, ctx):

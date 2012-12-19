@@ -15,6 +15,13 @@ class W_BoolObject(W_Root):
             return space.newstrconst('1')
         return space.newstrconst('')
 
+    def as_number(self, space):
+        return space.newint(int(self.boolval))
+
+    def eq_w(self, space, w_other):
+        assert isinstance(w_other, W_BoolObject)
+        return self is w_other
+
     def __repr__(self):
         return 'W_BoolObject(%s)' % self.boolval
 

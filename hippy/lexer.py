@@ -324,11 +324,9 @@ class Lexer(object):
                 specify your rules for whitespace, or it will be
                 flagged as an error.
         """
-        self.rules = [0] * len(rules)
+        self.rules = []
         for regex, type in rules:
-            #self.rules.append((compile(regex), type))
-            self.rules[i] = (compile(regex), type)
-            i += 1
+            self.rules.append((compile(regex), type))
 
         self.skip_whitespace = skip_whitespace
         self.re_ws_skip = compile('\S')

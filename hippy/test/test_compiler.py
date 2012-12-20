@@ -4,6 +4,7 @@ from hippy.objects.intobject import W_IntObject
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast, bc_preprocess, CompilerContext
 from hippy.objspace import ObjSpace
+from hippy.objects import reference, floatobject
 from hippy import consts
 
 def test_preprocess_string():
@@ -20,10 +21,10 @@ def test_preprocess_string():
     assert prepr('\\\'') == '\''
     c = prepr('$x')
     assert c.strings == ['', '']
-    assert c.vars == ['x']
+    assert c.var_nums == [0]
     c = prepr('a $x $y b $z ')
     assert c.strings == ['a ', ' ', ' b ', ' ']
-    assert c.vars == ['x', 'y', 'z']
+    assert c.var_nums == [0, 1, 2]
 
 class TestCompiler(object):
     def check_compile(self, source, expected=None, **kwds):
@@ -909,27 +910,28 @@ class TestCompiler(object):
         assert bc.bc_mapping == [1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
 
     def test_declare_static(self):
-        py.test.xfail("XXX static")
         self.check_compile("""
         static $a;
         """, """
-        LOAD_VAR_NAME 0
-        DECLARE_STATIC 1
+        LOAD_CONST 0      # loads a reference
+        STORE_FAST_REF 0  # store it into $a
+        DISCARD_TOP
         LOAD_NULL
         RETURN
         """)
 
     def test_initialized_static(self):
-        py.test.xfail("XXX static")
         bc = self.check_compile("""
-        static $a = 0;
+        static $a = 17.5;
         """, """
-        LOAD_VAR_NAME 0
-        DECLARE_STATIC 1
+        LOAD_CONST 0      # loads a reference
+        STORE_FAST_REF 0  # store it into $a
+        DISCARD_TOP
         LOAD_NULL
         RETURN
         """)
-        assert bc.static_vars.keys() == ['a']
+        assert isinstance(bc.consts[0], reference.W_Reference)
+        assert isinstance(bc.consts[0].w_value, floatobject.W_FloatObject)
 
     def test_print_exprs(self):
         bc = self.check_compile("$x = 3;", """

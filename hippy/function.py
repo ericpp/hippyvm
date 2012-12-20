@@ -34,7 +34,7 @@ class Function(AbstractFunction):
         return w_argument
 
     @jit.unroll_safe
-    def execute_call(self, space, parent_frame, nb_args):
+    def call(self, space, parent_frame, nb_args):
         newframe = Frame(space, self.bytecode)
         # XXX warn if too many arguments and this function does not call
         # func_get_arg() & friends

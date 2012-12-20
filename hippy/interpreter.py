@@ -441,7 +441,7 @@ class Interpreter(object):
 
     def CALL(self, bytecode, frame, space, arg, arg2, pc):
         func = frame.pop()
-        w_res = func.execute_call(space, frame, arg)
+        w_res = func.call(space, frame, arg)
         frame.pop_n(arg)
         frame.push(w_res)
         return pc

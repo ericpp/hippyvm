@@ -221,7 +221,7 @@ class W_DictArrayObject(W_ArrayObject):
         return W_DictArrayObject(self.space, self.dct_w.copy())
 
     def arraylen(self):
-        return len(self._dct_w)
+        return len(self.dct_w)
 
     def _getitem_int(self, index):
         return self._getitem_str(str(index))

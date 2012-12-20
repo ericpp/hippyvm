@@ -7,48 +7,86 @@ from hippy.objects.arrayobject import W_ArrayObject
 from pypy.rlib.rstring import StringBuilder
 from pypy.rlib.streamio import open_file_as_stream
 
-def create_function(signature, functocall):
-    lines = ["def %s(space, frame, args_w):" % (functocall.func_name,)]
-    inpi = 0
-    for i, tp in enumerate(signature):
-        if tp is int:
-            lines.append('    arg%d = space.int_w(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp is bool:
-            lines.append('    arg%d = space.is_true(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp == 'args_w':
-            lines.append('    arg%d = [w_arg.deref() for w_arg in args_w]' % i)
-        elif tp == 'args_w_unwrapped':
-            lines.append('    arg%d = args_w' % i)
-        elif tp == 'frame':
-            lines.append('    arg%d = frame' % i)
-        elif tp is float:
-            lines.append('    arg%d = space.float_w(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp is str:
-            lines.append('    arg%d = space.str_w(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp == 'space':
-            lines.append('    arg%d = space' % i)
-        elif tp is W_Root:
-            lines.append('    arg%s = args_w[%s].deref()' % (i, inpi))
-            inpi += 1
-        elif tp == 'unwrapped':
-            lines.append('    arg%s = args_w[%s]' % (i, inpi))
-            inpi += 1
+class BuiltinFunctionBuilder(object):
+    def __init__(self, signature, functocall):
+        self.signature = signature
+        self.functocall = functocall
+        self.input_i = 0
+        self.length_at_least = None
+
+    def header(self):
+        # call this *after* lines_for_arg()
+        lines = []
+        lines.append("@unroll_safe")
+        lines.append("def %s(space, frame, nb_args):" %
+                         (self.functocall.func_name,))
+        length_at_least = self.length_at_least
+        if length_at_least is None:
+            lines.append("    if nb_args != %d:" % (self.input_i,))
+            lines.append("        self.warn_at_least(%d)" % (self.input_i,))
+            lines.append("        return space.w_Null")
+            lines.append("    nb_args = %d  #constant below" % (self.input_i,))
         else:
-            raise Exception("Unknown signature %s" % tp)
-    lines.append('    return orig_func(%s)' % ', '.join(['arg%d' % i
-                                       for i in range(len(signature))]))
+            lines.append("    if nb_args < %d:" % (length_at_least,))
+            lines.append("        self.warn_at_least(%d)" % (length_at_least,))
+            lines.append("        return space.w_Null")
+        return lines
+
+    def footer(self):
+        allargs = ', '.join(['arg%d' % i for i in range(len(self.signature))])
+        return ['    return orig_func(%s)' % allargs]
+
+    def _value_arg(self, i, convertion):
+        self.input_i += 1
+        lines = ['    w_arg = frame.peek_nth(nb_args - %d)' % (self.input_i,),
+                 '    arg%d = %s' % (i, convertion)]
+        return lines
+
+    def _value_args_w(self, i):
+        self.input_i += 1
+        self.length_at_least = self.input_i
+        lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +
+                 'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
+        self.input_i = None    # all arguments consumed
+        return lines
+
+    def lines_for_arg(self, i, tp):
+        if tp is int:
+            return self._value_arg(i, 'space.int_w(w_arg)')
+        elif tp is bool:
+            return self._value_arg(i, 'space.is_true(w_arg)')
+        elif tp == 'args_w':
+            return self._value_args_w(i)
+        elif tp == 'args_w_unwrapped':
+            return ['    XXX_args_w_unwrapped']
+        elif tp == 'frame':
+            return ['    arg%d = frame' % i]
+        elif tp is float:
+            return self._value_arg(i, 'space.float_w(w_arg)')
+        elif tp is str:
+            return self._value_arg(i, 'space.str_w(w_arg)')
+        elif tp == 'space':
+            return ['    arg%d = space' % i]
+        elif tp is W_Root:
+            return self._value_arg(i, 'w_arg')
+        elif tp == 'unwrapped':
+            return ['    XXX_unwrapped']
+        else:
+            raise Exception("Unknown signature %r" % tp)
+
+def create_function(signature, functocall):
+    builder = BuiltinFunctionBuilder(signature, functocall)
+    lines = []
+    for i, tp in enumerate(signature):
+        lines.extend(builder.lines_for_arg(i, tp))
+    lines = builder.header() + lines + builder.footer()
     source = '\n'.join(lines)
-    d = {'orig_func': functocall}
+    d = {'orig_func': functocall, 'unroll_safe': jit.unroll_safe}
     try:
         exec py.code.Source(source).compile() in d
     except:
         print source
         raise
-    d[functocall.func_name]._jit_unroll_safe_ = True
     return d[functocall.func_name]
 
 class ArgumentError(InterpreterError):
@@ -57,9 +95,11 @@ class ArgumentError(InterpreterError):
     """
 
 class AbstractFunction(W_Root):
+    def argument_is_byref(self, i):
+        raise NotImplementedError("abstract base class")
     def prepare_argument(self, space, i, w_argument):
         raise NotImplementedError("abstract base class")
-    def call(self, space, frame, args_w):
+    def call(self, space, parent_frame, nb_args):
         raise NotImplementedError("abstract base class")
 
 class BuiltinFunction(AbstractFunction):
@@ -68,8 +108,15 @@ class BuiltinFunction(AbstractFunction):
     def __init__(self, signature, functocall):
         self.run = create_function(signature, functocall)
 
-    def call(self, space, frame, args_w):
-        return self.run(space, frame, args_w)
+    def argument_is_byref(self, i):
+        return False    # XXX
+
+    def prepare_argument(self, space, i, w_argument):
+        # XXX assume arguments are all by value
+        return w_argument.deref()
+
+    def call(self, space, parent_frame, nb_args):
+        return self.run(space, parent_frame, nb_args)
 
 BUILTIN_FUNCTIONS = []
 

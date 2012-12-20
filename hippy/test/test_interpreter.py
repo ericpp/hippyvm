@@ -1119,7 +1119,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.str_w(output[0]) == ""
 
     def test_null_eq(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = "x";
         echo $a == null, null == $a, null == null;
@@ -1129,7 +1128,6 @@ class TestInterpreter(BaseTestInterpreter):
                                                True, True, False]
 
     def test_hash_of_a_copy_of_concat(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         $a = "x";
         $b = $a . $a;
@@ -1141,7 +1139,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_reference_to_a_reference(self):
-        py.test.skip("XXX fix me")
         output = self.run('''
         function f(&$x) {
             $x = 3;
@@ -1278,7 +1275,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 6
 
     def test_function_mixed_case(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function F(){
             return 3;
@@ -1288,7 +1284,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_global_2(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f() {
           global $x;
@@ -1317,7 +1312,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [1, 2, 3, 4]
 
     def test_default_args(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f($n = 10) {
            echo $n;

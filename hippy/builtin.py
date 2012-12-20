@@ -56,7 +56,9 @@ class ArgumentError(InterpreterError):
     number of args
     """
 
-class AbstractFunction(object):
+class AbstractFunction(W_Root):
+    def prepare_argument(self, space, i, w_argument):
+        raise NotImplementedError("abstract base class")
     def call(self, space, frame, args_w):
         raise NotImplementedError("abstract base class")
 

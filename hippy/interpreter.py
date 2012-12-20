@@ -2,7 +2,7 @@
 from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES,\
      BINOP_LIST, RETURN
-from hippy.builtin import setup_builtin_functions
+from hippy.builtin import setup_builtin_functions, AbstractFunction
 from hippy.error import InterpreterError
 from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
@@ -26,7 +26,7 @@ driver = jit.JitDriver(reds = ['frame'],
                        should_unroll_one_iteration = lambda *args: True)
 
 class Frame(object):
-    """ Frame implementation. Note that vars_w store references, while
+    """ Frame implementation. Note that vars_w stores references, while
     stack stores values (also references)
     """
     _virtualizable2_ = ['vars_w[*]', 'stack[*]', 'stackpos', 'f_backref',
@@ -314,8 +314,12 @@ class Interpreter(object):
         frame.push(frame.load_var(space, bytecode, name))
         return pc
 
-    def LOAD_FAST(self, bytecode, frame, space, arg, arg2, pc):
+    def LOAD_REF(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(frame.load_fast(arg))
+        return pc
+
+    def LOAD_DEREF(self, bytecode, frame, space, arg, arg2, pc):
+        frame.push(frame.load_fast(arg).deref())
         return pc
 
     def STORE_FAST_REF(self, bytecode, frame, space, arg, arg2, pc):
@@ -414,11 +418,32 @@ class Interpreter(object):
         frame.push(space.newbool(not space.is_true(frame.pop())))
         return pc
 
-    @jit.unroll_safe
-    def CALL(self, bytecode, frame, space, arg, arg2, pc):
+    def GETFUNC(self, bytecode, frame, space, arg, arg2, pc):
         name = space.str_w(frame.pop())
         func = self.lookup_function(name)
-        frame.push(func.call(space, frame, [frame.pop() for i in range(arg)]))
+        frame.push(func)
+        return pc
+
+    def ARG(self, bytecode, frame, space, arg, arg2, pc):
+        w_argument = frame.pop()
+        func = frame.pop()
+        assert isinstance(func, AbstractFunction)
+        w_argument = func.prepare_argument(space, arg, w_argument)
+        frame.push(w_argument)
+        frame.push(func)
+        return pc
+
+    def ARG_IS_BYREF(self, bytecode, frame, space, arg, arg2, pc):
+        func = frame.peek()
+        assert isinstance(func, AbstractFunction)
+        frame.push(space.newbool(func.argument_is_byref(arg)))
+        return pc
+
+    def CALL(self, bytecode, frame, space, arg, arg2, pc):
+        func = frame.pop()
+        w_res = func.execute_call(space, frame, arg)
+        frame.pop_n(arg)
+        frame.push(w_res)
         return pc
 
     def GETITEM(self, bytecode, frame, space, arg, arg2, pc):
@@ -469,12 +494,6 @@ class Interpreter(object):
         if not isinstance(w_obj, W_Reference):
             w_obj = W_Reference(w_obj)
         frame.poke_nth(arg - 1, w_obj)
-        return pc
-
-    def BINARY_CONCAT(self, bytecode, frame, space, arg, arg2, pc):
-        w_right = frame.pop()
-        w_left = frame.pop()
-        frame.push(space.concat(w_left, w_right))
         return pc
 
     def BINARY_IS(self, bytecode, frame, space, arg, arg2, pc):
@@ -571,7 +590,7 @@ def _new_binop(name):
     BINARY.func_name = new_name
     return new_name, BINARY
 
-for _name in BINOP_LIST:
+for _name in BINOP_LIST + ['concat']:
     setattr(Interpreter, *_new_binop(_name))
 
 unrolling_bc = unrolling_iterable(enumerate(BYTECODE_NAMES))

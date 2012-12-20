@@ -5,7 +5,7 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Return, Append, And, Or, InplaceOp, Global, NamedConstant, DoWhile,\
      Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
-     UninitializedVariable, InitializedVariable, DefaultArgument
+     UninitializedVariable, InitializedVariable, DefaultArgument, Node
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
@@ -228,6 +228,39 @@ class CompilerContext(object):
             strings.append(''.join(r))
             return self.create_interpolation_const(strings, var_nums), True
 
+    def compile_call(self, args):
+        self.emit(consts.GETFUNC)
+        for i, arg in enumerate(args):
+            if (arg.can_be_passed_by_reference()
+                    and not isinstance(arg, Variable)):
+                self.emit(consts.ARG_IS_BYREF, i)
+                self.emit(consts.JUMP_IF_FALSE, 0)
+                pos = self.get_pos()
+                arg.compile_reference(self)
+                self.emit(consts.JUMP_FORWARD, 0)
+                self.patch_pos(pos)
+                pos = self.get_pos()
+                arg.compile(self)
+                self.patch_pos(pos)
+            else:
+                arg.compile(self)
+            # ARG: [function, argument]
+            #   => [fixed_argument, function]
+            # so the function object remains on top of all arguments, which
+            # accumulate below
+            self.emit(consts.ARG, i)
+        self.emit(consts.CALL, len(args))
+
+
+class __extend__(Node):
+    def can_be_passed_by_reference(self):
+        return False
+
+    def compile_deref(self, ctx):
+        self.compile(ctx)
+        if not self.is_constant():   # otherwise, not useful
+            ctx.emit(consts.DEREF)
+
 class __extend__(Block):
     def compile(self, ctx):
         for stmt in self.stmts:
@@ -240,6 +273,7 @@ class __extend__(Stmt):
         if ctx.print_exprs:
             # special mode used for interactive usage: print all expressions
             # (with a final \n) instead of discarding them.
+            ctx.emit(consts.DEREF)
             ctx.emit(consts.LOAD_NAME, ctx.create_name("\n"))
             ctx.emit(consts.ECHO, 2)
         else:
@@ -257,7 +291,7 @@ class __extend__(Echo):
     def compile(self, ctx):
         ctx.set_lineno(self.lineno)
         for expr in self.exprlist:
-            expr.compile(ctx)
+            expr.compile_deref(ctx)
         ctx.emit(consts.ECHO, len(self.exprlist))
 
 class __extend__(Assignment):
@@ -270,9 +304,8 @@ class __extend__(Assignment):
 
     # A simple assignment like "$a = $b" becomes this:
     #                 stack:
-    # LOAD_FAST $b       [ Ref$b ]
-    # DEREF              [ Value$b ]
-    # LOAD_FAST $a       [ Value$b, Ref$a ]
+    # LOAD_DEREF $b      [ Value$b ]
+    # LOAD_REF $a        [ Value$b, Ref$a ]
     # STORE 1            [ Value$b ]
     #
     # The 'STORE 1' pops the reference Ref$a, and store into it the
@@ -283,9 +316,8 @@ class __extend__(Assignment):
     #                 stack:
     # LOAD_CONST 5       [ 5 ]
     # LOAD_CONST 6       [ 5, 6 ]
-    # LOAD_FAST $b       [ 5, 6, Ref$b ]
-    # DEREF              [ 5, 6, Value$b ]
-    # LOAD_FAST $a       [ 5, 6, Value$b, Ref$a ]
+    # LOAD_DEREF $b      [ 5, 6, Value$b ]
+    # LOAD_REF $a        [ 5, 6, Value$b, Ref$a ]
     # FETCHITEM 3        [ 5, 6, Value$b, Ref$a, Array$a[5] ]
     # FETCHITEM 3        [ 5, 6, Value$b, Ref$a, Array$a[5], OldValue$a[5][6] ]
     # STOREITEM 3        [ 5, NewArray1, Value$b, Ref$a, Array$a[5] ]
@@ -322,7 +354,7 @@ class __extend__(Assignment):
     # LOAD_NONE          [ 5, None ]
     # LOAD_CONST 42      [ 5, None, 42 ]
     # (DEREF -- not actually needed after a LOAD_CONST)
-    # LOAD_FAST $a       [ 5, None, 42, Ref$a ]
+    # LOAD_REF $a        [ 5, None, 42, Ref$a ]
     # FETCHITEM 3        [ 5, None, 42, Ref$a, Array$a[5] ]
     # APPEND_INDEX 3     [ 5, idx, 42, Ref$a, Array$a[5] ]
     # FETCHITEM 3        [ 5, idx, 42, Ref$a, Array$a[5], OldValue$a[5][idx] ]
@@ -332,15 +364,13 @@ class __extend__(Assignment):
     #
     def _compile_assign_regular(self, ctx):
         depth = self.var.compile_assignment_prepare(ctx)
-        self.expr.compile(ctx)
-        if not self.expr.is_constant():   # otherwise, not useful
-            ctx.emit(consts.DEREF)
+        self.expr.compile_deref(ctx)
         self.var.compile_assignment_fetch(ctx, depth)
         self.var.compile_assignment_store(ctx, depth)
 
     # A simple assignment like '$a =& $b' becomes this:
     #                 stack:
-    # LOAD_FAST $b       [ Ref$b ]
+    # LOAD_REF $b        [ Ref$b ]
     # STORE_FAST_REF $a  [ Ref$b ]
     #
     # If the expression on the left is more complex, like '$a[5][6][7] =& $b':
@@ -348,8 +378,8 @@ class __extend__(Assignment):
     # LOAD_CONST 5       [ 5 ]
     # LOAD_CONST 6       [ 5, 6 ]
     # LOAD_CONST 7       [ 5, 6, 7 ]
-    # LOAD_FAST $b       [ 5, 6, 7, Ref$b ]
-    # LOAD_FAST $a       [ 5, 6, 7, Ref$b, Ref$a ]
+    # LOAD_REF $b        [ 5, 6, 7, Ref$b ]
+    # LOAD_REF $a        [ 5, 6, 7, Ref$b, Ref$a ]
     # FETCHITEM 4        [ 5, 6, 7, Ref$b, Ref$a, Array$a[5] ]
     # FETCHITEM 4        [ 5, 6, 7, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
     # STOREITEM_REF 4    [ 5, 6, NA1, Ref$b, Ref$a, Array$a[5], Array$a[5][6] ]
@@ -364,7 +394,7 @@ class __extend__(Assignment):
     # LOAD_CONST 7       [ 7 ]
     # LOAD_CONST 8       [ 7, 8 ]
     # LOAD_NONE          [ 7, 8, None ]
-    # LOAD_FAST $b       [ 7, 8, None, Ref$b ]
+    # LOAD_REF $b        [ 7, 8, None, Ref$b ]
     # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7] ]
     # FETCHITEM 3        [ 7, 8, None, Ref$b, Array$b[7], Array$b[7][8] ]
     # MAKE_REF 3         [ 7, 8, NewRef, Ref$b, Array$b[7] ]
@@ -372,11 +402,11 @@ class __extend__(Assignment):
     # STOREITEM 3        [ NewArray2, NewArray1, NewRef, Ref$b ]
     # STORE 3            [ NewRef ]
     #
-    # The case of '... =& $b;' is done just with a LOAD_FAST, but following
+    # The case of '... =& $b;' is done just with a LOAD_REF, but following
     # the recipe above we would get the following equivalent code:
     #
     # LOAD_NONE          [ None ]
-    # LOAD_FAST $b       [ None, Ref$b ]
+    # LOAD_REF $b        [ None, Ref$b ]
     # MAKE_REF 1         [ Ref$b, Ref$b ]     # already a ref
     # STORE 1            [ Ref$b ]            # stores $b in $b, no-op
     #
@@ -390,7 +420,7 @@ class __extend__(InplaceOp):
     # In-place operators: "$a += 42" becomes this:
     #                 stack:
     # LOAD_CONST 42      [ 42 ]
-    # LOAD_FAST $a       [ 42, Ref$a ]
+    # LOAD_REF $a        [ 42, Ref$a ]
     # DUP_TOP_AND_NTH 1  [ 42, Ref$a, Ref$a, 42 ]
     # BINARY_ADD         [ 42, Ref$a, $a+42 ]
     # POP_AND_POKE_NTH 1 [ $a+42, Ref$a ]
@@ -400,7 +430,7 @@ class __extend__(InplaceOp):
     #                 stack:
     # LOAD_CONST 5       [ 5 ]
     # LOAD_CONST 42      [ 5, 42 ]
-    # LOAD_FAST $a       [ 5, 42, Ref$a ]
+    # LOAD_REF $a        [ 5, 42, Ref$a ]
     # FETCHITEM 2        [ 5, 42, Ref$a, OldValue$a[5] ]
     # DUP_TOP_AND_NTH 2  [ 5, 42, Ref$a, OldValue$a[5], OldValue$a[5], 42 ]
     # BINARY_ADD         [ 5, 42, Ref$a, OldValue$a[5], old+42 ]
@@ -451,17 +481,27 @@ class __extend__(BinOp):
         ctx.emit(consts.BIN_OP_TO_BC[self.op])
 
 class __extend__(Variable):
+    def can_be_passed_by_reference(self):
+        return True
+
     def compile(self, ctx):
         # note that in the fast case (a variable) we could precache the name
         # lookup. It does not matter for the JIT, but it does matter for the
         # interpreter
         node = self.node
         if isinstance(node, ConstantStr):
-            ctx.emit(consts.LOAD_FAST, ctx.create_var_name(node.strval))
+            ctx.emit(consts.LOAD_REF, ctx.create_var_name(node.strval))
             return # fast path
         else:
             self.node.compile(ctx)
         ctx.emit(consts.LOAD_VAR)
+
+    def compile_deref(self, ctx):
+        node = self.node
+        if isinstance(node, ConstantStr):
+            ctx.emit(consts.LOAD_DEREF, ctx.create_var_name(node.strval))
+            return # fast path
+        return Node.compile_deref(self, ctx)
 
     def compile_reference(self, ctx):
         self.compile(ctx)
@@ -537,17 +577,13 @@ class __extend__(While):
 
 class __extend__(SimpleCall):
     def compile(self, ctx):
-        for i in range(len(self.args) - 1, -1, -1):
-            self.args[i].compile(ctx)
         ctx.emit(consts.LOAD_NAME, ctx.create_name(self.name))
-        ctx.emit(consts.CALL, len(self.args))
+        ctx.compile_call(self.args)
 
 class __extend__(DynamicCall):
     def compile(self, ctx):
-        for i in range(len(self.args) - 1, -1, -1):
-            self.args[i].compile(ctx)
         self.node.compile(ctx)
-        ctx.emit(consts.CALL, len(self.args))
+        ctx.compile_call(self.args)
 
 class __extend__(For):
     def compile(self, ctx):
@@ -566,6 +602,9 @@ class __extend__(For):
         ctx.pop_label(lbl)
 
 class __extend__(GetItem):
+    def can_be_passed_by_reference(self):
+        return self.node.can_be_passed_by_reference()
+
     def compile(self, ctx):
         self.node.compile(ctx)
         self.item.compile(ctx)
@@ -633,7 +672,7 @@ class __extend__(FunctionDecl):
                 args.append((consts.ARG_REFERENCE, name, None))
             elif isinstance(arg, DefaultArgument):
                 name = arg.name
-                args.append((consts.ARG_DEFAULT, name,
+                args.append((consts.ARG_ARGUMENT, name,
                              arg.value.wrap(ctx.space)))
             else:
                 assert False
@@ -748,9 +787,7 @@ class __extend__(Hash):
         elif isinstance(value, Reference):
             value.item.compile(ctx)
         else:
-            value.compile(ctx)
-            if not value.is_constant():   # otherwise, not useful
-                ctx.emit(consts.DEREF)
+            value.compile_deref(ctx)
 
     def _compile_array(self, ctx):
         # If all values are constants, then it's a constant array

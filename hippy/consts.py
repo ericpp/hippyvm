@@ -18,7 +18,8 @@ BYTECODES = [
     ('LOAD_NAMED_CONSTANT', 1, +1),
     ('LOAD_NAME', 1, +1),
     ('LOAD_VAR_NAME', 1, +1),
-    ('LOAD_FAST', 1, +1),
+    ('LOAD_REF', 1, +1),
+    ('LOAD_DEREF', 1, +1),
     ('LOAD_NULL', 0, +1),
     ('LOAD_NONE', 0, +1),
     ('BINARY_ADD', 0, -1),
@@ -57,7 +58,10 @@ BYTECODES = [
     ('JUMP_BACK_IF_TRUE', 1, -1),
     ('JUMP_BACK_IF_NOT_DONE', 1, -1),
     ('RETURN', 0, -1),
-    ('CALL', 1, ARGVAL1),
+    ('GETFUNC', 0, 0),
+    ('ARG', 1, 0),
+    ('ARG_IS_BYREF', 1, +1),
+    ('CALL', 1, ARGVAL),
     ('GETITEM', 0, -1),
     ('FETCHITEM', 1, +1),
     ('STOREITEM', 1, -1),
@@ -104,7 +108,7 @@ PREFIX_OP_TO_BC = {'++': PREFIX_PLUSPLUS, '--': PREFIX_MINUSMINUS,
                    '+': UNARY_PLUS, '-': UNARY_MINUS, '!': UNARY_NOT}
 CAST_TO_BC = {'array': CAST_ARRAY}
 
-ARG_ARGUMENT, ARG_REFERENCE, ARG_DEFAULT = range(3)
+ARG_ARGUMENT, ARG_REFERENCE = 'A', 'R'    # no relation to 'A'rmin 'R'igo :-)
 
 if __name__ == '__main__':
     for i, (bc, _, _) in enumerate(BYTECODES):

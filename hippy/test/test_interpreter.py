@@ -1320,6 +1320,18 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [20, 20]
 
+    def test_double_static_declarations_uninit(self):
+        output = self.run('''
+        function f() {
+           static $a = 10;
+           echo $a;
+           static $a;    // equivalent to: static $a = NULL;
+           echo $a;
+        }
+        f();
+        ''')
+        assert [self.space.str_w(i) for i in output] == ['', '']  # NULL, NULL
+
     def test_default_args(self):
         output = self.run('''
         function f($n = 10) {
@@ -1436,8 +1448,57 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert self.space.int_w(output[0]) == 5
 
+    def test_getitem_does_not_create(self):
+        output = self.run('''
+        $a = array();
+        $b = $a[0];   // NULL, but not stored in $a
+        echo count($a);
+        $a[] = 5;
+        echo $a[0];
+        ''')
+        assert [self.space.int_w(i) for i in output] == [0, 5]
+
+    def test_function_call_difference_based_on_actual_parameter(self):
+        output = self.run('''
+        function f1($a, $i) { g1($a[$i]); return $a; } //does not create $a[$i]
+        function f2($a, $i) { g2($a[$i]); return $a; } //this creates $a[$i]
+        function g1($x) { }
+        function g2(&$x) { }
+        echo count(f1(array(), 0));
+        echo count(f2(array(), 0));
+        echo count(f1(array(), "foo"));
+        echo count(f2(array(), "foo"));
+        ''')
+        assert [self.space.int_w(i) for i in output] == [0, 1, 0, 1]
+
+    def test_function_call_difference_based_on_actual_parameter_lazy(self):
+        source = '''
+        function f1($a, $j) { h1($j); g1($a[0]); return $a; }
+        function h1($j) {
+            if ($j == 5) {
+                function g1($x) { }
+            } else {
+                function g1(&$x) { }
+            }
+        }
+        '''
+        output1 = self.run(source + 'echo count(f1(array(), 5));')
+        output2 = self.run(source + 'echo count(f1(array(), 3));')
+        assert self.space.int_w(output1[0]) == 0
+        assert self.space.int_w(output2[0]) == 1
+
+    def test_function_call_difference_based_on_actual_parameter_dyn(self):
+        output = self.run('''
+        function f1($name, $a) { $x = $name(count($a), $a[0], count($a));
+                                 return $x + 100 * count($a); }
+        function g1($m, $x, $n) { return 10+$n+1000*$m; }
+        function g2($m, &$x, $n) { return 20+$n+1000*$m; }
+        echo f1("g1", array());
+        echo f1("g2", array());
+        ''')
+        assert [self.space.int_w(i) for i in output] == [10, 121]
+
     def test_function_call_argument_eval_order_1(self):
-        py.test.skip("XXX fix me")
         output = self.run('''
         function f($a, $b) {
            echo $a, $b;
@@ -1448,7 +1509,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [10, 12]
 
     def test_function_call_argument_eval_order_2(self):
-        py.test.skip("XXX fix me")
         output = self.run('''
         function f(&$a, $b) {    // <-- difference with the previous test
            echo $a, $b;
@@ -1457,3 +1517,13 @@ class TestInterpreter(BaseTestInterpreter):
         f($x, $x=12);
         ''')
         assert [self.space.int_w(i) for i in output] == [12, 12]
+
+    def test_builtin_function_call_argument_eval_order(self):
+        output = self.run('''
+        $x = 2;
+        echo pow($x, $x=3);
+        $y = 3;
+        echo max($y, $y=1, $y);
+        ''')
+        assert self.space.float_w(output[0]) == 8.0
+        assert self.space.int_w(output[1]) == 3

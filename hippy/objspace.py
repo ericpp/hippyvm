@@ -5,7 +5,7 @@ from hippy.consts import BINOP_LIST
 from hippy.objects.base import W_Root
 from hippy.objects.reference import W_Reference
 from hippy.objects.boolobject import W_BoolObject
-from hippy.objects.base import W_NullObject
+from hippy.objects.nullobject import W_NullObject
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject
@@ -34,6 +34,9 @@ class ExecutionContext(object):
         self.interpreter.logger.hippy_warn(self.interpreter, msg)
 
     def fatal(self, msg):
+        # This one is supposed to raise FatalError.  If needed, in the
+        # caller, write "raise space.ec.fatal(...)" to make it clear that
+        # it cannot return (useful for RPython)
         self.interpreter.logger.fatal(self.interpreter, msg)        
 
     def writestr(self, str):

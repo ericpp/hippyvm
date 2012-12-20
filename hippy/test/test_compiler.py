@@ -56,7 +56,7 @@ class TestCompiler(object):
     def test_assign(self):
         bc = self.check_compile("$x = 3;", """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         LOAD_NULL
@@ -69,9 +69,8 @@ class TestCompiler(object):
 
     def test_assign_nonconst(self):
         bc = self.check_compile("$x = $y;", """
-        LOAD_FAST 0
-        DEREF
-        LOAD_FAST 1
+        LOAD_DEREF 0
+        LOAD_REF 1
         STORE 1
         DISCARD_TOP
         LOAD_NULL
@@ -82,7 +81,7 @@ class TestCompiler(object):
     def test_addition(self):
         self.check_compile("3 + $x;", """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         BINARY_ADD
         DISCARD_TOP
         LOAD_NULL
@@ -92,7 +91,7 @@ class TestCompiler(object):
     def test_substraction(self):
         self.check_compile("3 - $x;", """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         BINARY_SUB
         DISCARD_TOP
         LOAD_NULL
@@ -102,7 +101,7 @@ class TestCompiler(object):
     def test_mul(self):
         self.check_compile("3 - $x * 3;", """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         LOAD_CONST 0
         BINARY_MUL
         BINARY_SUB
@@ -128,12 +127,22 @@ class TestCompiler(object):
         RETURN""")
         assert bc.consts[0].floatval == 3.5
 
+    def test_echo_2(self):
+        bc = self.check_compile("echo $x, $y;", """
+        LOAD_DEREF 0
+        LOAD_DEREF 1
+        ECHO 2
+        LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 2
+
     def test_unary_minus(self):
         self.check_compile("-$x;+$y;", """
-        LOAD_FAST 0
+        LOAD_REF 0
         UNARY_MINUS
         DISCARD_TOP
-        LOAD_FAST 1
+        LOAD_REF 1
         UNARY_PLUS
         DISCARD_TOP
         LOAD_NULL
@@ -145,6 +154,7 @@ class TestCompiler(object):
         LOAD_CONST 0
         LOAD_CONST 0
         BINARY_ADD
+        DEREF           # XXX remove?
         ECHO 1
         LOAD_NULL
         RETURN""")
@@ -160,10 +170,10 @@ class TestCompiler(object):
         LOAD_CONST 0
         JUMP_IF_FALSE 16
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-     16 LOAD_FAST 0
+     16 LOAD_DEREF 0
         ECHO 1
         LOAD_NULL
         RETURN
@@ -182,18 +192,18 @@ class TestCompiler(object):
         LOAD_CONST 0
         JUMP_IF_FALSE 19
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         JUMP_FORWARD 34
      19 LOAD_CONST 0
         LOAD_CONST 1
         BINARY_ADD
-        DEREF
-        LOAD_FAST 0
+        DEREF           # XXX remove?
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-     34 LOAD_FAST 0
+     34 LOAD_DEREF 0
         ECHO 1
         LOAD_NULL
         RETURN
@@ -212,17 +222,17 @@ class TestCompiler(object):
         LOAD_CONST 0
         JUMP_IF_FALSE 19
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         JUMP_FORWARD 35
      19 LOAD_CONST 1
         JUMP_IF_FALSE 35
         LOAD_CONST 1
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-     35 LOAD_FAST 0
+     35 LOAD_DEREF 0
         ECHO 1
         LOAD_NULL
         RETURN
@@ -242,22 +252,22 @@ class TestCompiler(object):
         LOAD_CONST 0
         JUMP_IF_FALSE 19
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         JUMP_FORWARD 48
      19 LOAD_CONST 1
         JUMP_IF_FALSE 38
         LOAD_CONST 1
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         JUMP_FORWARD 48
      38 LOAD_CONST 2
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-     48 LOAD_FAST 0
+     48 LOAD_DEREF 0
         ECHO 1
         LOAD_NULL
         RETURN
@@ -270,14 +280,14 @@ class TestCompiler(object):
           $i++;
         """, """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-     10 LOAD_FAST 0
+     10 LOAD_REF 0
         LOAD_CONST 1
         BINARY_LT
         JUMP_IF_FALSE 28
-        LOAD_FAST 0
+        LOAD_REF 0
         SUFFIX_PLUSPLUS
         DISCARD_TOP
         JUMP_BACKWARD 10
@@ -287,33 +297,84 @@ class TestCompiler(object):
 
     def test_function_call(self):
         bc = self.check_compile("""
-        cos($i);
+        cos($i, $j, $k);
         """, """
-        LOAD_FAST 0
         LOAD_NAME 0
+        GETFUNC
+        LOAD_REF 0
+        ARG 0
+        LOAD_REF 1
+        ARG 1
+        LOAD_REF 2
+        ARG 2
+        CALL 3
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 4
+
+    def test_function_call_nonref_arg(self):
+        bc = self.check_compile("""
+        f($i+2, $j);
+        """, """
+        LOAD_NAME 0
+        GETFUNC
+        LOAD_REF 0
+        LOAD_CONST 0
+        BINARY_ADD
+        ARG 0
+        LOAD_REF 1
+        ARG 1
+        CALL 2
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 3
+
+    def test_function_call_mayberef_arg(self):
+        self.check_compile("""
+        f($a[5]);
+        """, """
+        LOAD_NAME 0
+        GETFUNC
+        ARG_IS_BYREF 0
+        JUMP_IF_FALSE 32
+        LOAD_CONST 0    # this is the case where f() takes a reference argument
+        LOAD_NONE
+        LOAD_REF 0
+        FETCHITEM 2
+        MAKE_REF 2
+        STOREITEM_REF 2
+        STORE 2
+        JUMP_FORWARD 39
+     32 LOAD_REF 0      # this is the case where f() does not take a ref arg
+        LOAD_CONST 0
+        GETITEM
+     39 ARG 0
         CALL 1
         DISCARD_TOP
         LOAD_NULL
         RETURN
         """)
-        assert bc.stackdepth == 2
 
     def test_for(self):
         self.check_compile("""
         for ($i = 0; $i < 10; $i++) {$k++;}
         """, """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-     10 LOAD_FAST 0
+     10 LOAD_REF 0
         LOAD_CONST 1
         BINARY_LT
         JUMP_IF_FALSE 33
-        LOAD_FAST 1
+        LOAD_REF 1
         SUFFIX_PLUSPLUS
         DISCARD_TOP
-        LOAD_FAST 0
+        LOAD_REF 0
         SUFFIX_PLUSPLUS
         DISCARD_TOP
         JUMP_BACKWARD 10
@@ -333,12 +394,13 @@ class TestCompiler(object):
     def test_constant_str(self):
         self.check_compile('$x = "abc"; echo $x . $x;', """
         LOAD_NAME 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
-        LOAD_FAST 0
-        LOAD_FAST 0
+        LOAD_REF 0
+        LOAD_REF 0
         BINARY_CONCAT
+        DEREF           # XXX remove?
         ECHO 1
         LOAD_NULL
         RETURN
@@ -347,11 +409,11 @@ class TestCompiler(object):
     def test_str_consts_preprocessed(self):
         bc = self.check_compile('$x = "\\n"; $y = "$x";', """
         LOAD_NAME 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         LOAD_CONST_INTERPOLATE 0
-        LOAD_FAST 1
+        LOAD_REF 1
         STORE 1
         DISCARD_TOP
         LOAD_NULL
@@ -361,13 +423,13 @@ class TestCompiler(object):
 
     def test_getitem_setitem(self):
         self.check_compile("$x[3]; $x[3] = 1;", """
-        LOAD_FAST 0
+        LOAD_REF 0
         LOAD_CONST 0
         GETITEM
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
-        LOAD_FAST 0
+        LOAD_REF 0
         FETCHITEM 2
         STOREITEM 2
         STORE 2
@@ -378,14 +440,14 @@ class TestCompiler(object):
 
     def test_setitem_2(self):
         self.check_compile("$x[$y-1][$z+5] = 1;", """
-        LOAD_FAST 0
+        LOAD_REF 0
         LOAD_CONST 0
         BINARY_SUB     # $y-1
-        LOAD_FAST 1
+        LOAD_REF 1
         LOAD_CONST 1
         BINARY_ADD     # $z+5
         LOAD_CONST 0   # 1
-        LOAD_FAST 2    # $x
+        LOAD_REF 2     # $x
         FETCHITEM 3
         FETCHITEM 3
         STOREITEM 3
@@ -400,11 +462,10 @@ class TestCompiler(object):
         self.check_compile("$x = array(1, 2, $y);", """
         LOAD_CONST 0
         LOAD_CONST 1
-        LOAD_FAST 0
-        DEREF
+        LOAD_DEREF 0
         MAKE_ARRAY 3
         DEREF
-        LOAD_FAST 1
+        LOAD_REF 1
         STORE 1
         DISCARD_TOP
         LOAD_NULL
@@ -416,7 +477,7 @@ class TestCompiler(object):
         LOAD_CONST 0
         LOAD_CONST 0
         LOAD_NONE
-        LOAD_FAST 0
+        LOAD_REF 0
         FETCHITEM 3
         FETCHITEM 3
         MAKE_REF 3
@@ -442,9 +503,9 @@ class TestCompiler(object):
                                                (consts.ARG_ARGUMENT, 'c', None)]
         assert bc.startlineno == 0
         self.compare(bc.user_functions['f'].bytecode, """
-        LOAD_FAST 0
-        LOAD_FAST 1
-        LOAD_FAST 2
+        LOAD_REF 0
+        LOAD_REF 1
+        LOAD_REF 2
         BINARY_ADD
         BINARY_ADD
         RETURN
@@ -473,9 +534,8 @@ class TestCompiler(object):
         $a[] = $b;
         """, """
         LOAD_NONE
-        LOAD_FAST 0
-        DEREF
-        LOAD_FAST 1
+        LOAD_DEREF 0
+        LOAD_REF 1
         APPEND_INDEX 2
         FETCHITEM 2
         STOREITEM 2
@@ -491,7 +551,7 @@ class TestCompiler(object):
         """, """
         LOAD_NONE            # NULL
         LOAD_NONE            # NULL, NULL
-        LOAD_FAST 0          # NULL, NULL, Ref$b
+        LOAD_REF 0          # NULL, NULL, Ref$b
         APPEND_INDEX 2       # idx, NULL, Ref$b
         FETCHITEM 2          # idx, NULL, Ref$b, Array$b[idx]
         MAKE_REF 2           # idx, NewRef, Ref$b, Array$b[idx]
@@ -508,8 +568,8 @@ class TestCompiler(object):
         $a[] = &$b;
         """, """
         LOAD_NONE            # NULL
-        LOAD_FAST 0          # NULL, Ref$b
-        LOAD_FAST 1          # NULL, Ref$b, Ref$a
+        LOAD_REF 0          # NULL, Ref$b
+        LOAD_REF 1          # NULL, Ref$b, Ref$a
         APPEND_INDEX 2       # idx, Ref$b, Ref$a
         STOREITEM_REF 2      # NewArray, Ref$b, Ref$a ]
         STORE 2              # Ref$b
@@ -522,10 +582,10 @@ class TestCompiler(object):
         self.check_compile("""
         $a && $b;
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         IS_TRUE
         JUMP_IF_FALSE_NO_POP 12
-        LOAD_FAST 1
+        LOAD_REF 1
         IS_TRUE
         ROT_AND_DISCARD
      12 DISCARD_TOP
@@ -538,13 +598,13 @@ class TestCompiler(object):
         self.check_compile("""
         $a && $b || $c;
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         IS_TRUE
         JUMP_IF_FALSE_NO_POP 21
-        LOAD_FAST 1
+        LOAD_REF 1
         IS_TRUE
         JUMP_IF_TRUE_NO_POP 19
-        LOAD_FAST 2
+        LOAD_REF 2
         IS_TRUE
         ROT_AND_DISCARD
      19 IS_TRUE
@@ -559,7 +619,7 @@ class TestCompiler(object):
         $a += 2;
         """, """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         DUP_TOP_AND_NTH 1
         BINARY_ADD
         POP_AND_POKE_NTH 1
@@ -586,7 +646,7 @@ class TestCompiler(object):
         """, """
         LOAD_NAMED_CONSTANT 0
         DEREF
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         LOAD_NULL
@@ -609,9 +669,9 @@ class TestCompiler(object):
         self.check_compile("""
         $b; $a = &$b;
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         DISCARD_TOP
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_NULL
@@ -622,13 +682,13 @@ class TestCompiler(object):
         self.check_compile("""
         $b; $a[5][6][7] =& $b;
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
         LOAD_CONST 2
-        LOAD_FAST 0
-        LOAD_FAST 1
+        LOAD_REF 0
+        LOAD_REF 1
         FETCHITEM 4
         FETCHITEM 4
         STOREITEM_REF 4
@@ -644,12 +704,12 @@ class TestCompiler(object):
         self.check_compile("""
         $b; $a =& $b[7][8];
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
         LOAD_NONE
-        LOAD_FAST 0
+        LOAD_REF 0
         FETCHITEM 3
         FETCHITEM 3
         MAKE_REF 3
@@ -666,19 +726,19 @@ class TestCompiler(object):
         self.check_compile("""
         $b+0; $a[0] =& $b[1];
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         LOAD_CONST 0
         BINARY_ADD
         DISCARD_TOP
         LOAD_CONST 0
         LOAD_CONST 1
         LOAD_NONE
-        LOAD_FAST 0
+        LOAD_REF 0
         FETCHITEM 2
         MAKE_REF 2
         STOREITEM_REF 2
         STORE 2
-        LOAD_FAST 1
+        LOAD_REF 1
         STOREITEM_REF 2
         STORE 2
         DISCARD_TOP
@@ -755,7 +815,7 @@ class TestCompiler(object):
         JUMP_FORWARD 15
      12 LOAD_CONST 2
      15 DEREF
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
         LOAD_NULL
@@ -768,11 +828,11 @@ class TestCompiler(object):
         bc = self.check_compile("""
         foreach ($a as $b) {$b+1;}
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         CREATE_ITER
-      5 LOAD_FAST 1
+      5 LOAD_REF 1
         NEXT_VALUE_ITER 20
-        LOAD_FAST 1
+        LOAD_REF 1
         LOAD_CONST 0
         BINARY_ADD
         DISCARD_TOP
@@ -820,12 +880,15 @@ class TestCompiler(object):
         $a(3, 4);
         """, """
         LOAD_NAME 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
         DISCARD_TOP
+        LOAD_REF 0
+        GETFUNC
         LOAD_CONST 0
+        ARG 0
         LOAD_CONST 1
-        LOAD_FAST 0
+        ARG 1
         CALL 2
         DISCARD_TOP
         LOAD_NULL
@@ -847,8 +910,7 @@ class TestCompiler(object):
         array(1=>$a);
         """, """
         LOAD_CONST 0
-        LOAD_FAST 0
-        DEREF
+        LOAD_DEREF 0
         MAKE_HASH 1
         DISCARD_TOP
         LOAD_NULL
@@ -876,7 +938,7 @@ class TestCompiler(object):
         bc = self.check_compile("""
         array(&$a);
         """, """
-        LOAD_FAST 0
+        LOAD_REF 0
         MAKE_ARRAY 1
         DISCARD_TOP
         LOAD_NULL
@@ -888,7 +950,7 @@ class TestCompiler(object):
         array(5=>&$a);
         """, """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         MAKE_HASH 1
         DISCARD_TOP
         LOAD_NULL
@@ -936,8 +998,9 @@ class TestCompiler(object):
     def test_print_exprs(self):
         bc = self.check_compile("$x = 3;", """
         LOAD_CONST 0
-        LOAD_FAST 0
+        LOAD_REF 0
         STORE 1
+        DEREF
         LOAD_NAME 0
         ECHO 2
         LOAD_NULL

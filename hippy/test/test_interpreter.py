@@ -396,8 +396,7 @@ class TestInterpreter(BaseTestInterpreter):
         echo f(10);
         echo $b;
         ''')
-        assert self.space.int_w(output[0]) == 12
-        assert self.space.int_w(output[1]) == 5
+        assert [self.space.int_w(i) for i in output] == [12, 5]
 
     def test_declare_function_call_4(self):
         output = self.run('''
@@ -406,8 +405,7 @@ class TestInterpreter(BaseTestInterpreter):
         }
         f(10, 20, 30);
         ''')
-        assert self.space.int_w(output[0]) == 20
-        assert self.space.int_w(output[1]) == 30
+        assert [self.space.int_w(i) for i in output] == [20, 30]
 
     def test_declare_inside(self):
         py.test.raises(FatalError, self.run, '''
@@ -1437,3 +1435,25 @@ class TestInterpreter(BaseTestInterpreter):
         echo $a["bar"];
         ''')
         assert self.space.int_w(output[0]) == 5
+
+    def test_function_call_argument_eval_order_1(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function f($a, $b) {
+           echo $a, $b;
+        }
+        $x = 10;
+        f($x, $x=12);
+        ''')
+        assert [self.space.int_w(i) for i in output] == [10, 12]
+
+    def test_function_call_argument_eval_order_2(self):
+        py.test.skip("XXX fix me")
+        output = self.run('''
+        function f(&$a, $b) {    // <-- difference with the previous test
+           echo $a, $b;
+        }
+        $x = 10;
+        f($x, $x=12);
+        ''')
+        assert [self.space.int_w(i) for i in output] == [12, 12]

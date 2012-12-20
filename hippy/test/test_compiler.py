@@ -586,30 +586,49 @@ class TestCompiler(object):
         LOAD_REF 0
         IS_TRUE
         JUMP_IF_FALSE_NO_POP 12
+        DISCARD_TOP
         LOAD_REF 1
         IS_TRUE
-        ROT_AND_DISCARD
      12 DISCARD_TOP
         LOAD_NULL
         RETURN
         """)
 
-    def test_and_or(self):
-        py.test.xfail("The order of opperation have changed")
+    def test_and_or_forced_parenthesis(self):
+        self.check_compile("""
+        $a && ($b || $c);
+        """, """
+        LOAD_REF 0
+        IS_TRUE
+        JUMP_IF_FALSE_NO_POP 21
+        DISCARD_TOP
+        LOAD_REF 1
+        IS_TRUE
+        JUMP_IF_TRUE_NO_POP 20
+        DISCARD_TOP
+        LOAD_REF 2
+        IS_TRUE
+     20 IS_TRUE
+     21 DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_and_or_default_precedence(self):
         self.check_compile("""
         $a && $b || $c;
         """, """
         LOAD_REF 0
         IS_TRUE
-        JUMP_IF_FALSE_NO_POP 21
+        JUMP_IF_FALSE_NO_POP 12
+        DISCARD_TOP
         LOAD_REF 1
         IS_TRUE
-        JUMP_IF_TRUE_NO_POP 19
+     12 IS_TRUE
+        JUMP_IF_TRUE_NO_POP 21
+        DISCARD_TOP
         LOAD_REF 2
         IS_TRUE
-        ROT_AND_DISCARD
-     19 IS_TRUE
-        ROT_AND_DISCARD
      21 DISCARD_TOP
         LOAD_NULL
         RETURN

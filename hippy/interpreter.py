@@ -283,12 +283,6 @@ class Interpreter(object):
         frame.pop()
         return pc
 
-    def ROT_AND_DISCARD(self, bytecode, frame, space, arg, arg2, pc):
-        w_v = frame.pop()
-        frame.pop()
-        frame.push(w_v)
-        return pc
-
     def DUP_TOP_AND_NTH(self, bytecode, frame, space, arg, arg2, pc):
         w_v = frame.peek_nth(arg)
         frame.push(frame.peek())

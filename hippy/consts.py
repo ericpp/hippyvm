@@ -10,7 +10,6 @@ ARGVAL2 = 0xfffc
 BYTECODES = [
     ('ILLEGAL', 0, 0),
     ('DISCARD_TOP', 0, -1),
-    ('ROT_AND_DISCARD', 0, -1),
     ('STORE', 1, ARGVAL),
     ('STORE_FAST_REF', 1, 0),
     ('LOAD_CONST', 1, +1),

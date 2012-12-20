@@ -689,9 +689,9 @@ class __extend__(And):
         ctx.emit(consts.IS_TRUE)
         ctx.emit(consts.JUMP_IF_FALSE_NO_POP, 0)
         jmp_pos = ctx.get_pos()
+        ctx.emit(consts.DISCARD_TOP)
         self.right.compile(ctx)
         ctx.emit(consts.IS_TRUE)
-        ctx.emit(consts.ROT_AND_DISCARD)
         ctx.patch_pos(jmp_pos)
 
 class __extend__(Or):
@@ -700,9 +700,9 @@ class __extend__(Or):
         ctx.emit(consts.IS_TRUE)
         ctx.emit(consts.JUMP_IF_TRUE_NO_POP, 0)
         jmp_pos = ctx.get_pos()
+        ctx.emit(consts.DISCARD_TOP)
         self.right.compile(ctx)
         ctx.emit(consts.IS_TRUE)
-        ctx.emit(consts.ROT_AND_DISCARD)
         ctx.patch_pos(jmp_pos)
 
 class __extend__(Global):

@@ -1299,7 +1299,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[1]) == 3
 
     def test_static_var(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f() {
            $a = 15;

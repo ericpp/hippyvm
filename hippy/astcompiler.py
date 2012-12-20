@@ -9,6 +9,7 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
+from hippy.objects.reference import W_Reference
 from hippy import consts
 from hippy.error import InterpreterError
 from hippy.bytecode import ByteCode
@@ -64,7 +65,6 @@ class CompilerContext(object):
         self.name = name
         self.extra_offset = extra_offset
         self.print_exprs = print_exprs
-        self.static_vars = {}
         self.globals_var_num = -1
 
     def register_superglobal(self, name, index):
@@ -73,9 +73,6 @@ class CompilerContext(object):
 
     def set_lineno(self, lineno):
         self.cur_lineno = lineno
-
-    def register_static_declr(self, name, w_val):
-        self.static_vars[name] = W_Cell(w_val)
 
     def emit(self, bc, arg=-1, arg2=-1):
         self.lineno_map.append(self.cur_lineno + self.extra_offset)
@@ -185,7 +182,7 @@ class CompilerContext(object):
 
     def create_bytecode(self):
         return ByteCode("".join(self.data), self.consts[:], self.names[:],
-                        self.varnames[:], self.functions, self.static_vars,
+                        self.varnames[:], self.functions,
                         self.filename, self.sourcelines, self.extra_offset,
                         self.startlineno,
                         self.lineno_map, self.name, self.globals_var_num)
@@ -678,14 +675,16 @@ class __extend__(StaticDecl):
         ctx.set_lineno(self.lineno)
         for var in self.vars:
             if isinstance(var, UninitializedVariable):
-                ctx.emit(consts.LOAD_VAR_NAME, ctx.create_var_name(var.name))
-                ctx.register_static_declr(var.name, ctx.space.w_Null)
+                name = var.name
+                w_initial_value = ctx.space.w_Null
             else:
                 assert isinstance(var, InitializedVariable)
-                w_obj = var.expr.wrap(ctx.space)
-                ctx.register_static_declr(var.name, w_obj)
-                ctx.emit(consts.LOAD_VAR_NAME, ctx.create_var_name(var.name))
-        ctx.emit(consts.DECLARE_STATIC, len(self.vars))
+                name = var.name
+                w_initial_value = var.expr.wrap(ctx.space)
+            w_ref = W_Reference(w_initial_value)
+            ctx.emit(consts.LOAD_CONST, ctx.create_other_const(w_ref))
+            ctx.emit(consts.STORE_FAST_REF, ctx.create_var_name(name))
+            ctx.emit(consts.DISCARD_TOP)
 
 class __extend__(NamedConstant):
     def compile(self, ctx):

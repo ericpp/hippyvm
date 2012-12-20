@@ -522,18 +522,6 @@ class Interpreter(object):
         frame.store_fast_ref(arg, w_ref)
         return pc
 
-    @jit.unroll_safe
-    def DECLARE_STATIC(self, bytecode, frame, space, arg, arg2, pc):
-        for i in range(arg):
-            name = space.str_w(frame.pop())
-            w_cell = bytecode.lookup_static(name)
-            if bytecode.uses_dict:
-                frame.vars_dict[name] = w_cell
-            else:
-                pos = jit.hint(bytecode.lookup_var_pos(name), promote=True)
-                frame.vars_w[pos] = w_cell
-        return pc
-
     def REFERENCE(self, bytecode, frame, space, arg, arg2, pc):
         w_var = frame.pop()
         w_var = frame.upgrade_to_cell(w_var)

@@ -65,6 +65,7 @@ class CompilerContext(object):
         self.name = name
         self.extra_offset = extra_offset
         self.print_exprs = print_exprs
+        self.static_vars = {}
         self.globals_var_num = -1
 
     def register_superglobal(self, name, index):
@@ -681,7 +682,13 @@ class __extend__(StaticDecl):
                 assert isinstance(var, InitializedVariable)
                 name = var.name
                 w_initial_value = var.expr.wrap(ctx.space)
-            w_ref = W_Reference(w_initial_value)
+            if name in ctx.static_vars:
+                # XXX here, generate a warning --- it's nonsense code
+                w_ref = ctx.static_vars[name]
+                w_ref.w_value = w_initial_value
+            else:
+                w_ref = W_Reference(w_initial_value)
+                ctx.static_vars[name] = w_ref
             ctx.emit(consts.LOAD_CONST, ctx.create_other_const(w_ref))
             ctx.emit(consts.STORE_FAST_REF, ctx.create_var_name(name))
             ctx.emit(consts.DISCARD_TOP)

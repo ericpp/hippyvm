@@ -1311,8 +1311,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [1, 2, 3, 4]
 
     def test_double_static_declarations(self):
-        py.test.xfail("veeeery obscure, probably don't care, but would be "
-                      "nice if it generated a warning")
         output = self.run('''
         function f() {
            static $a = 10;

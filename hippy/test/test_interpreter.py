@@ -1310,6 +1310,20 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [1, 2, 3, 4]
 
+    def test_double_static_declarations(self):
+        py.test.xfail("veeeery obscure, probably don't care, but would be "
+                      "nice if it generated a warning")
+        output = self.run('''
+        function f() {
+           static $a = 10;
+           echo $a;
+           static $a = 20;
+           echo $a;
+        }
+        f();
+        ''')
+        assert [self.space.int_w(i) for i in output] == [20, 20]
+
     def test_default_args(self):
         output = self.run('''
         function f($n = 10) {

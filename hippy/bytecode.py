@@ -14,7 +14,8 @@ class ByteCode(object):
 
     def __init__(self, code, consts, names, varnames, user_functions,
                  static_vars, filename, sourcelines, line_start_offset,
-                 startlineno=0, bc_mapping=None, name='<main>'):
+                 startlineno=0, bc_mapping=None, name='<main>',
+                 globals_var_num=-1):
         self.code = code
         self.filename = filename
         self.sourcelines = sourcelines
@@ -35,6 +36,7 @@ class ByteCode(object):
         for i, v in enumerate(names):
             self.names_to_pos[v] = i
         self.static_vars = static_vars
+        self.globals_var_num = globals_var_num
 
     def getline(self, no):
         return self.sourcelines[no - self.line_start_offset]

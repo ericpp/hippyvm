@@ -1095,7 +1095,6 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_superglobals(self):
-        py.test.skip("XXX REDO")
         output = self.run('''
         function f() {
            return $GLOBALS["a"];
@@ -1106,9 +1105,8 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 3
 
     def test_globals_indirectly(self):
-        py.test.skip("XXX REDO")
-        # Note that this works in PHP 5.3.5 but according to the docs it
-        # should not work either.
+        py.test.skip("XXX $$a")
+        # PHP 5.4 behavior: GLOBALS is not found when accessed indirectly
         output = self.run('''
         function f() {
            $a = "GLO";
@@ -1118,7 +1116,7 @@ class TestInterpreter(BaseTestInterpreter):
         $g = f();
         echo $g["a"];
         ''')
-        assert self.space.int_w(output[0]) == 3
+        assert self.space.str_w(output[0]) == ""
 
     def test_null_eq(self):
         py.test.skip("XXX REDO")

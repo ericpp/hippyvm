@@ -42,6 +42,9 @@ class Frame(object):
         self.bytecode = code # for the debugging
         self.next_instr = 0
         self.vars_w = [W_Reference(space.w_Null) for v in code.varnames]
+        i = code.globals_var_num
+        if i >= 0:
+            self.vars_w[i].w_value = space.ec.interpreter.w_globals
 
     def push(self, w_v):
         stackpos = jit.hint(self.stackpos, promote=True)
@@ -118,6 +121,7 @@ class Interpreter(object):
         self.functions = {}
         self.constants = {}
         self.globals = {}
+        self.w_globals = space.new_array_from_dict(self.globals)
         self.logger = logger
         self.setup_constants(space)
         self.setup_globals(space)
@@ -131,7 +135,7 @@ class Interpreter(object):
         self.constants['null'] = space.w_Null
 
     def setup_globals(self, space):
-        pass
+        self.globals['GLOBALS'] = W_Reference(self.w_globals)
 
     #@jit.elidable -- XXX redo
     def lookup_global(self, space, name):

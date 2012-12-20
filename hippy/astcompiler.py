@@ -65,9 +65,11 @@ class CompilerContext(object):
         self.extra_offset = extra_offset
         self.print_exprs = print_exprs
         self.static_vars = {}
+        self.globals_var_num = -1
 
-    def register_superglobal(self, name):
+    def register_superglobal(self, name, index):
         assert name == 'GLOBALS' # not supporting anything else for now
+        self.globals_var_num = index
 
     def set_lineno(self, lineno):
         self.cur_lineno = lineno
@@ -159,14 +161,14 @@ class CompilerContext(object):
 
     def create_var_name(self, name):
         name = intern(name)
-        if name in SUPERGLOBALS:
-            self.register_superglobal(name)
         try:
             return self.varnames_to_nums[name]
         except KeyError:
             r = len(self.varnames)
             self.varnames_to_nums[name] = r
             self.varnames.append(name)
+            if name in SUPERGLOBALS:
+                self.register_superglobal(name, r)
             return r
 
     def force_var_name(self, name, i):
@@ -186,7 +188,7 @@ class CompilerContext(object):
                         self.varnames[:], self.functions, self.static_vars,
                         self.filename, self.sourcelines, self.extra_offset,
                         self.startlineno,
-                        self.lineno_map, self.name)
+                        self.lineno_map, self.name, self.globals_var_num)
 
     def preprocess_str(self, s):
         i = 0

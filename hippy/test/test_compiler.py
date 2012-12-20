@@ -947,3 +947,11 @@ class TestCompiler(object):
         assert isinstance(c, W_IntObject)
         assert c.intval == 3
         assert bc.stackdepth == 2
+
+    def test_mixed_case(self):
+        self.check_compile("array(nUll);", """
+        LOAD_CONST 0
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)

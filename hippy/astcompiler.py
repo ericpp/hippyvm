@@ -698,17 +698,12 @@ class __extend__(NamedConstant):
         ctx.emit(consts.LOAD_NAMED_CONSTANT, ctx.create_name(self.name))
 
     def wrap(self, space):
-        if self.name == 'null':
+        name = self.name.lower()
+        if name == 'null':
             return space.w_Null
-        if self.name == 'NULL':
-            return space.w_Null
-        elif self.name == 'true':
+        elif name == 'true':
             return space.w_True
         elif self.name == 'false':
-            return space.w_False
-        elif self.name == 'TRUE':
-            return space.w_True
-        elif self.name == 'FALSE':
             return space.w_False
         else:
             assert False

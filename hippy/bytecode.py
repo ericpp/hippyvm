@@ -9,7 +9,7 @@ class ByteCode(object):
     """
     _immutable_fields_ = ['code', 'consts[*]', 'varnames[*]',
                           'functions[*]', 'names[*]', 'stackdepth',
-                          'var_to_pos', 'names_to_pos', 'user_functions']
+                          'var_to_pos', 'names_to_pos', 'user_functions[*]']
     _marker = None
 
     def __init__(self, code, consts, names, varnames, user_functions,
@@ -50,17 +50,6 @@ class ByteCode(object):
     @jit.elidable
     def _lookup_pos(self, v):
         return self.var_to_pos[v]
-
-    def setup_functions(self, interp, space):
-        if self.user_functions is not None:
-            self._setup_functions(interp, space)
-
-    def _setup_functions(self, interp, space):
-        for v in self.user_functions:
-            if v in interp.functions:
-                raise InterpreterError("Function %s alread declared")
-            interp.functions[v] = self.user_functions[v]
-        self.user_functions = None
 
     def count_stack_depth(self):
         i = 0

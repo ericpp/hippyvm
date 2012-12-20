@@ -491,38 +491,39 @@ class TestCompiler(object):
         """)
 
     def test_function_decl(self):
-        py.test.skip("XXX FIXME")
-
         bc = self.check_compile("""
         function f($a, &$b, $c) { return $a + $b + $c; }""", """
-        RETURN_NULL
+        DECLARE_FUNC 0
+        LOAD_NULL
+        RETURN
         """)
-        assert bc.user_functions.keys() == ['f']
-        assert bc.user_functions['f'].args == [(consts.ARG_ARGUMENT, 'a', None),
-                                              (consts.ARG_REFERENCE, 'b', None),
-                                               (consts.ARG_ARGUMENT, 'c', None)]
+        assert bc.user_functions[0].tp == [consts.ARG_ARGUMENT,
+                                           consts.ARG_REFERENCE,
+                                           consts.ARG_ARGUMENT]
+        assert bc.user_functions[0].names == ['a', 'b', 'c']
         assert bc.startlineno == 0
-        self.compare(bc.user_functions['f'].bytecode, """
+        self.compare(bc.user_functions[0].bytecode, """
         LOAD_REF 0
         LOAD_REF 1
+        BINARY_ADD
         LOAD_REF 2
         BINARY_ADD
-        BINARY_ADD
         RETURN
-        RETURN_NULL # unreachable
+        LOAD_NULL   # unreachable
+        RETURN
         """)
-        assert bc.user_functions['f'].bytecode.startlineno == 1
-        assert bc.user_functions['f'].bytecode.name == 'f'
+        assert bc.user_functions[0].bytecode.startlineno == 1
+        assert bc.user_functions[0].bytecode.name == 'f'
 
     def test_function_decl_2(self):
         bc = self.check_compile("""
         function f() { return; }""", """
+        DECLARE_FUNC 0
         LOAD_NULL
         RETURN
         """)
-        assert bc.user_functions.keys() == ['f']
-        assert bc.user_functions['f'].args == []
-        self.compare(bc.user_functions['f'].bytecode, """
+        assert bc.user_functions[0].tp == []
+        self.compare(bc.user_functions[0].bytecode, """
         LOAD_NULL
         RETURN
         LOAD_NULL   # unreachable

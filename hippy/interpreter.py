@@ -176,7 +176,6 @@ class Interpreter(object):
         return self.interpret(space, frame, bytecode)
 
     def interpret(self, space, frame, bytecode):
-        bytecode.setup_functions(self, space)
         self.enter(frame)
         try:
             return self._interpret(space, frame, bytecode)
@@ -541,10 +540,12 @@ class Interpreter(object):
         frame.store_fast_ref(arg, w_ref)
         return pc
 
-    def REFERENCE(self, bytecode, frame, space, arg, arg2, pc):
-        w_var = frame.pop()
-        w_var = frame.upgrade_to_cell(w_var)
-        frame.push(W_Reference(w_var))
+    def DECLARE_FUNC(self, bytecode, frame, space, arg, arg2, pc):
+        func = bytecode.user_functions[arg]
+        name = func.get_name()
+        if name in self.functions:
+            raise InterpreterError("Function '%s' already declared" % name)
+        self.functions[name] = func
         return pc
 
     def CREATE_ITER(self, bytecode, frame, space, arg, arg2, pc):

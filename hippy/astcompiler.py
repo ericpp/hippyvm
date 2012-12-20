@@ -56,7 +56,7 @@ class CompilerContext(object):
         self.int_cache = {}
         self.float_cache = {}
         self.string_cache = {}
-        self.functions = {}
+        self.functions = []
         self.labels = [] # stack of labels
         self.jumps_to_patch = {} # label -> list of jumps to patch
         self.startlineno = startlineno
@@ -175,11 +175,10 @@ class CompilerContext(object):
         self.varnames_to_nums[name] = i
         self.varnames.append(name)
 
-    def register_function(self, name, args, bytecode):
-        name = name.lower()
-        if name in self.functions:
-            raise CompilerError("function %s already declared" % name)
-        self.functions[name] = Function(args[:], bytecode)
+    def register_function(self, args, bytecode):
+        i = len(self.functions)
+        self.functions.append(Function(args, bytecode))
+        return i
 
     def create_bytecode(self):
         return ByteCode("".join(self.data), self.consts[:], self.names[:],
@@ -659,8 +658,9 @@ class __extend__(Append):
 
 class __extend__(FunctionDecl):
     def compile(self, ctx):
+        name = self.name.lower()
         new_context = CompilerContext(ctx.filename, ctx.sourcelines,
-                                      self.lineno, ctx.space, self.name,
+                                      self.lineno, ctx.space, name,
                                       extra_offset=ctx.extra_offset)
         args = []
         for i, arg in enumerate(self.argdecls):
@@ -680,7 +680,8 @@ class __extend__(FunctionDecl):
         self.body.compile(new_context)
         new_context.emit(consts.LOAD_NULL)
         new_context.emit(consts.RETURN)
-        ctx.register_function(self.name, args, new_context.create_bytecode())
+        num = ctx.register_function(args, new_context.create_bytecode())
+        ctx.emit(consts.DECLARE_FUNC, num)
 
 class __extend__(And):
     def compile(self, ctx):

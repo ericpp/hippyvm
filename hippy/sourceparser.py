@@ -1430,8 +1430,8 @@ class SourceParser(object):
                    "non_empty_parameter_list , "
                    "optional_class_type & T_VARIABLE")
     def nepl_nepl_optional_class_type_h_ref_t_var(self, p):
-        lineno = p[3].getsourcepos()
-        tvar = ReferenceArgument(p[3].getstr()[1:], lineno=lineno)
+        lineno = p[4].getsourcepos()
+        tvar = ReferenceArgument(p[4].getstr()[1:], lineno=lineno)
 
         if p[2] is not None:
             raise NotImplementedError(p)

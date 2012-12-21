@@ -1,11 +1,16 @@
 import sys
+import rply
 from rply import ParserGenerator
-from rply import ParsingError
 from hippy.lexer import RULES
 from hippy.lexer import PRECEDENCES
 from hippy.lexer import Lexer
 from pypy.tool.pairtype import extendabletype
 from pypy.rlib.rarithmetic import intmask
+
+
+class PHPParsingError(rply.ParsingError):
+    def __str__(self):     # for debugging only
+        return '%s, line %s' % (self.message, self.source_pos)
 
 
 class Node(object):
@@ -1019,7 +1024,7 @@ class SourceParser(object):
     @pg.production("unticked_statement : T_BREAK expr ;")
     def unticked_statement_t_break_expr(self, p):
         if not isinstance(p[1], ConstantInt):
-            raise ParsingError("'break' operator accepts only positive numbers",
+            raise PHPParsingError("'break' operator accepts only positive numbers",
                                p[0].getsourcepos())
         return Break(levels=p[1], lineno=p[0].getsourcepos())
 
@@ -1030,7 +1035,7 @@ class SourceParser(object):
     @pg.production("unticked_statement : T_CONTINUE expr ;")
     def unticked_statement_t_continue_expr(self, p):
         if not isinstance(p[1], ConstantInt):
-            raise ParsingError("'continue' operator accepts only positive numbers",
+            raise PHPParsingError("'continue' operator accepts only positive numbers",
                                p[0].getsourcepos())
         return Continue(levels=p[1], lineno=p[0].getsourcepos())
 
@@ -1574,10 +1579,9 @@ class SourceParser(object):
 
     @pg.error
     def error_handler(self, token):
-        raise ValueError("syntax error, unexpected \'%s\' line(%s)" %
-                         (token.gettokentype(),
-                          token.getsourcepos())
-                         )
+        raise PHPParsingError("syntax error, unexpected \'%s\'" %
+                              (token.gettokentype(),),
+                              token.getsourcepos())
 
     parser = pg.build()
 

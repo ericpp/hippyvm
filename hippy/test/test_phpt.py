@@ -62,7 +62,7 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize("file_name", argvalues)
 
 TEST_DIR = os.path.dirname(__file__)
-PHPT_DIR = os.path.join(TEST_DIR, 'phpts')
+PHPT_DIR = os.path.join(TEST_DIR, 'phpts-5.4.9')
 PHPT_FILES = []
 for root, dirs, files in os.walk(PHPT_DIR):
     PHPT_FILES += [os.path.join(root, f) for f in files

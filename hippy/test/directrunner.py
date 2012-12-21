@@ -58,13 +58,15 @@ def parse_result(space, stdout):
 
 def run_source(space, source):
     php_source = source_replace(source)
+    stdout = run_php_source(space, php_source)
+    return parse_result(space, stdout)
+
+def run_php_source(space, php_source):
     f = tempfile.NamedTemporaryFile()
     py.path.local(f.name).write(php_source)
     pipe = subprocess.Popen(['php', f.name], stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
-    pipe.wait()
-    stderr = pipe.stderr.read()
-    stdout = pipe.stdout.read()
+    stdout, stderr = pipe.communicate()
     if pipe.returncode or stderr:
         raise Exception("Got %s %s" % (stderr, stdout))
-    return parse_result(space, stdout)
+    return stdout

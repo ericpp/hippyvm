@@ -1,5 +1,5 @@
 import py
-from hippy.test.directrunner import source_replace, run_source
+from hippy.test.directrunner import source_replace, run_source, run_php_source
 from hippy.objspace import ObjSpace
 
 def test_source_replace():
@@ -21,7 +21,6 @@ var_dump("echo");
 
 
 def test_source_run():
-    py.test.skip("XXX FIXME")
     space = ObjSpace()
     output = run_source(space, '''
     echo 1;
@@ -31,8 +30,6 @@ def test_source_run():
 
 
 def test_parse_array_output():
-    py.test.skip("XXX FIXME")
-
     space = ObjSpace()
     output = run_source(space, '''
     $a = array(1, 2, 3);
@@ -48,7 +45,6 @@ def test_parse_array_output():
 
 
 def test_parse_str():
-    py.test.skip("XXX FIXME")
     space = ObjSpace()
     output = run_source(space, '''
     echo "dupa";
@@ -57,8 +53,6 @@ def test_parse_str():
 
 
 def test_parse_misc():
-    py.test.skip("XXX FIXME")
-
     space = ObjSpace()
     output = run_source(space, '''
     echo NULL, 3.5, TRUE;
@@ -66,3 +60,9 @@ def test_parse_misc():
     assert output[0] is space.w_Null
     assert space.float_w(output[1]) == 3.5
     assert space.is_true(output[2])
+
+
+def test_run_php_source():
+    space = ObjSpace()
+    stdout = run_php_source(space, '<?php echo hello ?>_world')
+    assert stdout == 'hello_world'

@@ -40,7 +40,7 @@ class BaseTestInterpreter(object):
     def run(self, source):
         # preparse the source a bit so traceback starts with the
         # correct number of whitespaces
-        lines = source.splitlines()
+        lines = source.splitlines(True)
         prefix = sys.maxint
         for line in lines:
             stripped = line.lstrip()
@@ -48,12 +48,12 @@ class BaseTestInterpreter(object):
                 prefix = min(len(line) - len(stripped), prefix)
         for i, line in enumerate(lines):
             lines[i] = lines[i][prefix:]
-        source = "\n".join(lines)
+        source = "".join(lines)
         if option.runappdirect:
-            return run_source(self.space, source)
+            return self.run_direct(source)
         interp = MockInterpreter(self.space)
         self.space.ec.writestr = interp.output.append
-        bc = compile_ast('<input>', source, parse(source), self.space)
+        bc = self.compile(source)
         self.interp = interp
         #old = strobject._new_mutable_string
         try:
@@ -63,6 +63,12 @@ class BaseTestInterpreter(object):
         finally:
             pass #strobject._new_mutable_string = old
         return interp.output
+
+    def compile(self, source):
+        return compile_ast('<input>', source, parse(source), self.space)
+
+    def run_direct(self, source):
+        return run_source(self.space, source)
 
     @property
     def space(self):

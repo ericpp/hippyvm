@@ -1,5 +1,4 @@
 from hippy.test.test_interpreter import BaseTestInterpreter
-from hippy.phpcompiler import compile_php
 from hippy.test.directrunner import run_php_source
 
 
@@ -10,6 +9,8 @@ class BaseTestPHP(BaseTestInterpreter):
         return ''.join(output)
 
     def compile(self, source):
+        import py; py.test.skip("xxx work in progress")
+        from hippy.phpcompiler import compile_php
         return compile_php('<input>', source, self.space)
 
     def run_direct(self, source):
@@ -31,6 +32,12 @@ class TestPHPCompiler(BaseTestPHP):
     def test_case_insensitive(self):
         output = self.run('Foo <?phP echo 5; ?> Bar')
         assert output == 'Foo 5 Bar'
+
+    def test_no_php_code(self):
+        output = self.run('Foo\n')
+        assert output == 'Foo\n'
+        output = self.run('\nFoo')
+        assert output == '\nFoo'
 
     def test_eol_after_closing_tag(self):
         output = self.run('Foo <?phP echo 5; ?>\nBar')

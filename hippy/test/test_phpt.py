@@ -67,6 +67,7 @@ PHPT_FILES = []
 for root, dirs, files in os.walk(PHPT_DIR):
     PHPT_FILES += [os.path.join(root, f) for f in files
                    if fnmatch.fnmatch(f, '*.phpt')]
+PHPT_FILES.sort()
 
 
 class TestPHPTSuite(BaseTestInterpreter):

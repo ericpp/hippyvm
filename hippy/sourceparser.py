@@ -1588,6 +1588,6 @@ class SourceParser(object):
 
 def parse(_source):
     lx = Lexer(RULES)
-    lx.input(_source)
+    lx.input(_source + ';')
     parser = SourceParser(lx.tokens())
     return parser.parse()

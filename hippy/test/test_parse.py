@@ -17,6 +17,11 @@ class TestParser(object):
         r = parse("{1;}")
         assert r == Block([Block([Stmt(ConstantInt(1))])])
 
+    def test_automatic_semicolon_at_the_end(self):
+        r = parse("1")
+        assert r == Block([Stmt(ConstantInt(1))])
+        r = parse("{1;}")
+        assert r == Block([Block([Stmt(ConstantInt(1))])])
 
     def test_assign(self):
         r = parse("$x = 3;")

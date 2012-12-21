@@ -14,22 +14,25 @@ class BuiltinFunctionBuilder(object):
         self.input_i = 0
         self.length_at_least = None
 
-    def header(self):
+    def header(self, error):
         # call this *after* lines_for_arg()
         lines = []
+        name = self.functocall.func_name
         lines.append("@unroll_safe")
-        lines.append("def %s(space, frame, nb_args):" %
-                         (self.functocall.func_name,))
+        lines.append("def %s(space, frame, nb_args):" % (name,))
         length_at_least = self.length_at_least
         if length_at_least is None:
-            lines.append("    if nb_args != %d:" % (self.input_i,))
-            lines.append("        self.warn_at_least(%d)" % (self.input_i,))
-            lines.append("        return space.w_Null")
-            lines.append("    nb_args = %d  #constant below" % (self.input_i,))
+            input_i = self.input_i
+            lines.append("    if nb_args != %d:" % (input_i,))
+            lines.append("        warn_exactly(space, %r, %d, nb_args)"
+                         % (name, input_i,))
+            lines.append("        return space.w_%s" % (error,))
+            lines.append("    nb_args = %d  # constant below" % (input_i,))
         else:
             lines.append("    if nb_args < %d:" % (length_at_least,))
-            lines.append("        self.warn_at_least(%d)" % (length_at_least,))
-            lines.append("        return space.w_Null")
+            lines.append("        warn_at_least(space, %r, %d, nb_args)"
+                         % (name, length_at_least,))
+            lines.append("        return space.w_%s" % (error,))
         return lines
 
     def footer(self):
@@ -43,8 +46,8 @@ class BuiltinFunctionBuilder(object):
         return lines
 
     def _value_args_w(self, i):
-        self.input_i += 1
         self.length_at_least = self.input_i
+        self.input_i += 1
         lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +
                  'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
         self.input_i = None    # all arguments consumed
@@ -74,14 +77,34 @@ class BuiltinFunctionBuilder(object):
         else:
             raise Exception("Unknown signature %r" % tp)
 
-def create_function(signature, functocall):
+def warn_bad_nb_args(space, funcname, text, expected_nb_args, got_nb_args):
+    if expected_nb_args > 1:
+        plural = "s"
+    else:
+        plural = ""
+    space.ec.warn("%s() expects %s %d parameter%s, %d given"
+                  % (funcname, text, expected_nb_args, plural, got_nb_args))
+    return space.w_Null
+
+def warn_exactly(space, funcname, expected_nb_args, got_nb_args):
+    return warn_bad_nb_args(space, funcname, "exactly",
+                            expected_nb_args, got_nb_args)
+
+def warn_at_least(space, funcname, expected_nb_args, got_nb_args):
+    return warn_bad_nb_args(space, funcname, "at least",
+                            expected_nb_args, got_nb_args)
+
+def create_function(signature, functocall, error):
     builder = BuiltinFunctionBuilder(signature, functocall)
     lines = []
     for i, tp in enumerate(signature):
         lines.extend(builder.lines_for_arg(i, tp))
-    lines = builder.header() + lines + builder.footer()
+    lines = builder.header(error) + lines + builder.footer()
     source = '\n'.join(lines)
-    d = {'orig_func': functocall, 'unroll_safe': jit.unroll_safe}
+    d = {'orig_func': functocall,
+         'warn_exactly': warn_exactly,
+         'warn_at_least': warn_at_least,
+         'unroll_safe': jit.unroll_safe}
     try:
         exec py.code.Source(source).compile() in d
     except:
@@ -105,8 +128,8 @@ class AbstractFunction(W_Root):
 class BuiltinFunction(AbstractFunction):
     _immutable_fields_ = ['run']
 
-    def __init__(self, signature, functocall):
-        self.run = create_function(signature, functocall)
+    def __init__(self, signature, functocall, error):
+        self.run = create_function(signature, functocall, error)
 
     def argument_is_byref(self, i):
         return False    # XXX
@@ -120,11 +143,12 @@ class BuiltinFunction(AbstractFunction):
 
 BUILTIN_FUNCTIONS = []
 
-def wrap(signature, name=None, aliases=()):
+def wrap(signature, name=None, aliases=(), error="Null"):
     assert name is None or isinstance(name, str)
     assert isinstance(aliases, (tuple, list))
+    assert isinstance(error, str)
     def inner(function):
-        res = BuiltinFunction(signature, function)
+        res = BuiltinFunction(signature, function, error)
         BUILTIN_FUNCTIONS.append((name or function.func_name, res))
         for alias in aliases:
             BUILTIN_FUNCTIONS.append((alias, res))
@@ -205,39 +229,46 @@ def isset(space, w_obj):
         return space.wrap(w_obj.deref() is not space.w_Null)
     return space.wrap(w_obj.deref() is not space.w_Null)
 
-@wrap(['space', 'args_w'])
-def printf(space, args_w):
-    if len(args_w) == 0:
-        space.ec.notice("printf(): expects at least 1 parameter, 0 given")
-        return space.w_False
-    no = 1
-    format = space.str_w(args_w[0])
+@wrap(['space', str, 'args_w'], error='False')
+def printf(space, format, args_w):
+    no = 0
     # improve the estimate
     builder = StringBuilder(len(format) + 5 * format.count('%'))
     i = 0
     while i < len(format):
         c = format[i]
+        i += 1
         if c == '%':
-            if i == len(format) - 1:
-                space.ec.hippy_warn("printf(): wrong % in string format")
+            try:
+                next = format[i]
+                warn_if_unknown = True
                 i += 1
-                continue
-            next = format[i + 1]
+            except IndexError:
+                next = '\x00'
+                warn_if_unknown = False
+                msg = "printf(): Trailing '%' character"
+                if no < len(args_w):
+                    msg += ", the next argument is going to be ignored"
+                space.ec.hippy_warn(msg)
             if next == '%':
                 builder.append('%')
-            elif next == 'd':
-                if no == len(args_w):
-                    space.ec.warn("printf(): Too few arguments")
-                    return space.w_False
-                builder.append(str(space.int_w(args_w[no])))
-            else:
-                space.ec.hippy_warn("printf(): Unknown format char " + next)
-            i += 2
+                continue
+            #
+            if no == len(args_w):
+                space.ec.warn("printf(): Too few arguments")
+                return space.w_False
+            w_arg = args_w[no]
+            no += 1
+            if next == 'd':
+                builder.append(str(space.int_w(w_arg)))
+            elif warn_if_unknown:
+                space.ec.hippy_warn("printf(): Unknown format char %%%s, "
+                                    "ignoring corresponding argument" % next)
         else:
             builder.append(c)
-            i += 1
     if no < len(args_w):
-        space.ec.hippy_warn("printf(): Too many arguments passed")
+        space.ec.hippy_warn("printf(): Too many arguments passed, "
+                            "ignoring the %d extra" % (len(args_w) - no,))
     s = builder.build()
     space.ec.interpreter.echo(space, space.newstrconst(s))
     return space.wrap(len(s))

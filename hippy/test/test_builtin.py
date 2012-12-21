@@ -81,25 +81,45 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_printf_1(self):
         output = self.run('''
-        echo printf("a %d b\\n", 12);
+        echo printf("%%a %d b\\n", 12);
         ''')
-        assert self.space.int_w(output[1]) == len('a 12 b\n')
-        assert self.space.str_w(output[0]) == 'a 12 b\n'
-        output = self.run('''
-        echo printf();
-        printf("%d");
-        printf("%a");
-        printf("%");
-        printf("", 1, 2, 3);
-        ''')
-        assert not output[0].boolval
+        assert self.interp.logger.msgs == []
+        assert self.space.str_w(output[0]) == '%a 12 b\n'
+        assert self.space.int_w(output[1]) == len('%a 12 b\n')
+        #
+        output = self.run('echo printf();')
+        assert self.space.is_w(output[0], self.space.w_False)
         assert self.interp.logger.msgs == [
-            ('NOTICE', 'printf(): expects at least 1 parameter, 0 given'),
-            ('WARNING', 'printf(): Too few arguments'),
-            ('HIPPY WARNING', 'printf(): Unknown format char a'),
-            ('HIPPY WARNING', 'printf(): wrong % in string format'),
-            ('HIPPY WARNING', 'printf(): Too many arguments passed')
-        ]
+            ('WARNING', 'printf() expects at least 1 parameter, 0 given')]
+        #
+        output = self.run('echo printf("foo %d bar");')
+        assert self.space.is_w(output[0], self.space.w_False)
+        assert self.interp.logger.msgs == [
+            ('WARNING', 'printf(): Too few arguments')]
+        #
+        output = self.run('echo printf("foo %y bar %d baz", 42, 43);')
+        assert self.space.is_w(output[0], self.space.newstr("foo  bar 43 baz"))
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'printf(): Unknown format char %y,'
+                              ' ignoring corresponding argument')]
+        #
+        output = self.run('echo printf("foo%");')
+        assert self.space.is_w(output[0], self.space.w_False)
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', "printf(): Trailing '%' character"),
+            ('WARNING', 'printf(): Too few arguments')]
+        #
+        output = self.run('echo printf("foo%", 42);')
+        assert self.space.is_w(output[0], self.space.newstr("foo"))
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', "printf(): Trailing '%' character, "
+                              "the next argument is going to be ignored")]
+        #
+        output = self.run('echo printf("foo", 1, 2, 3);')
+        assert self.space.is_w(output[0], self.space.newstr("foo"))
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'printf(): Too many arguments passed, '
+                              'ignoring the 3 extra')]
 
     def test_count(self):
         output = self.run('''

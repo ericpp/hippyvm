@@ -74,7 +74,8 @@ KEYWORDS = {
 
 RULES = [
     ("[a-zA-Z_]+[0-9]*[a-zA-Z_]*", 'T_STRING'),
-
+    ("\?\>", 'B_END_OF_CODE_BLOCK'),
+    ("\x00", 'B_LITERAL_BLOCK'),
 
     # ("print", 'T_PRINT'),
     # ("echo", 'T_ECHO'),
@@ -331,12 +332,12 @@ class Lexer(object):
         self.skip_whitespace = skip_whitespace
         self.re_ws_skip = compile('\S')
 
-    def input(self, buf):
+    def input(self, buf, pos=0, lineno=0):
         """ Initialize the lexer with a buffer as input.
         """
         self.buf = buf
-        self.pos = 0
-        self.lineno = 0
+        self.pos = pos
+        self.lineno = lineno
 
     def token(self):
         """ Return the next token (a Token object) found in the

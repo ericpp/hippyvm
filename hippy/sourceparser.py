@@ -49,6 +49,16 @@ class Block(Node):
     def repr(self):
         return "Block(" + ", ".join([i.repr() for i in self.stmts]) + ", %d)" % self.lineno
 
+class LiteralBlock(Node):
+    def __init__(self, literal_text):
+        assert isinstance(literal_text, str)
+        self.literal_text = literal_text
+        self.lineno = 0
+
+    def repr(self):
+        return "LiteralBlock(%d characters)" % (len(self.literal_text),)
+
+
 class Stmt(Node):
     def __init__(self, expr, lineno=0):
         self.expr = expr
@@ -684,7 +694,7 @@ class SourceParser(object):
 
     @pg.production("inner_statement_list : empty")
     def inner_statement_list_empty(self, p):
-        return p[0]
+        return []
 
     @pg.production("inner_statement : statement")
     def inner_statement_statement(self, p):
@@ -697,6 +707,10 @@ class SourceParser(object):
     @pg.production("statement : unticked_statement")
     def statement(self, p):
         return p[0]
+
+    @pg.production("statement : B_LITERAL_BLOCK")
+    def statement(self, p):
+        return LiteralBlock(p[0].value)
 
     @pg.production("unticked_statement : expr ;")
     def unticked_statement_expr(self, p):

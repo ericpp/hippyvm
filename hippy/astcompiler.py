@@ -5,7 +5,8 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Return, Append, And, Or, InplaceOp, Global, NamedConstant, DoWhile,\
      Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
-     UninitializedVariable, InitializedVariable, DefaultArgument, Node
+     UninitializedVariable, InitializedVariable, DefaultArgument, Node,\
+     LiteralBlock
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
@@ -264,6 +265,11 @@ class __extend__(Block):
     def compile(self, ctx):
         for stmt in self.stmts:
             stmt.compile(ctx)
+
+class __extend__(LiteralBlock):
+    def compile(self, ctx):
+        ctx.emit(consts.LOAD_NAME, ctx.create_name(self.literal_text))
+        ctx.emit(consts.ECHO, 1)
 
 class __extend__(Stmt):
     def compile(self, ctx):

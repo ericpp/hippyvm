@@ -1,20 +1,34 @@
 from hippy.test.test_interpreter import BaseTestInterpreter
 from hippy.test.directrunner import run_php_source
+from hippy.phpcompiler import compile_php, PHPLexerWrapper
 
 
 class BaseTestPHP(BaseTestInterpreter):
 
     def run(self, source):
-        output = BaseTestInterpreter.run(self, source)
+        output_w = BaseTestInterpreter.run(self, source)
+        space = self.space
+        output = [space.str_w(space.as_string(v)) for v in output_w]
         return ''.join(output)
 
     def compile(self, source):
-        import py; py.test.skip("xxx work in progress")
-        from hippy.phpcompiler import compile_php
         return compile_php('<input>', source, self.space)
 
     def run_direct(self, source):
         return run_php_source(self.space, source)
+
+
+def test_phplexerwrapper():
+    phplexerwrapper = PHPLexerWrapper('Foo <?php echo 5 ?> Bar')
+    for expected in [('B_LITERAL_BLOCK', 'Foo '),
+                     ('T_ECHO', 'echo'),
+                     ('T_LNUMBER', '5'),
+                     (';', ';'),
+                     ('B_LITERAL_BLOCK', ' Bar')]:
+        tok = phplexerwrapper.next()
+        assert (tok.name, tok.value) == expected
+    tok = phplexerwrapper.next()
+    assert tok is None
 
 
 class TestPHPCompiler(BaseTestPHP):

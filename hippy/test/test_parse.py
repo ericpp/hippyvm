@@ -29,7 +29,7 @@ class TestParser(object):
                                            ConstantInt(3)))])
 
     def test_assign_error(self):
-        raises(ValueError, lambda : parse("$x$ = 3;"))
+        raises(ParsingError, lambda : parse("$x$ = 3;"))
 
     def test_add(self):
         r = parse("3 + 1;")
@@ -349,7 +349,7 @@ class TestParser(object):
         assert r == Block([Echo([ConstantInt(1, 1), ConstantInt(2, 1),
                                  ConstantInt(3, 1)], 1)])
         # print gramma is >T_PRING expr<, so we should see parse exception
-        raises(ValueError, lambda : parse('''
+        raises(ParsingError, lambda : parse('''
         print 1, 2, 3;
         '''))
 

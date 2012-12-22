@@ -34,7 +34,7 @@ def repl(argv):
             continue
         try:
             pc = parse(line)
-            bc = compile_ast("<input>", line, pc, space, 0, print_exprs=True)
+            bc = compile_ast("<input>", line, pc, space, print_exprs=True)
         except Exception, e:
             print >> sys.stderr, '%s: %s' % (e.__class__.__name__, e)
             continue

@@ -50,13 +50,14 @@ class Block(Node):
         return "Block(" + ", ".join([i.repr() for i in self.stmts]) + ", %d)" % self.lineno
 
 class LiteralBlock(Node):
-    def __init__(self, literal_text):
+    def __init__(self, literal_text, firstlineno):
         assert isinstance(literal_text, str)
         self.literal_text = literal_text
-        self.lineno = 0
+        self.lineno = firstlineno
 
     def repr(self):
-        return "LiteralBlock(%d characters)" % (len(self.literal_text),)
+        return "LiteralBlock(%d chars from line %d)" % (
+            len(self.literal_text), self.lineno)
 
 
 class Stmt(Node):
@@ -710,7 +711,7 @@ class SourceParser(object):
 
     @pg.production("statement : B_LITERAL_BLOCK")
     def statement(self, p):
-        return LiteralBlock(p[0].value)
+        return LiteralBlock(p[0].value, p[0].getsourcepos())
 
     @pg.production("unticked_statement : expr ;")
     def unticked_statement_expr(self, p):

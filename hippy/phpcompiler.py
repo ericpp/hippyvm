@@ -8,6 +8,7 @@ class PHPLexerWrapper(LexerWrapper):
     def __init__(self, source):
         self.lexer = Lexer(RULES)
         self.source = source
+        self.startlineno = 1
         self.startindex = 0
 
     def next(self):
@@ -20,14 +21,15 @@ class PHPLexerWrapper(LexerWrapper):
                 tagindex = len(source)
             if tagindex > self.startindex:
                 block_of_text = source[self.startindex:tagindex]
-                tok = Token('B_LITERAL_BLOCK', block_of_text, 0)
+                tok = Token('B_LITERAL_BLOCK', block_of_text, self.startlineno)
+                self.startlineno += block_of_text.count('\n')
             else:
                 tok = None
             if source[tagindex:tagindex+5].lower() == '<?php':
                 pos = tagindex + 5
             else:
                 pos = tagindex + 2
-            self.lexer.input(self.source, pos)  # XXX lineno
+            self.lexer.input(self.source, pos, self.startlineno)
             self.startindex = -1
             if tok is not None:
                 return tok
@@ -56,10 +58,12 @@ class PHPLexerWrapper(LexerWrapper):
     def end_current_block(self, tok, endpos):
         # a "?>" marker that ends the current block of code
         # generates a ";" token followed by a B_LITERAL_BLOCK
+        self.startlineno = tok.getsourcepos()
         self.startindex = endpos
         if (self.startindex < len(self.source) and
                 self.source[self.startindex] == '\n'):
-            self.startindex += 1  # consume \n if immediately following
+            self.startlineno += 1     # consume \n if immediately following
+            self.startindex += 1
         return Token(";", ";", tok.getsourcepos())
 
 

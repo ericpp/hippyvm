@@ -1,6 +1,7 @@
 from hippy.test.test_interpreter import BaseTestInterpreter
 from hippy.test.directrunner import run_php_source
 from hippy.phpcompiler import compile_php, PHPLexerWrapper
+from hippy.objspace import ObjSpace
 
 
 class BaseTestPHP(BaseTestInterpreter):
@@ -19,16 +20,22 @@ class BaseTestPHP(BaseTestInterpreter):
 
 
 def test_phplexerwrapper():
-    phplexerwrapper = PHPLexerWrapper('Foo <?php echo 5 ?> Bar')
-    for expected in [('B_LITERAL_BLOCK', 'Foo '),
-                     ('T_ECHO', 'echo'),
-                     ('T_LNUMBER', '5'),
-                     (';', ';'),
-                     ('B_LITERAL_BLOCK', ' Bar')]:
+    phplexerwrapper = PHPLexerWrapper(
+        'Foo\n<?php echo 5 ?>\nBar\nBaz\n<? echo')
+    for expected in [('B_LITERAL_BLOCK', 'Foo\n', 1),
+                     ('T_ECHO', 'echo', 2),
+                     ('T_LNUMBER', '5', 2),
+                     (';', ';', 2),
+                     ('B_LITERAL_BLOCK', 'Bar\nBaz\n', 3),
+                     ('T_ECHO', 'echo', 5)]:
         tok = phplexerwrapper.next()
-        assert (tok.name, tok.value) == expected
+        assert (tok.name, tok.value, tok.getsourcepos()) == expected
     tok = phplexerwrapper.next()
     assert tok is None
+
+def test_line_start_offset():
+    bc = compile_php('<input>', 'Hi there\n', ObjSpace())
+    assert bc.startlineno == 1
 
 
 class TestPHPCompiler(BaseTestPHP):

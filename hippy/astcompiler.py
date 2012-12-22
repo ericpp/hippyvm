@@ -17,10 +17,8 @@ from hippy.bytecode import ByteCode
 from hippy.function import Function
 from pypy.rlib.rsre.rsre_re import compile
 
-def compile_ast(filename, source, mainnode, space, extra_offset=0,
-                print_exprs=False):
-    c = CompilerContext(filename, source.split("\n"), 0, space,
-                        extra_offset=extra_offset,
+def compile_ast(filename, source, mainnode, space, print_exprs=False):
+    c = CompilerContext(filename, source.split("\n"), 1, space,
                         print_exprs=print_exprs)
     mainnode.compile(c)
     c.emit(consts.LOAD_NULL)
@@ -44,7 +42,7 @@ class CompilerContext(object):
     """ Context for compiling a piece of bytecode. It'll store the necessary
     """
     def __init__(self, filename, sourcelines, startlineno, space, name='<main>',
-                 extra_offset=0, print_exprs=False):
+                 print_exprs=False):
         self.space = space
         self.filename = filename
         self.sourcelines = sourcelines
@@ -64,7 +62,6 @@ class CompilerContext(object):
         self.cur_lineno = startlineno
         self.lineno_map = []
         self.name = name
-        self.extra_offset = extra_offset
         self.print_exprs = print_exprs
         self.static_vars = {}
         self.globals_var_num = -1
@@ -77,20 +74,20 @@ class CompilerContext(object):
         self.cur_lineno = lineno
 
     def emit(self, bc, arg=-1, arg2=-1):
-        self.lineno_map.append(self.cur_lineno + self.extra_offset)
+        self.lineno_map.append(self.cur_lineno)
         assert arg < 1<<16
         assert arg2 < 1<<16
         self.data.append(chr(bc))
         if arg != -1:
             self.data.append(chr(arg & 0xff))
             self.data.append(chr(arg >> 8))
-            self.lineno_map.append(self.cur_lineno + self.extra_offset)
-            self.lineno_map.append(self.cur_lineno + self.extra_offset)
+            self.lineno_map.append(self.cur_lineno)
+            self.lineno_map.append(self.cur_lineno)
         if arg2 != -1:
             self.data.append(chr(arg2 & 0xff))
             self.data.append(chr(arg2 >> 8))
-            self.lineno_map.append(self.cur_lineno + self.extra_offset)
-            self.lineno_map.append(self.cur_lineno + self.extra_offset)
+            self.lineno_map.append(self.cur_lineno)
+            self.lineno_map.append(self.cur_lineno)
 
     def get_pos(self):
         return len(self.data) - 2
@@ -184,7 +181,7 @@ class CompilerContext(object):
     def create_bytecode(self):
         return ByteCode("".join(self.data), self.consts[:], self.names[:],
                         self.varnames[:], self.functions,
-                        self.filename, self.sourcelines, self.extra_offset,
+                        self.filename, self.sourcelines,
                         self.startlineno,
                         self.lineno_map, self.name, self.globals_var_num)
 
@@ -666,8 +663,7 @@ class __extend__(FunctionDecl):
     def compile(self, ctx):
         name = self.name.lower()
         new_context = CompilerContext(ctx.filename, ctx.sourcelines,
-                                      self.lineno, ctx.space, name,
-                                      extra_offset=ctx.extra_offset)
+                                      self.lineno, ctx.space, name)
         args = []
         for i, arg in enumerate(self.argdecls):
             if isinstance(arg, Argument):

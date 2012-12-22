@@ -13,13 +13,12 @@ class ByteCode(object):
     _marker = None
 
     def __init__(self, code, consts, names, varnames, user_functions,
-                 filename, sourcelines, line_start_offset,
+                 filename, sourcelines,
                  startlineno=0, bc_mapping=None, name='<main>',
                  globals_var_num=-1):
         self.code = code
         self.filename = filename
         self.sourcelines = sourcelines
-        self.line_start_offset = line_start_offset
         self.consts = consts
         self.names = names
         self.varnames = varnames # named variables
@@ -38,7 +37,7 @@ class ByteCode(object):
         self.globals_var_num = globals_var_num
 
     def getline(self, no):
-        return self.sourcelines[no - self.line_start_offset]
+        return self.sourcelines[no - self.startlineno]
 
     def lookup_var_pos(self, v):
         return self._lookup_pos(jit.hint(v, promote_string=True))

@@ -11,8 +11,7 @@ import sys, os, pdb
 if __name__ == '__main__':
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from hippy.sourceparser import parse
-from hippy.astcompiler import compile_ast
+from hippy.phpcompiler import compile_php
 from hippy.interpreter import Interpreter, Frame
 from hippy.logger import Logger, InterpreterError
 from hippy.objspace import getspace
@@ -33,45 +32,13 @@ def entry_point(argv):
     f = open_file_as_stream(filename)
     data = f.readall()
     f.close()
-    c = 0
-    try:
-        while True:
-            assert c >= 0
-            next_c = data.find("\n", c)
-            if next_c < 0:
-                raise Error
-            line = data[c:next_c].strip(" ")
-            if line:
-                start = next_c + 1
-                if line != '<?php' and line != '<?':
-                    raise Error
-                break
-            c = next_c + 1
-        c = len(data)
-        while True:
-            assert c >= 0
-            prev_c = data.rfind('\n', 0, c)
-            if prev_c < 0:
-                raise Error
-            line = data[prev_c + 1:c].strip(" ")
-            if line:
-                end = prev_c
-                if line != '?>':
-                    raise Error
-                break
-            c = prev_c
-    except Error:
-        print "not a php input file, can't find <?php ?> tags"
-        return 1
-
-    extra_offset = data[:start].count("\n") + 1
-    source_data = data[start:end]
+    #
     space = getspace()
-    bc = compile_ast(filename, source_data, parse(source_data), space,
-                     extra_offset)
+    bc = compile_php(filename, data, space)
+    #
     interp = Interpreter(space, Logger())
     try:
-        interp.run_main(bc)
+        interp.run_main(space, bc)
     except InterpreterError:
         # the traceback should already have been printed,
         # including the error msg

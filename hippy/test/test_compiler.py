@@ -492,7 +492,10 @@ class TestCompiler(object):
 
     def test_function_decl(self):
         bc = self.check_compile("""
+        echo 5;
         function f($a, &$b, $c) { return $a + $b + $c; }""", """
+        LOAD_CONST 0
+        ECHO 1
         DECLARE_FUNC 0
         LOAD_NULL
         RETURN
@@ -501,7 +504,7 @@ class TestCompiler(object):
                                            consts.ARG_REFERENCE,
                                            consts.ARG_ARGUMENT]
         assert bc.user_functions[0].names == ['a', 'b', 'c']
-        assert bc.startlineno == 0
+        assert bc.startlineno == 1
         self.compare(bc.user_functions[0].bytecode, """
         LOAD_REF 0
         LOAD_REF 1
@@ -512,7 +515,7 @@ class TestCompiler(object):
         LOAD_NULL   # unreachable
         RETURN
         """)
-        assert bc.user_functions[0].bytecode.startlineno == 1
+        assert bc.user_functions[0].bytecode.startlineno == 2
         assert bc.user_functions[0].bytecode.name == 'f'
 
     def test_function_decl_2(self):

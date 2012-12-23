@@ -4,7 +4,7 @@ import os
 import fnmatch
 from hippy.interpreter import Interpreter, Frame
 from hippy.objspace import ObjSpace
-from hippy.sourceparser import parse, PHPParsingError
+from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
 from hippy.conftest import option
 from hippy.test.test_interpreter import BaseTestInterpreter

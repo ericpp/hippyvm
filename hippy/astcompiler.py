@@ -745,7 +745,7 @@ class __extend__(NamedConstant):
             return space.w_Null
         elif name == 'true':
             return space.w_True
-        elif self.name == 'false':
+        elif name == 'false':
             return space.w_False
         else:
             assert False

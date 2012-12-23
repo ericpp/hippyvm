@@ -139,6 +139,9 @@ class W_ArrayObject(W_Root):
         space.ec.writestr('%s}\n' % indent)
         del recursion[self]
 
+    def as_string(self, space):
+        return space.newstr("Array")
+
 
 class W_ListArrayObject(W_ArrayObject):
     _has_string_keys = False

@@ -82,6 +82,7 @@ class BaseTestInterpreter(object):
         self.new_mutable_strings.append((''.join(chars), flag))
 
     def echo(self, source):
+        assert isinstance(source, str)
         output = self.run("echo %s;" % (source,))
         assert len(output) == 1
         return self.space.str_w(output[0])

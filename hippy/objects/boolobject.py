@@ -18,6 +18,9 @@ class W_BoolObject(W_Root):
     def as_number(self, space):
         return space.newint(int(self.boolval))
 
+    def int_w(self, space):
+        return int(self.boolval)
+
     def eq_w(self, space, w_other):
         assert isinstance(w_other, W_BoolObject)
         return self is w_other

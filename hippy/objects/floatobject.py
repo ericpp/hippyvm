@@ -26,6 +26,9 @@ class W_FloatObject(W_Root):
     def as_string(self, space):
         return space.newstrconst(self._as_str())
 
+    def int_w(self, space):
+        return int(self.floatval)
+
     def coerce(self, space, tp):
         if tp == space.tp_float:
             return self

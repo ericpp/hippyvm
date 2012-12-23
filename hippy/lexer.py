@@ -172,6 +172,7 @@ RULES = [
     ("\-\-", 'T_DEC'),
 
     ("\(int\)", 'T_INT_CAST'),
+    ("\(integer\)", 'T_INT_CAST'),
     ("\(double\)", 'T_DOUBLE_CAST'),
     ("\(string\)", 'T_STRING_CAST'),
     ("\(array\)", 'T_ARRAY_CAST'),

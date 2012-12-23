@@ -728,3 +728,7 @@ class TestParser(object):
         continue 1;
         ''')
         assert r == Block([Continue(levels=ConstantInt(1, 1), lineno=1)])
+
+    def test_uppercase_1E50(self):
+        r = parse('1E50')
+        assert r == Block([Stmt(ConstantFloat(1E50))])

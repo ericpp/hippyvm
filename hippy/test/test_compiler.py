@@ -918,8 +918,8 @@ class TestCompiler(object):
         foreach ($a as &$b) {$b+=1;}
         """, """
         LOAD_REF 0
-        CREATE_ITER
-      4 NEXT_VALUE_ITER_REF 31
+        CREATE_ITER_REF
+      4 NEXT_VALUE_ITER 31
         STORE_FAST_REF 1
         DISCARD_TOP
         LOAD_CONST 0       # start of the code within the { }
@@ -940,8 +940,8 @@ class TestCompiler(object):
         foreach ($a as $k=>&$b[5][5]) {$b;}
         """, """
         LOAD_REF 0
-        CREATE_ITER
-      4 NEXT_ITEM_ITER_REF 46
+        CREATE_ITER_REF
+      4 NEXT_ITEM_ITER 46
         LOAD_CONST 0        # store the value as reference into $b[5]
         LOAD_CONST 0
         ROT 2

@@ -87,6 +87,9 @@ class W_Root(object):
     def create_iter(self, space):
         raise InterpreterError("unsupported create_iter")
 
+    def create_iter_ref(self, space, w_arr_ref):
+        raise InterpreterError("unsupported create_iter_ref")
+
     def hash(self, space):
         raise InterpreterError("unsupported hash")
 

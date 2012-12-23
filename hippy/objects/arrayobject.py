@@ -3,7 +3,6 @@ from pypy.rlib import jit
 from pypy.rlib.objectmodel import specialize, we_are_translated
 from pypy.rlib.rarithmetic import ovfcheck
 from hippy.objects.base import W_Root
-from hippy.objects import arrayiter
 from hippy.error import InterpreterError
 from hippy.rpython.rdict import RDict
 from hippy.objects.reference import W_Reference
@@ -26,6 +25,15 @@ def try_convert_str_to_int(key):
     if str(i) != key:
         raise ValueError
     return i
+
+@specialize.argtype(1)
+def wrap_array_key(space, key):
+    if isinstance(key, str):
+        try:
+            key = try_convert_str_to_int(key)
+        except ValueError:
+            return space.newstr(key)
+    return space.newint(key)
 
 
 class W_ArrayObject(W_Root):

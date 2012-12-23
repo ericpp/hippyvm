@@ -8,7 +8,6 @@ from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 from hippy.objects.interpolate import W_StrInterpolation
 from hippy.objects.arrayiter import W_BaseArrayIterator
-from hippy.objects.arrayobject import try_convert_str_to_int
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -297,6 +296,16 @@ class Interpreter(object):
         frame.poke_nth(arg, w_v)
         return pc
 
+    @jit.unroll_safe
+    def ROT(self, bytecode, frame, space, arg, arg2, pc):
+        w_move_forward = frame.peek_nth(arg)
+        arg -= 1
+        while arg >= 0:
+            frame.poke_nth(arg + 1, frame.peek_nth(arg))
+            arg -= 1
+        frame.poke_nth(0, w_move_forward)
+        return pc
+
     def LOAD_NAME(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(space.newstrconst(bytecode.names[arg]))
         return pc
@@ -534,32 +543,34 @@ class Interpreter(object):
 
     def CREATE_ITER(self, bytecode, frame, space, arg, arg2, pc):
         w_arr = frame.pop()
-        frame.push(space.create_iter(space.as_array(w_arr)))
+        frame.push(space.create_iter(w_arr))
+        return pc
+
+    def CREATE_ITER_REF(self, bytecode, frame, space, arg, arg2, pc):
+        w_arr_ref = frame.pop()
+        frame.push(space.create_iter_ref(w_arr_ref))
         return pc
 
     def NEXT_VALUE_ITER(self, bytecode, frame, space, arg, arg2, pc):
         w_iter = frame.peek()
         assert isinstance(w_iter, W_BaseArrayIterator)
-        if w_iter.done():
+        try:
+            w_value = w_iter.next(space)
+        except StopIteration:
             frame.pop()
             return arg
-        w_value = w_iter.next(space)
         frame.push(w_value)
         return pc
 
     def NEXT_ITEM_ITER(self, bytecode, frame, space, arg, arg2, pc):
         w_iter = frame.peek()
         assert isinstance(w_iter, W_BaseArrayIterator)
-        if w_iter.done():
+        try:
+            item_w = w_iter.next_item(space)
+        except StopIteration:
             frame.pop()
             return arg
-        key, w_value = w_iter.next_item(space)
-        try:
-            i = try_convert_str_to_int(key)
-        except ValueError:
-            w_key = space.newstr(key)
-        else:
-            w_key = space.newint(i)
+        w_key, w_value = item_w
         frame.push(w_key)
         frame.push(w_value)
         return pc

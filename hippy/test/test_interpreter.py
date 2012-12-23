@@ -1573,3 +1573,56 @@ class TestInterpreter(BaseTestInterpreter):
             'integer', '1', '20',
             'integer', '2', '30',
             'integer', '3', '40']
+
+    def test_foreach_4(self):
+        output = self.run('''
+        $a = array(10, 20, 30, 40);
+        $c = 0;
+        $b = array(1=>&$c);
+        foreach($a as $k => $b[1]) {
+            echo $c;
+        }
+        ''')
+        assert [self.space.int_w(i) for i in output] == [10, 20, 30, 40]
+
+    def test_foreach_ref_1(self):
+        output = self.run('''
+        $a = array(10, 20, 30, 40);
+        foreach($a as &$n) {
+            $n *= 10;
+        }
+        echo $a[0];
+        echo $a[3];
+        ''')
+        assert [self.space.int_w(i) for i in output] == [100, 400]
+
+    def test_foreach_ref_2(self):
+        output = self.run('''
+        $a = array(10, 20, 30, 40);
+        foreach($a as $k => &$n) {
+            echo gettype($k);
+            echo $k;
+            echo $n++;
+        }
+        echo $a[0];
+        echo $a[3];
+        ''')
+        assert [self.space.str_w(i) for i in output] == [
+            'integer', '0', '10',
+            'integer', '1', '20',
+            'integer', '2', '30',
+            'integer', '3', '40',
+            '11', '41']
+
+    def test_foreach_ref_3(self):
+        output = self.run('''
+        $a = array(10, 20, 30, 40);
+        $c = 0;
+        $b = array(1=>&$c);
+        foreach($a as $k => &$b[1]) {
+            echo $b[1];
+            echo $c;
+        }
+        ''')
+        assert [self.space.int_w(i) for i in output] == [
+            10, 0, 20, 0, 30, 0, 40, 0]

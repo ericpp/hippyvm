@@ -251,6 +251,13 @@ class ObjSpace(object):
         w_arr = w_arr.deref()
         return w_arr.create_iter(self)
 
+    def create_iter_ref(self, w_arr_ref):
+        from hippy.objects.arrayiter import W_ArrayIteratorByReference
+        if not isinstance(w_arr_ref, W_Reference):
+            raise self.ec.fatal("foreach(1 as &2): argument 1 must be a "
+                                "variable")
+        return W_ArrayIteratorByReference(self, w_arr_ref)
+
     def str_hash(self, w_obj):
         return w_obj.deref().hash()
 

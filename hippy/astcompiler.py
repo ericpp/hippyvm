@@ -889,7 +889,7 @@ class __extend__(ForEach):
         self.valuevar.compile_generic_assignment(ctx)
         ctx.emit(consts.DISCARD_TOP)
         self.body.compile(ctx)
-        ctx.emit(consts.JUMP_BACK_IF_NOT_DONE, jmp_back_pos)
+        ctx.emit(consts.JUMP_BACKWARD, jmp_back_pos)
         ctx.pop_label(lbl)
 
 class __extend__(ForEachKey):
@@ -906,7 +906,7 @@ class __extend__(ForEachKey):
         self.keyvar.compile_generic_assignment(ctx)
         ctx.emit(consts.DISCARD_TOP)
         self.body.compile(ctx)
-        ctx.emit(consts.JUMP_BACK_IF_NOT_DONE, jmp_back_pos)
+        ctx.emit(consts.JUMP_BACKWARD, jmp_back_pos)
         ctx.pop_label(lbl)
 
 class __extend__(Cast):

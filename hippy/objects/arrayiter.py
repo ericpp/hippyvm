@@ -2,13 +2,19 @@
 from hippy.objects.base import W_Root
 
 
-class BaseArrayIterator(W_Root):
+class W_BaseArrayIterator(W_Root):
 
     def done(self):
-        return self.remaining <= 0
+        return self.remaining <= 0  #XXX kill me and use exceptions from next()
+
+    def next(self, space):
+        raise NotImplementedError
+
+    def next_item(self, space):
+        raise NotImplementedError
 
 
-class W_ListArrayIterator(BaseArrayIterator):
+class W_ListArrayIterator(W_BaseArrayIterator):
 
     def __init__(self, storage_w):
         self.storage_w = storage_w
@@ -29,7 +35,7 @@ class W_ListArrayIterator(BaseArrayIterator):
         return str(index), self.storage_w[index]
 
 
-class W_RDictArrayIterator(BaseArrayIterator):
+class W_RDictArrayIterator(W_BaseArrayIterator):
     def __init__(self, rdct_w):
         self.rdct_w = rdct_w
         self.dctiter = rdct_w.iter()

@@ -859,7 +859,7 @@ class TestCompiler(object):
         LOAD_CONST 0
         BINARY_ADD
         DISCARD_TOP
-        JUMP_BACK_IF_NOT_DONE 4
+        JUMP_BACKWARD 4
      25 LOAD_NULL
         RETURN
         """)
@@ -880,7 +880,7 @@ class TestCompiler(object):
         DISCARD_TOP
         LOAD_REF 2          # start of the code within the { }
         DISCARD_TOP
-        JUMP_BACK_IF_NOT_DONE 4
+        JUMP_BACKWARD 4
      28 LOAD_NULL
         RETURN
         """)
@@ -907,7 +907,7 @@ class TestCompiler(object):
         LOAD_CONST 1
         BINARY_ADD
         DISCARD_TOP
-        JUMP_BACK_IF_NOT_DONE 4
+        JUMP_BACKWARD 4
      46 LOAD_NULL
         RETURN
         """)

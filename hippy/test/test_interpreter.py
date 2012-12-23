@@ -1534,3 +1534,42 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert self.space.float_w(output[0]) == 8.0
         assert self.space.int_w(output[1]) == 3
+
+    def test_foreach_1(self):
+        output = self.run('''
+        $a = array(10, 20, 30, 40);
+        foreach($a as $n) {
+            echo $n;
+        }
+        ''')
+        assert [self.space.int_w(i) for i in output] == [10, 20, 30, 40]
+
+    def test_foreach_2(self):
+        output = self.run('''
+        $a = array(10, 20, 30, 40);
+        foreach($a as $k => $n) {
+            echo gettype($k);
+            echo $k;
+            echo $n;
+        }
+        ''')
+        assert [self.space.str_w(i) for i in output] == [
+            'integer', '0', '10',
+            'integer', '1', '20',
+            'integer', '2', '30',
+            'integer', '3', '40']
+
+    def test_foreach_3(self):
+        output = self.run('''
+        $a = array("0"=>10, "1"=>20, "2"=>30, "3"=>40);
+        foreach($a as $k => $n) {
+            echo gettype($k);
+            echo $k;
+            echo $n;
+        }
+        ''')
+        assert [self.space.str_w(i) for i in output] == [
+            'integer', '0', '10',
+            'integer', '1', '20',
+            'integer', '2', '30',
+            'integer', '3', '40']

@@ -7,6 +7,8 @@ from hippy.error import InterpreterError
 from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 from hippy.objects.interpolate import W_StrInterpolation
+from hippy.objects.arrayiter import W_BaseArrayIterator
+from hippy.objects.arrayobject import try_convert_str_to_int
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -341,14 +343,6 @@ class Interpreter(object):
             return arg
         return pc
 
-    def JUMP_BACK_IF_NOT_DONE(self, bytecode, frame, space, arg, arg2, pc):
-        w_iter = frame.peek()
-        assert isinstance(w_iter, BaseArrayIterator)
-        if w_iter.done():
-            #frame.pop().mark_invalid()
-            return pc
-        return arg
-
     def JUMP_IF_FALSE_NO_POP(self, bytecode, frame, space, arg, arg2, pc):
         if not space.is_true(frame.peek()):
             return arg
@@ -544,27 +538,30 @@ class Interpreter(object):
         return pc
 
     def NEXT_VALUE_ITER(self, bytecode, frame, space, arg, arg2, pc):
-        w_var = frame.pop()
         w_iter = frame.peek()
-        assert isinstance(w_iter, BaseArrayIterator)
+        assert isinstance(w_iter, W_BaseArrayIterator)
         if w_iter.done():
-            #frame.pop().mark_invalid()
+            frame.pop()
             return arg
         w_value = w_iter.next(space)
-        frame.store_var(space, w_var, w_value)
+        frame.push(w_value)
         return pc
 
     def NEXT_ITEM_ITER(self, bytecode, frame, space, arg, arg2, pc):
-        w_valvar = frame.pop()
-        w_keyvar = frame.pop()
         w_iter = frame.peek()
-        assert isinstance(w_iter, BaseArrayIterator)
+        assert isinstance(w_iter, W_BaseArrayIterator)
         if w_iter.done():
-            #frame.pop().mark_invalid()
+            frame.pop()
             return arg
-        w_item, w_value = w_iter.next_item(space)
-        frame.store_var(space, w_keyvar, w_item)
-        frame.store_var(space, w_valvar, w_value)
+        key, w_value = w_iter.next_item(space)
+        try:
+            i = try_convert_str_to_int(key)
+        except ValueError:
+            w_key = space.newstr(key)
+        else:
+            w_key = space.newint(i)
+        frame.push(w_key)
+        frame.push(w_value)
         return pc
 
     def CAST_ARRAY(self, bytecode, frame, space, arg, arg2, pc):

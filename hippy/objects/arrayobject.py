@@ -13,6 +13,20 @@ from hippy.objects.convert import force_float_to_int_in_any_way
 def new_rdict():
     return RDict(W_Root)
 
+def try_convert_str_to_int(key):
+    # try to convert 'key' from a string to an int, but carefully:
+    # we must not remove any space, make sure the result does not
+    # overflows, etc.  In general we have to make sure that the
+    # result, when converted back to a string, would give exactly
+    # the original string.
+    try:
+        i = int(key)     # XXX can be done a bit more efficiently
+    except (ValueError, OverflowError):
+        raise ValueError
+    if str(i) != key:
+        raise ValueError
+    return i
+
 
 class W_ArrayObject(W_Root):
     """Abstract base class.  Concrete subclasses use various strategies.
@@ -62,21 +76,6 @@ class W_ArrayObject(W_Root):
             raise Exception("Warning: Illegal offset type")
     _getindex._always_inline_ = True
     _getindex = staticmethod(_getindex)
-
-    def _convert_str_to_int(key):
-        # try to convert 'key' from a string to an int, but carefully:
-        # we must not remove any space, make sure the result does not
-        # overflows, etc.  In general we have to make sure that the
-        # result, when converted back to a string, would give exactly
-        # the original string.
-        try:
-            i = int(key)     # XXX can be done a bit more efficiently
-        except (ValueError, OverflowError):
-            raise ValueError
-        if str(i) != key:
-            raise ValueError
-        return i
-    _convert_str_to_int = staticmethod(_convert_str_to_int)
 
     def getitem(self, space, w_arg):
         as_int, as_str = self._getindex(space, w_arg)
@@ -198,7 +197,7 @@ class W_ListArrayObject(W_ArrayObject):
 
     def _getitem_str(self, key):
         try:
-            i = self._convert_str_to_int(key)
+            i = try_convert_str_to_int(key)
         except ValueError:
             return self.space.w_Null
         return self._getitem_int(i)
@@ -223,7 +222,7 @@ class W_ListArrayObject(W_ArrayObject):
 
     def _setitem_str(self, key, w_value, as_ref):
         try:
-            i = self._convert_str_to_int(key)
+            i = try_convert_str_to_int(key)
         except ValueError:
             return self._setitem_str_fresh(key, w_value)
         else:
@@ -240,7 +239,7 @@ class W_ListArrayObject(W_ArrayObject):
 
     def _isset_str(self, key):
         try:
-            i = self._convert_str_to_int(key)
+            i = try_convert_str_to_int(key)
         except ValueError:
             return False
         else:

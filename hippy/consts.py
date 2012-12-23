@@ -55,7 +55,6 @@ BYTECODES = [
     ('JUMP_FORWARD', 1, 0),
     ('JUMP_BACKWARD', 1, 0),
     ('JUMP_BACK_IF_TRUE', 1, -1),
-    ('JUMP_BACK_IF_NOT_DONE', 1, -1),
     ('RETURN', 0, -1),
     ('GETFUNC', 0, 0),
     ('ARG', 1, 0),

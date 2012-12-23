@@ -57,3 +57,9 @@ class TestFloatObject(BaseTestInterpreter):
         # truncated to ints
         assert self.echo('6.9 & 5.9') == '4'
         assert self.echo('gettype(6.9 & 5.9)') == 'integer'
+
+    def test_cast_to_int_overflow(self):
+        assert self.echo('(int)1E100') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: value 1e+100 overflows'
+                              ' and is returned as 0')]

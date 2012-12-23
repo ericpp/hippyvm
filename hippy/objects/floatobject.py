@@ -2,6 +2,8 @@
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
+from pypy.rlib.rarithmetic import intmask
+
 
 class W_FloatObject(W_Root):
     _immutable_fields_ = ['floatval']
@@ -27,7 +29,12 @@ class W_FloatObject(W_Root):
         return space.newstrconst(self._as_str())
 
     def int_w(self, space):
-        return int(self.floatval)
+        result = intmask(int(self.floatval))
+        if result != self.floatval:
+            space.ec.hippy_warn("cast float to integer: value %s overflows"
+                                " and is returned as %d" % (self._as_str(),
+                                                            result))
+        return result
 
     def coerce(self, space, tp):
         if tp == space.tp_float:

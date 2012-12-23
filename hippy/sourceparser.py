@@ -460,29 +460,29 @@ class IfExpr(Node):
 
 
 class ForEach(Node):
-    def __init__(self, expr, varname, body, lineno=0):
+    def __init__(self, expr, valuevar, body, lineno=0):
         self.expr = expr
-        self.varname = varname
+        self.valuevar = valuevar
         self.body = body
         self.lineno = lineno
 
     def repr(self):
-        return 'ForEach(%s, %s, %s)' % (self.expr.repr(), self.varname.repr(),
+        return 'ForEach(%s, %s, %s)' % (self.expr.repr(), self.valuevar.repr(),
                                         self.body.repr())
 
 
 class ForEachKey(Node):
-    def __init__(self, expr, keyname, valname, body, lineno=0):
+    def __init__(self, expr, keyvar, valuevar, body, lineno=0):
         self.expr = expr
-        self.keyname = keyname
-        self.valname = valname
+        self.keyvar = keyvar
+        self.valuevar = valuevar
         self.body = body
         self.lineno = lineno
 
     def repr(self):
         return 'ForEachKey(%s, %s, %s, %s)' % (self.expr.repr(),
-                                               self.keyname.repr(),
-                                               self.valname.repr(),
+                                               self.keyvar.repr(),
+                                               self.valuevar.repr(),
                                                self.body.repr())
 
 class Cast(Node):
@@ -1103,11 +1103,11 @@ class SourceParser(object):
 
     @pg.production("foreach_variable : variable")
     def foreach_variable_variable(self, p):
-        return Argument(p[0].node.strval, lineno=p[0].lineno)
+        return p[0]
 
     @pg.production("foreach_variable : & variable")
     def foreach_variable_ref_variable(self, p):
-        raise NotImplementedError(p)
+        return Reference(p[1])
 
     @pg.production("foreach_optional_arg : T_DOUBLE_ARROW foreach_variable")
     def foreach_opt_arg_t_d_arrow_foreach_var(self, p):
@@ -1115,7 +1115,7 @@ class SourceParser(object):
 
     @pg.production("foreach_optional_arg : empty")
     def foreach_opt_arg_empty(self, p):
-        return p[0]
+        return None
 
     @pg.production("foreach_statement : statement")
     def foreach_statement_statement(self, p):

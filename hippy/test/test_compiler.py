@@ -846,45 +846,72 @@ class TestCompiler(object):
         """)
 
     def test_iterator_1(self):
-        py.test.skip("XXX fix me: the syntax is "
-                     "'foreach (<expr> as <assignment_target>)'")
         bc = self.check_compile("""
         foreach ($a as $b) {$b+1;}
         """, """
         LOAD_REF 0
         CREATE_ITER
-      5 LOAD_REF 1
-        NEXT_VALUE_ITER 20
+      4 NEXT_VALUE_ITER 25
         LOAD_REF 1
+        STORE 1
+        DISCARD_TOP
+        LOAD_REF 1         # start of the code within the { }
         LOAD_CONST 0
         BINARY_ADD
         DISCARD_TOP
-        JUMP_BACK_IF_NOT_DONE 5
-     20 LOAD_NULL
+        JUMP_BACK_IF_NOT_DONE 4
+     25 LOAD_NULL
         RETURN
         """)
         assert bc.stackdepth == 3
 
     def test_iterator_2(self):
-        py.test.skip("XXX fix me: the syntax is "
-                     "'foreach (<expr> as <assignment_target>)'")
-        self.check_compile("""
+        bc = self.check_compile("""
         foreach ($a as $b => $c) {$b;}
         """, """
-        LOAD_VAR_NAME 0
-        LOAD_VAR
+        LOAD_REF 0
         CREATE_ITER
-        LOAD_VAR_NAME 1
-        LOAD_VAR
-        LOAD_VAR_NAME 2
-        LOAD_VAR
-        NEXT_ITEM_ITER 24
-        LOAD_VAR_NAME 1
-        LOAD_VAR
+      4 NEXT_ITEM_ITER 28
+        LOAD_REF 1          # store first $c
+        STORE 1
         DISCARD_TOP
-        JUMP_BACK_IF_NOT_DONE 5
-        RETURN_NULL
+        LOAD_REF 2          # then store $b
+        STORE 1
+        DISCARD_TOP
+        LOAD_REF 2          # start of the code within the { }
+        DISCARD_TOP
+        JUMP_BACK_IF_NOT_DONE 4
+     28 LOAD_NULL
+        RETURN
         """)
+        assert bc.stackdepth == 4
+
+    def test_iterator_3(self):
+        bc = self.check_compile("""
+        foreach ($a as $b[0][1]) {$b+1;}
+        """, """
+        LOAD_REF 0
+        CREATE_ITER
+      4 NEXT_VALUE_ITER 46
+        LOAD_CONST 0
+        LOAD_CONST 1
+        ROT 2
+        LOAD_REF 1       # $b
+        FETCHITEM 3
+        FETCHITEM 3
+        STOREITEM 3
+        STOREITEM 3
+        STORE 3
+        DISCARD_TOP
+        LOAD_REF 1         # start of the code within the { }
+        LOAD_CONST 1
+        BINARY_ADD
+        DISCARD_TOP
+        JUMP_BACK_IF_NOT_DONE 4
+     46 LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 7
 
     def test_array_cast(self):
         self.check_compile("""

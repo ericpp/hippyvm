@@ -505,6 +505,10 @@ class __extend__(Variable):
             return # fast path
         return Node.compile_deref(self, ctx)
 
+    def compile_generic_assignment(self, ctx):
+        self.compile_assignment_fetch(ctx, 0)
+        self.compile_assignment_store(ctx, 0)
+
     def compile_reference(self, ctx):
         self.compile(ctx)
 
@@ -611,6 +615,12 @@ class __extend__(GetItem):
         self.node.compile(ctx)
         self.item.compile(ctx)
         ctx.emit(consts.GETITEM)
+
+    def compile_generic_assignment(self, ctx):
+        depth = self.compile_assignment_prepare(ctx)
+        ctx.emit(consts.ROT, depth)
+        self.compile_assignment_fetch(ctx, depth)
+        self.compile_assignment_store(ctx, depth)
 
     def compile_assignment_prepare(self, ctx):
         depth = self.node.compile_assignment_prepare(ctx)
@@ -874,9 +884,10 @@ class __extend__(ForEach):
         ctx.emit(consts.CREATE_ITER)
         lbl = ctx.register_label()
         jmp_back_pos = ctx.get_pos_for_jump()
-        self.varname.compile(ctx)
         ctx.emit(consts.NEXT_VALUE_ITER, 0)
         ctx.register_jump_to_patch(lbl)
+        self.valuevar.compile_generic_assignment(ctx)
+        ctx.emit(consts.DISCARD_TOP)
         self.body.compile(ctx)
         ctx.emit(consts.JUMP_BACK_IF_NOT_DONE, jmp_back_pos)
         ctx.pop_label(lbl)
@@ -888,10 +899,12 @@ class __extend__(ForEachKey):
         ctx.emit(consts.CREATE_ITER)
         lbl = ctx.register_label()
         jmp_back_pos = ctx.get_pos_for_jump()
-        self.keyname.compile(ctx)
-        self.valname.compile(ctx)
         ctx.emit(consts.NEXT_ITEM_ITER, 0)
         ctx.register_jump_to_patch(lbl)
+        self.valuevar.compile_generic_assignment(ctx)
+        ctx.emit(consts.DISCARD_TOP)
+        self.keyvar.compile_generic_assignment(ctx)
+        ctx.emit(consts.DISCARD_TOP)
         self.body.compile(ctx)
         ctx.emit(consts.JUMP_BACK_IF_NOT_DONE, jmp_back_pos)
         ctx.pop_label(lbl)

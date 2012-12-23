@@ -303,11 +303,6 @@ class Interpreter(object):
         frame.push(space.newstrconst(bytecode.varnames[arg]))
         return pc
 
-    def LOAD_VAR(self, bytecode, frame, space, arg, arg2, pc):
-        name = space.str_w(frame.pop())
-        frame.push(frame.load_var(space, bytecode, name))
-        return pc
-
     def LOAD_REF(self, bytecode, frame, space, arg, arg2, pc):
         frame.push(frame.load_fast(arg))
         return pc

@@ -514,14 +514,14 @@ class TestParser(object):
     def test_iterator(self):
         r = parse("foreach ($x as $y) {}")
         assert r == Block([ForEach(Variable(ConstantStr("x")),
-                                   Argument("y"), Block([]))])
+                                   Variable(ConstantStr('y')), Block([]))])
 
     def test_iterator_with_reference(self):
-        py.test.skip("XXX: fix me")
         r = parse("foreach ($x as $y => &$z) {}")
         assert r == Block([ForEachKey(Variable(ConstantStr("x")),
-                                      Argument("y"),
-                                      ReferenceArgument("z"), Block([]))])
+                                      Variable(ConstantStr('y')),
+                                      Reference(Variable(ConstantStr("z"))),
+                                      Block([]))])
 
     def test_array_cast(self):
         r = parse('(array)3;')

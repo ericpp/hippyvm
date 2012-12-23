@@ -88,10 +88,9 @@ class W_ArrayObject(W_Root):
     def setitem(self, space, w_arg, w_value):
         as_int, as_str = self._getindex(space, w_arg)
         if as_str is None:
-            res = self._setitem_int(as_int, w_value, False)
+            return self._setitem_int(as_int, w_value, False)
         else:
-            res = self._setitem_str(as_str, w_value, False)
-        return res, w_value
+            return self._setitem_str(as_str, w_value, False)
 
     def setitem_ref(self, space, w_arg, w_ref):
         as_int, as_str = self._getindex(space, w_arg)
@@ -254,6 +253,7 @@ class W_ListArrayObject(W_ArrayObject):
 
 class W_RDictArrayObject(W_ArrayObject):
     _has_string_keys = True
+    strategy_name = 'hash'
 
     def __init__(self, space, dct_w):
         if not we_are_translated():

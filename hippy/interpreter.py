@@ -47,6 +47,7 @@ class Frame(object):
 
     def push(self, w_v):
         stackpos = jit.hint(self.stackpos, promote=True)
+        assert isinstance(w_v, W_Root) or w_v is None
         self.stack[stackpos] = w_v
         self.stackpos = stackpos + 1
 
@@ -88,6 +89,7 @@ class Frame(object):
     def poke_nth(self, n, w_obj):
         stackpos = jit.hint(self.stackpos, promote=True) + ~n
         assert stackpos >= 0
+        assert isinstance(w_obj, W_Root) or w_obj is None
         self.stack[stackpos] = w_obj
 
     def store_var(self, space, w_v, w_value):
@@ -461,7 +463,7 @@ class Interpreter(object):
             w_target.w_value = w_value.deref()
             w_newobj = w_obj
         else:
-            w_newobj, w_newvalue = space.setitem(w_obj, w_item, w_value)
+            w_newobj, w_newvalue = space.setitem2(w_obj, w_item, w_value)
             frame.poke_nth(arg - 1, w_newvalue)
         frame.poke_nth(arg, w_newobj)
         return pc

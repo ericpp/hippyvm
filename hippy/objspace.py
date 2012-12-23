@@ -8,7 +8,7 @@ from hippy.objects.boolobject import W_BoolObject
 from hippy.objects.nullobject import W_NullObject
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
-from hippy.objects.strobject import W_StringObject
+from hippy.objects.strobject import W_StringObject, SINGLE_CHAR_STRING
 from hippy.objects.arrayobject import W_ArrayObject
 from hippy.rpython.rdict import RDict
 
@@ -149,8 +149,20 @@ class ObjSpace(object):
         return w_obj.deref().getitem(self, w_item.deref())
 
     def setitem(self, w_obj, w_item, w_value):
-        # returns a pair (w_newobj, w_newvalue)
+        # returns the w_newobj, which is the new version of w_obj
         return w_obj.deref().setitem(self, w_item.deref(), w_value.deref())
+
+    def setitem2(self, w_obj, w_item, w_value):
+        # returns a pair (w_newobj, w_newvalue)
+        w_obj = w_obj.deref()
+        if w_obj.tp == self.tp_str:
+            c = self.getchar(w_value)
+            w_value = SINGLE_CHAR_STRING[ord(c)]
+        else:
+            w_value = w_value.deref()
+        w_newobj = w_obj.setitem(self, w_item.deref(), w_value)
+        return (w_newobj, w_value)
+    setitem2._always_inline_ = True     # returns a tuple
 
     def setitem_ref(self, w_obj, w_item, w_ref):
         return w_obj.deref().setitem_ref(self, w_item.deref(), w_ref)
@@ -229,6 +241,8 @@ class ObjSpace(object):
 
     def new_array_from_pairs(self, pairs_ww):
         return W_ArrayObject.new_array_from_pairs(self, pairs_ww)
+
+    new_map_from_pairs = new_array_from_pairs   # for now
 
     def iter(self, w_arr):
         return ObjSpaceWithIter(self, w_arr)

@@ -38,3 +38,13 @@ class TestBoolObject(BaseTestInterpreter):
         assert self.echo('"00" ? 42 : 31') == '42'
         assert self.echo('"." ? 42 : 31') == '42'
         assert self.echo('array(FALSE) ? 42 : 31') == '42'
+
+    def test_cast_to_bool(self):
+        assert self.echo('(bool)5') == '1'
+        assert self.echo('(bool)0.0') == ''
+        assert self.echo('(bool)"foo"') == '1'
+
+    def test_cast_to_boolean(self):
+        assert self.echo('(boolean)5') == '1'
+        assert self.echo('(boolean)0.0') == ''
+        assert self.echo('(boolean)"foo"') == '1'

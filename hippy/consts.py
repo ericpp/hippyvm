@@ -106,7 +106,9 @@ BIN_OP_TO_BC = {'+': BINARY_ADD, '*': BINARY_MUL, '-': BINARY_SUB,
 SUFFIX_OP_TO_BC = {'++': SUFFIX_PLUSPLUS, '--': SUFFIX_MINUSMINUS}
 PREFIX_OP_TO_BC = {'++': PREFIX_PLUSPLUS, '--': PREFIX_MINUSMINUS,
                    '+': UNARY_PLUS, '-': UNARY_MINUS, '!': UNARY_NOT}
-CAST_TO_BC = {'array': CAST_ARRAY}
+CAST_TO_BC = {'array': CAST_ARRAY,
+              'bool': IS_TRUE,
+              'boolean': IS_TRUE}
 
 ARG_ARGUMENT, ARG_REFERENCE = 'A', 'R'    # no relation to 'A'rmin 'R'igo :-)
 

@@ -100,6 +100,13 @@ class W_ArrayObject(W_Root):
         else:
             return self._setitem_str(as_str, w_ref, True)
 
+    def isset_index(self, space, w_index):
+        as_int, as_str = self._getindex(space, w_index)
+        if as_str is None:
+            return self._isset_int(as_int)
+        else:
+            return self._isset_str(as_str)
+
     def append_index(self, space):
         # XXX bogus! fix me!
         return space.newint(self.arraylen())
@@ -114,6 +121,12 @@ class W_ArrayObject(W_Root):
         raise NotImplementedError("abstract")
 
     def _setitem_str(self, key, w_value, as_ref):
+        raise NotImplementedError("abstract")
+
+    def _isset_int(self, index):
+        raise NotImplementedError("abstract")
+
+    def _isset_str(self, key):
         raise NotImplementedError("abstract")
 
     def arraylen(self):
@@ -223,6 +236,21 @@ class W_ListArrayObject(W_ArrayObject):
         d[key] = w_value
         return W_RDictArrayObject(self.space, d)
 
+    def _isset_int(self, index):
+        return 0 <= index < self.arraylen()
+
+    def _isset_str(self, key):
+        try:
+            i = self._convert_str_to_int(key)
+        except ValueError:
+            return False
+        else:
+            return self._isset_int(i)
+
+    def create_iter(self, space):
+        from hippy.objects.arrayiter import W_ListArrayIterator
+        return W_ListArrayIterator(self.lst_w)
+
 
 class W_RDictArrayObject(W_ArrayObject):
     _has_string_keys = True
@@ -269,3 +297,13 @@ class W_RDictArrayObject(W_ArrayObject):
         else:
             dct_w[key] = w_value
         return res
+
+    def _isset_int(self, index):
+        return self._isset_str(str(index))
+
+    def _isset_str(self, key):
+        return key in self.dct_w
+
+    def create_iter(self, space):
+        from hippy.objects.arrayiter import W_RDictArrayIterator
+        return W_RDictArrayIterator(self.dct_w)

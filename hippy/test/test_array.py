@@ -6,6 +6,8 @@ from hippy.objspace import ObjSpace
 class TestArrayDirect(object):
     def create_array_strats(self, space):
         # int, float, mix, empty, hash, copy
+        # XXX for now we don't have all of them any more, so some of
+        # XXX them are identical.
         int_arr = space.new_array_from_list([space.wrap(1), space.wrap(2)])
         return (int_arr,
                 space.new_array_from_list([space.wrap(1.2), space.wrap(2.2)]),
@@ -17,7 +19,7 @@ class TestArrayDirect(object):
                     (space.newstrconst("a"), space.wrap(2)),
                     (space.newstrconst("b"), space.wrap(3)),
                     (space.newstrconst("c"), space.wrap(4))]),
-                int_arr.copy(space))
+                int_arr)  #.copy(space))
 
     def test_value_iterators(self):
         space = ObjSpace()
@@ -48,18 +50,20 @@ class TestArrayDirect(object):
         assert w_iter.done()
 
     def test_item_iterators(self):
-        def unpack((w_1, w_2)):
-            l = []
-            for w_obj in w_1, w_2:
-                if w_obj.tp == space.tp_str:
-                    l.append(space.str_w(w_obj))
-                elif w_obj.tp == space.tp_float:
-                    l.append(space.float_w(w_obj))
-                elif w_obj.tp == space.tp_int:
-                    l.append(space.int_w(w_obj))
-                else:
-                    raise NotImplementedError
-            return l
+        def unpack((key, w_obj)):
+            try:
+                key = int(key)
+            except ValueError:
+                pass
+            if w_obj.tp == space.tp_str:
+                value = space.str_w(w_obj)
+            elif w_obj.tp == space.tp_float:
+                value = space.float_w(w_obj)
+            elif w_obj.tp == space.tp_int:
+                value = space.int_w(w_obj)
+            else:
+                raise NotImplementedError
+            return [key, value]
 
         space = ObjSpace()
         int_arr, float_arr, mix_arr, empty, hash, cp_arr = \

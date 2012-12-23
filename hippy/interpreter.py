@@ -7,7 +7,6 @@ from hippy.error import InterpreterError
 from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 from hippy.objects.interpolate import W_StrInterpolation
-from hippy.objects.arrayiter import BaseArrayIterator
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -349,7 +348,7 @@ class Interpreter(object):
         w_iter = frame.peek()
         assert isinstance(w_iter, BaseArrayIterator)
         if w_iter.done():
-            frame.pop().mark_invalid()
+            #frame.pop().mark_invalid()
             return pc
         return arg
 
@@ -552,7 +551,7 @@ class Interpreter(object):
         w_iter = frame.peek()
         assert isinstance(w_iter, BaseArrayIterator)
         if w_iter.done():
-            frame.pop().mark_invalid()
+            #frame.pop().mark_invalid()
             return arg
         w_value = w_iter.next(space)
         frame.store_var(space, w_var, w_value)
@@ -564,7 +563,7 @@ class Interpreter(object):
         w_iter = frame.peek()
         assert isinstance(w_iter, BaseArrayIterator)
         if w_iter.done():
-            frame.pop().mark_invalid()
+            #frame.pop().mark_invalid()
             return arg
         w_item, w_value = w_iter.next_item(space)
         frame.store_var(space, w_keyvar, w_item)

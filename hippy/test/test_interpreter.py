@@ -436,7 +436,7 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 1
 
     def test_undeclared_traceback(self):
-        py.test.raises(FatalError, self.run, '''
+        py.test.raises(FatalError, self.run, '''\
         function f() {
            g();
         }

@@ -1,6 +1,7 @@
 import py
 from py.test import raises
-from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
+from hippy import sourceparser
+from hippy.sourceparser import Block, Stmt, Assignment, ConstantInt,\
      Variable, Echo, Return, If, PrefixOp, SuffixOp, While, For, ConstantStr,\
      SimpleCall, DynamicCall, FunctionDecl, Argument, BinOp, ConstantFloat,\
      GetItem, Append, And, Or, InplaceOp, Global,\
@@ -8,6 +9,10 @@ from hippy.sourceparser import parse, Block, Stmt, Assignment, ConstantInt,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
      UninitializedVariable, Break, Continue
 from rply import ParsingError
+
+def parse(source):
+    return sourceparser.parse(source, startlineno=0)
+
 
 class TestParser(object):
 

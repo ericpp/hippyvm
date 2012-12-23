@@ -491,7 +491,7 @@ class TestCompiler(object):
         """)
 
     def test_function_decl(self):
-        bc = self.check_compile("""
+        bc = self.check_compile("""\
         echo 5;
         function f($a, &$b, $c) { return $a + $b + $c; }""", """
         LOAD_CONST 0
@@ -919,7 +919,7 @@ class TestCompiler(object):
         """)
 
     def test_lineno_mapping(self):
-        bc = self.check_compile("""
+        bc = self.check_compile("""\
         1;
         2;
         3;
@@ -981,7 +981,7 @@ class TestCompiler(object):
         """)
 
     def test_extra_offset(self):
-        bc = self.check_compile("""
+        bc = self.check_compile("""\
         1;
         2;
         """, """

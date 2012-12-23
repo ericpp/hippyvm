@@ -1602,8 +1602,8 @@ class SourceParser(object):
     parser = pg.build()
 
 
-def parse(_source):
+def parse(_source, startlineno=1):
     lx = Lexer(RULES)
-    lx.input(_source + ';')
+    lx.input(_source + ';', 0, startlineno)
     parser = SourceParser(lx.tokens())
     return parser.parse()

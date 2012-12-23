@@ -330,7 +330,7 @@ class Lexer(object):
         self.skip_whitespace = skip_whitespace
         self.re_ws_skip = compile('\S')
 
-    def input(self, buf, pos=0, lineno=0):
+    def input(self, buf, pos, lineno):
         """ Initialize the lexer with a buffer as input.
         """
         self.buf = buf

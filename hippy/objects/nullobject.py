@@ -11,6 +11,9 @@ class W_NullObject(W_Root):
     def as_string(self, space):
         return space.newstrconst("")
 
+    def int_w(self, space):
+        return 0
+
     def eq_w(self, space, other):
         return True
 

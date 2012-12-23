@@ -79,6 +79,7 @@ BYTECODES = [
     ('DECLARE_FUNC', 1, 0),
     ('CAST_ARRAY', 0, 0),
     ('CAST_INT', 0, 0),
+    ('CAST_FLOAT', 0, 0),
 ]
 
 BYTECODE_NUM_ARGS = []
@@ -111,7 +112,10 @@ CAST_TO_BC = {'array': CAST_ARRAY,
               'bool': IS_TRUE,
               'boolean': IS_TRUE,
               'int': CAST_INT,
-              'integer': CAST_INT}
+              'integer': CAST_INT,
+              'float': CAST_FLOAT,
+              'double': CAST_FLOAT,
+              'real': CAST_FLOAT}
 
 ARG_ARGUMENT, ARG_REFERENCE = 'A', 'R'    # no relation to 'A'rmin 'R'igo :-)
 

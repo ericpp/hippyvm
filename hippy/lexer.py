@@ -171,16 +171,13 @@ RULES = [
     ("\+\+", 'T_INC'),
     ("\-\-", 'T_DEC'),
 
-    ("\(int\)", 'T_INT_CAST'),
-    ("\(integer\)", 'T_INT_CAST'),
-    ("\(double\)", 'T_DOUBLE_CAST'),
-    ("\(string\)", 'T_STRING_CAST'),
+    ("\((int|integer)\)", 'T_INT_CAST'),
+    ("\((real|double|float)\)", 'T_DOUBLE_CAST'),
+    ("\((string|binary)\)", 'T_STRING_CAST'),
     ("\(array\)", 'T_ARRAY_CAST'),
     ("\(object\)", 'T_OBJECT_CAST'),
-    ("\(bool\)", 'T_BOOL_CAST'),
-    ("\(boolean\)", 'T_BOOL_CAST'),
+    ("\((bool|boolean)\)", 'T_BOOL_CAST'),
     ("\(unset\)", 'T_UNSET_CAST'),
-    ("\(binary\)", 'T_BINARY_CAST'),
     ("\(unicode\)", 'T_UNICODE_CAST'),
 
 

@@ -72,9 +72,6 @@ class W_IntObject(W_Root):
     def is_true(self, space):
         return self.intval != 0
 
-    def float_w(self, space):
-        return float(self.intval)
-
     def uplus(self, space):
         return self
 

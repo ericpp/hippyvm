@@ -579,6 +579,10 @@ class Interpreter(object):
         frame.push(space.newint(space.int_w(frame.pop())))
         return pc
 
+    def CAST_FLOAT(self, bytecode, frame, space, arg, arg2, pc):
+        frame.push(space.newfloat(space.float_w(frame.pop())))
+        return pc
+
 def _new_binop(name):
     def BINARY(self, bytecode, frame, space, arg, arg2, pc):
         w_right = frame.pop()

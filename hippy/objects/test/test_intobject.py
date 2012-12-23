@@ -18,6 +18,7 @@ class TestIntObject(BaseTestInterpreter):
         assert self.echo('(integer)TrUe') == '1'
         assert self.echo('(integer)-1E3') == '-1000'
         assert self.echo('(integer)"  12.34  "') == '12'
+        assert self.echo('(integer)NULL') == '0'
 
     def test_division(self):
         assert self.echo('5 / 2') == '2.5'

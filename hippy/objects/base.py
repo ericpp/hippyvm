@@ -14,7 +14,7 @@ class W_Root(object):
         raise InterpreterError("TypeError: casting to int of wrong type")
 
     def float_w(self, space):
-        raise InterpreterError("TypeError: casting to float of wrong type")
+        return float(self.int_w(space))
 
     def str_w(self, space):
         raise InterpreterError("TypeError: casting to string of wrong type")

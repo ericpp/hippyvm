@@ -74,6 +74,8 @@ BYTECODES = [
     ('CREATE_ITER', 0, 0),
     ('NEXT_VALUE_ITER', 1, +1),
     ('NEXT_ITEM_ITER', 1, +2),
+    ('NEXT_VALUE_ITER_REF', 1, +1),
+    ('NEXT_ITEM_ITER_REF', 1, +2),
     ('DECLARE_GLOBAL', 1, 0),
     ('DECLARE_FUNC', 1, 0),
     ('CAST_ARRAY', 0, 0),

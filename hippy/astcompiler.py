@@ -512,6 +512,10 @@ class __extend__(Variable):
     def compile_reference(self, ctx):
         self.compile(ctx)
 
+    def compile_generic_assignment_ref(self, ctx):
+        self.compile_assignment_fetch_ref(ctx, 0)
+        self.compile_assignment_store_ref(ctx, 0)
+
     def compile_assignment_prepare(self, ctx):
         return 0
 
@@ -621,6 +625,12 @@ class __extend__(GetItem):
         ctx.emit(consts.ROT, depth)
         self.compile_assignment_fetch(ctx, depth)
         self.compile_assignment_store(ctx, depth)
+
+    def compile_generic_assignment_ref(self, ctx):
+        depth = self.compile_assignment_prepare(ctx)
+        ctx.emit(consts.ROT, depth)
+        self.compile_assignment_fetch_ref(ctx, depth)
+        self.compile_assignment_store_ref(ctx, depth)
 
     def compile_assignment_prepare(self, ctx):
         depth = self.node.compile_assignment_prepare(ctx)
@@ -884,9 +894,15 @@ class __extend__(ForEach):
         ctx.emit(consts.CREATE_ITER)
         lbl = ctx.register_label()
         jmp_back_pos = ctx.get_pos_for_jump()
-        ctx.emit(consts.NEXT_VALUE_ITER, 0)
-        ctx.register_jump_to_patch(lbl)
-        self.valuevar.compile_generic_assignment(ctx)
+        valuevar = self.valuevar
+        if not isinstance(valuevar, Reference):
+            ctx.emit(consts.NEXT_VALUE_ITER, 0)
+            ctx.register_jump_to_patch(lbl)
+            valuevar.compile_generic_assignment(ctx)
+        else:
+            ctx.emit(consts.NEXT_VALUE_ITER_REF, 0)
+            ctx.register_jump_to_patch(lbl)
+            valuevar.item.compile_generic_assignment_ref(ctx)
         ctx.emit(consts.DISCARD_TOP)
         self.body.compile(ctx)
         ctx.emit(consts.JUMP_BACKWARD, jmp_back_pos)
@@ -899,9 +915,15 @@ class __extend__(ForEachKey):
         ctx.emit(consts.CREATE_ITER)
         lbl = ctx.register_label()
         jmp_back_pos = ctx.get_pos_for_jump()
-        ctx.emit(consts.NEXT_ITEM_ITER, 0)
-        ctx.register_jump_to_patch(lbl)
-        self.valuevar.compile_generic_assignment(ctx)
+        valuevar = self.valuevar
+        if not isinstance(valuevar, Reference):
+            ctx.emit(consts.NEXT_ITEM_ITER, 0)
+            ctx.register_jump_to_patch(lbl)
+            valuevar.compile_generic_assignment(ctx)
+        else:
+            ctx.emit(consts.NEXT_ITEM_ITER_REF, 0)
+            ctx.register_jump_to_patch(lbl)
+            valuevar.item.compile_generic_assignment_ref(ctx)
         ctx.emit(consts.DISCARD_TOP)
         self.keyvar.compile_generic_assignment(ctx)
         ctx.emit(consts.DISCARD_TOP)

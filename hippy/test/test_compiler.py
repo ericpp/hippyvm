@@ -913,6 +913,55 @@ class TestCompiler(object):
         """)
         assert bc.stackdepth == 7
 
+    def test_iterator_ref_1(self):
+        bc = self.check_compile("""
+        foreach ($a as &$b) {$b+=1;}
+        """, """
+        LOAD_REF 0
+        CREATE_ITER
+      4 NEXT_VALUE_ITER_REF 31
+        STORE_FAST_REF 1
+        DISCARD_TOP
+        LOAD_CONST 0       # start of the code within the { }
+        LOAD_REF 1
+        DUP_TOP_AND_NTH 1
+        BINARY_ADD
+        POP_AND_POKE_NTH 1
+        STORE 1
+        DISCARD_TOP
+        JUMP_BACKWARD 4
+     31 LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 5
+
+    def test_iterator_ref_2(self):
+        bc = self.check_compile("""
+        foreach ($a as $k=>&$b[5][5]) {$b;}
+        """, """
+        LOAD_REF 0
+        CREATE_ITER
+      4 NEXT_ITEM_ITER_REF 46
+        LOAD_CONST 0        # store the value as reference into $b[5]
+        LOAD_CONST 0
+        ROT 2
+        LOAD_REF 1
+        FETCHITEM 3
+        STOREITEM_REF 3
+        STOREITEM 3
+        STORE 3
+        DISCARD_TOP
+        LOAD_REF 2          # then store the key into $k
+        STORE 1
+        DISCARD_TOP
+        LOAD_REF 1          # start of the code within the { }
+        DISCARD_TOP
+        JUMP_BACKWARD 4
+     46 LOAD_NULL
+        RETURN
+        """)
+        assert bc.stackdepth == 7
+
     def test_array_cast(self):
         self.check_compile("""
         (array)3;

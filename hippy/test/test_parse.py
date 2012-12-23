@@ -523,6 +523,15 @@ class TestParser(object):
                                       Reference(Variable(ConstantStr("z"))),
                                       Block([]))])
 
+    def test_iterator_with_reference_2(self):
+        r = parse("foreach ($x as $y => &$z[5]) {}")
+        assert r == Block([ForEachKey(Variable(ConstantStr("x")),
+                                      Variable(ConstantStr('y')),
+                                      Reference(GetItem(
+                                          Variable(ConstantStr("z")),
+                                          ConstantInt(5))),
+                                      Block([]))])
+
     def test_array_cast(self):
         r = parse('(array)3;')
         assert r == Block([Stmt(Cast("array", ConstantInt(3)))])

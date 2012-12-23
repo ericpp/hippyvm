@@ -1,6 +1,6 @@
 
 from pypy.rlib import jit
-from pypy.rlib.objectmodel import specialize
+from pypy.rlib.objectmodel import specialize, we_are_translated
 from pypy.rlib.rarithmetic import ovfcheck
 from hippy.objects.base import W_Root
 from hippy.objects import arrayiter
@@ -8,6 +8,10 @@ from hippy.error import InterpreterError
 from hippy.rpython.rdict import RDict
 from hippy.objects.reference import W_Reference
 from hippy.objects.convert import force_float_to_int_in_any_way
+
+
+def new_rdict():
+    return RDict(W_Root)
 
 
 class W_ArrayObject(W_Root):
@@ -22,12 +26,12 @@ class W_ArrayObject(W_Root):
         return W_ListArrayObject(space, lst_w)
 
     @staticmethod
-    def new_array_from_dict(space, dct_w):
-        return W_DictArrayObject(space, dct_w)
+    def new_array_from_rdict(space, dct_w):
+        return W_RDictArrayObject(space, dct_w)
 
     @staticmethod
     def new_array_from_pairs(space, pairs_ww):
-        dct_w = {}
+        rdct_w = new_rdict()
         next_idx = 0
         for w_key, w_value in pairs_ww:
             if w_key is not None:
@@ -39,8 +43,8 @@ class W_ArrayObject(W_Root):
                 next_idx += 1
             if as_str is None:
                 as_str = str(as_int)
-            dct_w[as_str] = w_value
-        return W_DictArrayObject(space, dct_w)
+            rdct_w[as_str] = w_value
+        return W_RDictArrayObject(space, rdct_w)
 
     def is_true(self, space):
         return self.arraylen() > 0
@@ -115,8 +119,18 @@ class W_ArrayObject(W_Root):
     def arraylen(self):
         raise NotImplementedError("abstract")
 
-    def as_dict(self):
+    def as_rdict(self):
         raise NotImplementedError("abstract")
+
+    def as_dict(self):
+        "NOT_RPYTHON: for tests only"
+        rdict = self.as_rdict()
+        it = rdict.iter()
+        d = {}
+        for i in range(len(rdict)):
+            key, w_value = it.nextitem()
+            d[key] = w_value
+        return d
 
     def var_dump(self, space, indent, recursion):
         if self in recursion:
@@ -156,8 +170,8 @@ class W_ListArrayObject(W_ArrayObject):
     def arraylen(self):
         return len(self.lst_w)
 
-    def as_dict(self):
-        d = {}
+    def as_rdict(self):
+        d = new_rdict()
         for i in range(len(self.lst_w)):
             d[str(i)] = self.lst_w[i]
         return d
@@ -204,24 +218,26 @@ class W_ListArrayObject(W_ArrayObject):
             return self._setitem_int(i, w_value, as_ref)
 
     def _setitem_str_fresh(self, key, w_value):
-        d = self.as_dict()    # make a fresh dictionary
+        d = self.as_rdict()    # make a fresh dictionary
         assert key not in d
         d[key] = w_value
-        return W_DictArrayObject(self.space, d)
+        return W_RDictArrayObject(self.space, d)
 
 
-class W_DictArrayObject(W_ArrayObject):
+class W_RDictArrayObject(W_ArrayObject):
     _has_string_keys = True
 
     def __init__(self, space, dct_w):
+        if not we_are_translated():
+            assert isinstance(dct_w, RDict)
         self.space = space
         self.dct_w = dct_w
 
-    def as_dict(self):
+    def as_rdict(self):
         return self.dct_w
 
     def as_unique_arraydict(self):
-        return W_DictArrayObject(self.space, self.dct_w.copy())
+        return W_RDictArrayObject(self.space, self.dct_w.copy())
 
     def arraylen(self):
         return len(self.dct_w)
@@ -230,7 +246,10 @@ class W_DictArrayObject(W_ArrayObject):
         return self._getitem_str(str(index))
 
     def _getitem_str(self, key):
-        return self.dct_w.get(key, self.space.w_Null)
+        try:
+            return self.dct_w[key]
+        except KeyError:
+            return self.space.w_Null
 
     def _setitem_int(self, index, w_value, as_ref):
         return self._setitem_str(str(index), w_value, as_ref)
@@ -239,7 +258,10 @@ class W_DictArrayObject(W_ArrayObject):
         res = self.as_unique_arraydict()
         dct_w = res.dct_w
         if not as_ref:
-            w_old = dct_w.get(key, None)
+            try:
+                w_old = dct_w[key]
+            except KeyError:
+                w_old = None
         else:
             w_old = None
         if isinstance(w_old, W_Reference):   # and is not None

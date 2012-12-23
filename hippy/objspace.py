@@ -10,6 +10,7 @@ from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject
 from hippy.objects.arrayobject import W_ArrayObject
+from hippy.rpython.rdict import RDict
 
 
 @specialize.memo()
@@ -215,9 +216,16 @@ class ObjSpace(object):
     def new_array_from_list(self, lst_w):
         return W_ArrayObject.new_array_from_list(self, lst_w)
 
+    def new_array_from_rdict(self, rdict_w):
+        # 'dict_w' is a RDict that contains {"rpython string": W_Objects}
+        return W_ArrayObject.new_array_from_rdict(self, rdict_w)
+
     def new_array_from_dict(self, dict_w):
-        # 'dict_w' is a dictionary {"rpython string": W_Objects}
-        return W_ArrayObject.new_array_from_dict(self, dict_w)
+        "NOT_RPYTHON: for tests only (gets a random ordering)"
+        rdict_w = RDict(W_Root)
+        for key, w_value in dict_w.items():
+            rdict_w[key] = w_value
+        return W_ArrayObject.new_array_from_rdict(self, rdict_w)
 
     def new_array_from_pairs(self, pairs_ww):
         return W_ArrayObject.new_array_from_pairs(self, pairs_ww)

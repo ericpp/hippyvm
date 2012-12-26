@@ -8,6 +8,7 @@ from hippy.objects.reference import W_Reference
 from hippy.objects.base import W_Root
 from hippy.objects.interpolate import W_StrInterpolation
 from hippy.objects.arrayiter import W_BaseArrayIterator
+from hippy.objects.arrayobject import new_rdict
 from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib import jit
 from pypy.rlib.unroll import unrolling_iterable
@@ -122,8 +123,8 @@ class Interpreter(object):
     def __init__(self, space, logger):
         self.functions = {}
         self.constants = {}
-        self.globals = {}
-        self.w_globals = space.new_array_from_dict(self.globals)
+        self.globals = new_rdict()
+        self.w_globals = space.new_array_from_rdict(self.globals)
         self.logger = logger
         self.setup_constants(space)
         self.setup_globals(space)

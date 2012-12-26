@@ -1626,3 +1626,26 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [
             10, 0, 20, 0, 30, 0, 40, 0]
+
+    def test_foreach_ref_cornercase_1(self):
+        output = self.run('''
+        $a = array(10);
+        foreach($a as &$v) {
+            echo $v;
+            $a[] = 42;
+        }
+        ''')
+        assert [self.space.int_w(i) for i in output] == [10]
+
+    def test_foreach_ref_cornercase_2(self):
+        output = self.run('''
+        $a = array(10, 20);
+        $n = 8;
+        foreach($a as &$v) {
+            if (!--$n) break;
+            echo $v;
+            $a[] = 42;
+        }
+        ''')
+        assert [self.space.int_w(i) for i in output] == [
+            10, 20, 42, 42, 42, 42, 42]

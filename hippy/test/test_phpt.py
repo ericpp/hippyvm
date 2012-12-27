@@ -9,6 +9,8 @@ from hippy.astcompiler import compile_ast
 from hippy.conftest import option
 from hippy.test.test_interpreter import BaseTestInterpreter
 
+py.test.skip("XXX in-progress")
+
 
 def parse_phpt(fname):
     src = []

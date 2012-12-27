@@ -7,7 +7,7 @@ from hippy.sourceparser import Block, Stmt, Assignment, ConstantInt,\
      GetItem, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
-     UninitializedVariable, Break, Continue, Unset
+     UninitializedVariable, Break, Continue, Unset, Print
 from rply import ParsingError
 
 def parse(source):
@@ -570,19 +570,12 @@ class TestParser(object):
         assert r == Block([Stmt(ConstantInt(1, 1), 1),
                            Stmt(ConstantInt(2, 3), 3)])
 
-    def test_print(self):
-        py.test.xfail("unsuporrted gramma")
-        r = parse('''
-        print 1;
-        ''')
-        assert r == Block([Echo([ConstantInt(1)], 1)])
-
     def test_print_new(self):
         r = parse('''
         print 1;
         ''')
         assert r == Block([
-                Stmt(Echo([ConstantInt(1, 1)], 1), 1)
+                Stmt(Print(ConstantInt(1, 1), 1), 1)
                 ])
 
     def test_default_args(self):

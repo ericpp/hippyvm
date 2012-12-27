@@ -64,5 +64,5 @@ def test_parse_misc():
 
 def test_run_php_source():
     space = ObjSpace()
-    stdout = run_php_source(space, '<?php echo hello ?>_world')
+    stdout = run_php_source(space, "<?php echo 'hello' ?>_world")
     assert stdout == 'hello_world'

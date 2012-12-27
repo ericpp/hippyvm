@@ -1136,3 +1136,28 @@ class TestCompiler(object):
         LOAD_NULL
         RETURN
         """)
+
+    def test_GLOBALS_1(self):
+        self.check_compile("$GLOBALS['a'] = 42;", """
+        LOAD_NAME 0
+        LOAD_CONST 0
+        LOAD_REF 0
+        FETCHITEM 2
+        STOREITEM 2
+        STORE 2
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)
+
+    def test_GLOBALS_2(self):
+        self.check_compile("$GLOBALS['a'] = &$x;", """
+        LOAD_NAME 0
+        LOAD_REF 0
+        LOAD_REF 1
+        STOREITEM_REF 2
+        STORE 2
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)

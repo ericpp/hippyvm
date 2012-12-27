@@ -45,7 +45,7 @@ class Frame(object):
         self.vars_w = [W_Reference(space.w_Null) for v in code.varnames]
         i = code.globals_var_num
         if i >= 0:
-            self.vars_w[i].w_value = space.ec.interpreter.w_globals
+            self.vars_w[i] = space.ec.interpreter.w_globals_ref
 
     def push(self, w_v):
         stackpos = jit.hint(self.stackpos, promote=True)
@@ -124,7 +124,8 @@ class Interpreter(object):
         self.functions = {}
         self.constants = {}
         self.globals = new_rdict()
-        self.w_globals = space.new_array_from_rdict(self.globals)
+        self.w_globals_ref = W_Reference(
+            space.new_array_from_rdict(self.globals))
         self.logger = logger
         self.setup_constants(space)
         self.setup_globals(space)
@@ -138,7 +139,7 @@ class Interpreter(object):
         self.constants['null'] = space.w_Null
 
     def setup_globals(self, space):
-        self.globals['GLOBALS'] = W_Reference(self.w_globals)
+        self.globals['GLOBALS'] = self.w_globals_ref
 
     #@jit.elidable -- XXX redo
     def lookup_global(self, space, name):
@@ -157,6 +158,21 @@ class Interpreter(object):
             del self.globals[name]
         except KeyError:
             pass
+
+    def update_global_var_from_dict(self, space, name, w_ref):
+        # called in rare cases: the $GLOBALS dictionary maps names to
+        # (usually) references to values.  This is called only when we detect
+        # explicitly a change in this mapping.  So far it is called for
+        # '$GLOBALS['x'] = & $y;' and for 'unset($GLOBALS['x'])'.
+        gframe = space.ec.global_frame
+        if gframe is not None:
+            code = gframe.bytecode
+            try:
+                no = code.var_to_pos[name]
+            except KeyError:
+                pass
+            else:
+                gframe.store_fast_ref(no, w_ref)
 
     @jit.elidable
     def lookup_constant(self, name):
@@ -181,6 +197,7 @@ class Interpreter(object):
             w_ref = self.lookup_global(space, name)
             frame.store_fast_ref(i, w_ref)
         frame.is_global_level = True
+        space.ec.global_frame = frame
         #
         return self.interpret(space, frame, bytecode)
 
@@ -485,6 +502,8 @@ class Interpreter(object):
         w_item = frame.peek_nth(arg)
         w_obj = frame.peek()
         w_newobj = space.setitem_ref(w_obj, w_item, w_ref)
+        if w_obj is self.w_globals_ref:
+            self.update_global_var_from_dict(space, space.str_w(w_item), w_ref)
         frame.poke_nth(arg, w_newobj)
         return pc
 
@@ -492,6 +511,9 @@ class Interpreter(object):
         w_item = frame.peek_nth(arg)
         w_obj = frame.peek()
         w_newobj = space.unsetitem(w_obj, w_item)
+        if w_obj is self.w_globals_ref:
+            self.update_global_var_from_dict(space, space.str_w(w_item),
+                                             W_Reference(space.w_Null))
         frame.poke_nth(arg, w_newobj)
         return pc
 

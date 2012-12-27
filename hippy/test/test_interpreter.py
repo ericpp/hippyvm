@@ -423,7 +423,8 @@ class TestInterpreter(BaseTestInterpreter):
         }
         echo g();
         ''')
-        assert self.interp.logger.msgs == [('FATAL', 'undefined function g')]
+        assert self.interp.logger.msgs == [
+            ('FATAL', 'undefined function: g()')]
         output = self.run('''
                 function f() {
            function g() {
@@ -442,7 +443,8 @@ class TestInterpreter(BaseTestInterpreter):
         }
         f();
         ''')
-        assert self.interp.logger.msgs == [('FATAL', 'undefined function g')]
+        assert self.interp.logger.msgs == [
+            ('FATAL', 'undefined function: g()')]
         assert self.interp.logger.tb == [('<input>', '<main>', 4, 'f();'),
                                          ('<input>', 'f', 2, '   g();')]
 
@@ -1109,19 +1111,46 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert self.space.int_w(output[0]) == 3
 
-    def test_globals_indirectly(self):
-        py.test.skip("XXX $$a")
-        # PHP 5.4 behavior: GLOBALS is not found when accessed indirectly
+    def test_superglobals_assign(self):
         output = self.run('''
         function f() {
-           $a = "GLO";
-           return ${$a . "BALS"};
+            global $b;
+            $GLOBALS['b'] = 43;
+            echo $b;
         }
-        $a = 3;
-        $g = f();
-        echo $g["a"];
+        function g() {
+            global $b;
+            echo $b;
+        }
+        f();
+        echo $b;
+        g();
         ''')
-        assert self.space.str_w(output[0]) == ""
+        assert [self.space.int_w(i) for i in output] == [43, 43, 43]
+
+    def test_superglobals_write(self):
+        output = self.run('''
+        $GLOBALS["c"] = 42;
+        echo $c;
+        ''')
+        assert self.space.int_w(output[0]) == 42
+
+    def test_superglobals_ref(self):
+        output = self.run('''
+        $a = 43;
+        $b = &$a;
+        echo $GLOBALS["a"], $GLOBALS["b"];
+        $GLOBALS["c"] = &$a;
+        echo $c;
+        $GLOBALS["d"] = $a;
+        echo $d;
+        $a = 44;
+        echo $a, $b, $c, $d;
+        echo $GLOBALS["a"], $GLOBALS["b"], $GLOBALS["c"], $GLOBALS["d"];
+        ''')
+        assert [self.space.int_w(i) for i in output] == [43, 43, 43, 43,
+                                                         44, 44, 44, 43,
+                                                         44, 44, 44, 43]
 
     def test_null_eq(self):
         output = self.run('''
@@ -1685,10 +1714,13 @@ class TestInterpreter(BaseTestInterpreter):
             unset($GLOBALS['bar']);
         }
         $bar = "baz";
+        $baz = &$bar;
         destroy_bar();
         echo gettype($bar);
+        echo gettype($baz);
         ''')
         assert self.space.str_w(output[0]) == 'NULL'
+        assert self.space.str_w(output[1]) == 'string'
 
     def test_unset_4(self):
         output = self.run('''
@@ -1722,3 +1754,19 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [
             1, 23, 2, 23, 3, 23]
+
+    def test_unset_6(self):
+        output = self.run('''
+        $v = 42;
+        $a = array(&$v);
+        unset($a[0]);
+        echo $v;
+        ''')
+        assert self.space.int_w(output[0]) == 42
+        output = self.run('''
+        $v = 42;
+        $a = array(&$v);
+        $a[0] = NULL;
+        echo gettype($v);
+        ''')
+        assert self.space.str_w(output[0]) == 'NULL'

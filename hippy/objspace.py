@@ -24,6 +24,7 @@ class ExecutionContext(object):
 
     def __init__(self):
         self.interpreter = None
+        self.global_frame = None
 
     def notice(self, msg):
         self.interpreter.logger.notice(self.interpreter, msg)

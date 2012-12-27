@@ -318,7 +318,7 @@ def _pad_array(space, w_arr, pairs, idx):
     with space.iter(w_arr) as itr:
         while not itr.done():
             w_key, w_val = itr.next_item(space)
-            if not space.is_valid_number(w_key):
+            if w_key.tp != space.tp_int:
                 pairs.append((w_key, w_val))
             else:
                 pairs.append((space.newint(idx), w_val))

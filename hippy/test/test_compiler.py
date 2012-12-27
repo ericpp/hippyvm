@@ -1117,3 +1117,17 @@ class TestCompiler(object):
         LOAD_NULL
         RETURN
         """)
+
+    def test_call_unset_stmt(self):
+        self.check_compile("unset($a, $c);", """
+        LOAD_NAME 0
+        GETFUNC
+        LOAD_REF 0
+        ARG 0
+        LOAD_REF 1
+        ARG 1
+        CALL 2
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)

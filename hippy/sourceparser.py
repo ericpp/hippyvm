@@ -728,7 +728,10 @@ class SourceParser(object):
     @pg.production("unticked_statement : T_UNSET "
                    "( unset_variables ) ;")
     def unticked_statement_t_unset_variables(self, p):
-        return SimpleCall(p[0].getstr(), p[2], lineno=p[0].getsourcepos())
+        # unset() is a special function, but should still be called
+        # within a Stmt(SimpleCall(..)) to get a DISCARD_TOP after CALL
+        sc = SimpleCall(p[0].getstr(), p[2], lineno=p[0].getsourcepos())
+        return Stmt(sc, lineno=p[0].getsourcepos())
 
     @pg.production("unset_variables : unset_variables , unset_variable")
     def unset_vars_unset_vars_unset_var(self, p):

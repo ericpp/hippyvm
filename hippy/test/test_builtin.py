@@ -75,9 +75,7 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a, $a[0];
         """)
         assert output[1] is self.space.w_Null
-        w_array = output[0].strategy.unerase(output[0].storage).parent
-        # int or null
-        assert isinstance(w_array.strategy, arrayobject.ListArrayStrategy)
+        assert not output[0]._has_string_keys
 
     def test_printf_1(self):
         output = self.run('''

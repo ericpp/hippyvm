@@ -2,7 +2,8 @@
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
-from pypy.rlib.rarithmetic import intmask
+from pypy.rlib.rarithmetic import intmask, ovfcheck
+from pypy.rlib.rfloat import isnan
 
 
 class W_FloatObject(W_Root):
@@ -29,7 +30,14 @@ class W_FloatObject(W_Root):
         return space.newstrconst(self._as_str())
 
     def int_w(self, space):
-        result = intmask(int(self.floatval))
+        if isnan(self.floatval):
+            space.ec.hippy_warn("cast float to integer: NaN"
+                                " is returned as 0")
+            return 0
+        try:
+            result = intmask(int(self.floatval))
+        except OverflowError:
+            result = 0    # +/- infinity
         if result != self.floatval:
             space.ec.hippy_warn("cast float to integer: value %s overflows"
                                 " and is returned as %d" % (self._as_str(),

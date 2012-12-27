@@ -63,3 +63,17 @@ class TestFloatObject(BaseTestInterpreter):
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: value 1e+100 overflows'
                               ' and is returned as 0')]
+
+    def test_cast_to_int_overflow_inf(self):
+        assert self.echo('(int)INF') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: value inf overflows'
+                              ' and is returned as 0')]
+        assert self.echo('(int)-INF') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: value -inf overflows'
+                              ' and is returned as 0')]
+        assert self.echo('(int)NAN') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: NaN'
+                              ' is returned as 0')]

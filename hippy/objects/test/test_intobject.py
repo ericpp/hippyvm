@@ -1,4 +1,4 @@
-
+import sys
 from hippy.test.test_interpreter import BaseTestInterpreter
 
 
@@ -31,3 +31,11 @@ class TestIntObject(BaseTestInterpreter):
         assert self.echo('50 % -20') == '10'
         assert self.echo('(-50) % 20') == '-10'
         assert self.echo('(-50) % -20') == '-10'
+
+    def test_uplusplus(self):
+        output = self.run('$a = -189;\necho ++$a;')
+        assert self.space.is_w(output[0], self.space.newint(-188))
+        output = self.run('$a = %d;\necho ++$a;' % sys.maxint)
+        assert self.space.is_w(output[0], self.space.newfloat(sys.maxint+1))
+        output = self.run('$a = NULL;\necho ++$a;')
+        assert self.space.is_w(output[0], self.space.newint(1))

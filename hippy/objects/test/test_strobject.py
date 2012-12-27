@@ -102,6 +102,9 @@ class TestStrObject(BaseTestInterpreter):
         output = self.run('$a = "4.5"; echo --$a;')
         assert self.space.is_w(output[0], self.space.newfloat(3.5))
 
+        output = self.run('$a = NULL; echo --$a;')
+        assert self.space.is_w(output[0], self.space.w_Null)
+
     def test_is_true(self):
         output = self.run('if("") echo "yes"; else echo "no";')
         assert self.space.is_w(output[0], self.space.newstrconst("no"))

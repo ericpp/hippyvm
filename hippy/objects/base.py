@@ -64,7 +64,7 @@ class W_Root(object):
         raise InterpreterError("unsupport uplusplus")
 
     def uminusminus(self, space):
-        raise InterpreterError("unsupport uminusminus")
+        return self    # by default, does nothing
 
     def itemreference(self, space, w_item):
         raise InterpreterError("unsupported itemreference")

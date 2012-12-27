@@ -22,3 +22,6 @@ class W_NullObject(W_Root):
 
     def abs(self, space):
         return 0
+
+    def uplusplus(self, space):
+        return space.newint(1)

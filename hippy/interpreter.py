@@ -165,7 +165,7 @@ class Interpreter(object):
         try:
             return self.functions[name.lower()]
         except KeyError:
-            self.logger.fatal(self, "undefined function %s" % name)
+            self.logger.fatal(self, "undefined function: %s()" % name)
 
     def run_main(self, space, bytecode):
         frame = Frame(space, bytecode)

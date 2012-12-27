@@ -4,11 +4,13 @@ from pypy.rlib import jit
 from hippy.error import InterpreterError
 from hippy.objects.base import W_Root
 from hippy.objects.arrayobject import W_ArrayObject
+from hippy.objects.reference import W_Reference
 from pypy.rlib.rstring import StringBuilder
 from pypy.rlib.streamio import open_file_as_stream
 
 class BuiltinFunctionBuilder(object):
-    def __init__(self, signature, functocall):
+    def __init__(self, builtin_function, signature, functocall):
+        self.builtin_function = builtin_function
         self.signature = signature
         self.functocall = functocall
         self.input_i = 0
@@ -40,15 +42,30 @@ class BuiltinFunctionBuilder(object):
         return ['    return orig_func(%s)' % allargs]
 
     def _value_arg(self, i, convertion):
+        assert not self.builtin_function.argument_is_byref(self.input_i)
         self.input_i += 1
         lines = ['    w_arg = frame.peek_nth(nb_args - %d)' % (self.input_i,),
                  '    arg%d = %s' % (i, convertion)]
         return lines
 
     def _value_args_w(self, i):
+        for j in range(7):
+            assert not self.builtin_function.argument_is_byref(self.input_i+j)
         self.length_at_least = self.input_i
         self.input_i += 1
         lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +
+                 'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
+        self.input_i = None    # all arguments consumed
+        return lines
+
+    def _argrefs_w(self, i):
+        raise NotImplementedError("re-enable if necessary: argrefs_w")
+        for j in range(7):
+            assert self.builtin_function.argument_is_byref(self.input_i+j)
+        self.length_at_least = self.input_i
+        self.input_i += 1
+        lines = ['    arg%d = [check_reference(space, frame.peek_nth(i)) '
+                         % (i,) +
                  'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
         self.input_i = None    # all arguments consumed
         return lines
@@ -60,8 +77,6 @@ class BuiltinFunctionBuilder(object):
             return self._value_arg(i, 'space.is_true(w_arg)')
         elif tp == 'args_w':
             return self._value_args_w(i)
-        elif tp == 'args_w_unwrapped':
-            return ['    XXX_args_w_unwrapped']
         elif tp == 'frame':
             return ['    arg%d = frame' % i]
         elif tp is float:
@@ -72,8 +87,8 @@ class BuiltinFunctionBuilder(object):
             return ['    arg%d = space' % i]
         elif tp is W_Root:
             return self._value_arg(i, 'w_arg')
-        elif tp == 'unwrapped':
-            return ['    XXX_unwrapped']
+        elif tp == 'argrefs_w':
+            return self._argrefs_w(i)
         else:
             raise Exception("Unknown signature %r" % tp)
 
@@ -94,27 +109,14 @@ def warn_at_least(space, funcname, expected_nb_args, got_nb_args):
     return warn_bad_nb_args(space, funcname, "at least",
                             expected_nb_args, got_nb_args)
 
-def create_function(signature, functocall, error):
-    builder = BuiltinFunctionBuilder(signature, functocall)
-    lines = []
-    for i, tp in enumerate(signature):
-        lines.extend(builder.lines_for_arg(i, tp))
-    lines = builder.header(error) + lines + builder.footer()
-    source = '\n'.join(lines)
-    d = {'orig_func': functocall,
-         'warn_exactly': warn_exactly,
-         'warn_at_least': warn_at_least,
-         'unroll_safe': jit.unroll_safe}
-    try:
-        exec py.code.Source(source).compile() in d
-    except:
-        print source
-        raise
-    return d[functocall.func_name]
+def check_reference(space, w_ref):
+    if not isinstance(w_ref, W_Reference):
+        raise ArgumentError("Arguments must be references")
+    return w_ref
 
 class ArgumentError(InterpreterError):
     """ An exception raised when function is called with a wrong
-    number of args
+    number or type of args
     """
 
 class AbstractFunction(W_Root):
@@ -129,17 +131,44 @@ class BuiltinFunction(AbstractFunction):
     _immutable_fields_ = ['run']
 
     def __init__(self, signature, functocall, error):
-        self.run = create_function(signature, functocall, error)
+        self.run = self.create_function(signature, functocall, error)
+
+    def create_function(self, signature, functocall, error):
+        builder = BuiltinFunctionBuilder(self, signature, functocall)
+        lines = []
+        for i, tp in enumerate(signature):
+            lines.extend(builder.lines_for_arg(i, tp))
+        lines = builder.header(error) + lines + builder.footer()
+        source = '\n'.join(lines)
+        d = {'orig_func': functocall,
+             'warn_exactly': warn_exactly,
+             'warn_at_least': warn_at_least,
+             'check_reference': check_reference,
+             'unroll_safe': jit.unroll_safe}
+        try:
+            exec py.code.Source(source).compile() in d
+        except:
+            print source
+            raise
+        return d[functocall.func_name]
 
     def argument_is_byref(self, i):
-        return False    # XXX
+        return False
 
     def prepare_argument(self, space, i, w_argument):
-        # XXX assume arguments are all by value
+        # This class assumes that arguments are all by value
         return w_argument.deref()
 
     def call(self, space, parent_frame, nb_args):
         return self.run(space, parent_frame, nb_args)
+
+##class BuiltinFunctionByRef(BuiltinFunction):
+##    # This is for builtin functions that take all arguments by reference
+##    def argument_is_byref(self, i):
+##        return True
+
+##    def prepare_argument(self, space, i, w_argument):
+##        return w_argument
 
 BUILTIN_FUNCTIONS = []
 
@@ -205,29 +234,9 @@ def max(space, args_w):
         return space.w_Null
     return args_w[cur_max_i]
 
-@wrap(['space', 'frame', 'args_w_unwrapped'])
-@jit.unroll_safe
-def unset(space, frame, args_w):
-    to_clean = []
-    for w_arg in args_w:
-        if isinstance(w_arg, W_BaseContainerReference):
-            if w_arg.isset(space):
-                to_clean.append(w_arg)
-            continue
-        frame.store_var(space, w_arg, space.w_Null)
-    for w_arg in to_clean:
-        frame.store_var(space, w_arg, space.w_Null)
-    return space.w_Null
-
-@wrap(['space', 'unwrapped'])
+@wrap(['space', W_Root])
 def isset(space, w_obj):
-    # optimization - be careful about forcing non-existing elements
-    # from an array
-    if isinstance(w_obj, W_BaseContainerReference):
-        if not w_obj.isset(space):
-            return space.w_False
-        return space.wrap(w_obj.deref() is not space.w_Null)
-    return space.wrap(w_obj.deref() is not space.w_Null)
+    return space.newbool(w_obj is not space.w_Null)
 
 @wrap(['space', str, 'args_w'], error='False')
 def printf(space, format, args_w):

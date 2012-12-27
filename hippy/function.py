@@ -1,5 +1,5 @@
 
-from hippy.builtin import AbstractFunction, ArgumentError
+from hippy.builtin import AbstractFunction
 from hippy.interpreter import Frame
 from hippy import consts
 from hippy.objects.reference import W_Reference

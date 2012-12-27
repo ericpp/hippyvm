@@ -106,6 +106,13 @@ class W_ArrayObject(W_Root):
         else:
             return self._setitem_str(as_str, w_ref, True)
 
+    def unsetitem(self, space, w_arg):
+        as_int, as_str = self._getindex(space, w_arg)
+        if as_str is None:
+            return self._unsetitem_int(as_int)
+        else:
+            return self._unsetitem_str(as_str)
+
     def isset_index(self, space, w_index):
         as_int, as_str = self._getindex(space, w_index)
         if as_str is None:
@@ -127,6 +134,12 @@ class W_ArrayObject(W_Root):
         raise NotImplementedError("abstract")
 
     def _setitem_str(self, key, w_value, as_ref):
+        raise NotImplementedError("abstract")
+
+    def _unsetitem_int(self, index):
+        raise NotImplementedError("abstract")
+
+    def _unsetitem_str(self, key):
         raise NotImplementedError("abstract")
 
     def _isset_int(self, index):
@@ -242,6 +255,26 @@ class W_ListArrayObject(W_ArrayObject):
         d[key] = w_value
         return W_RDictArrayObject(self.space, d)
 
+    def _unsetitem_int(self, index):
+        if index < 0 or index >= self.arraylen():
+            return self
+        if index == self.arraylen() - 1:
+            res = self.as_unique_arraylist()
+            del res.lst_w[index]
+            return res
+        else:
+            d = self.as_rdict()   # make a fresh dictionary
+            del d[str(index)]
+            return W_RDictArrayObject(self.space, d)
+
+    def _unsetitem_str(self, key):
+        try:
+            i = try_convert_str_to_int(key)
+        except ValueError:
+            return self     # str key, so not in the array at all
+        else:
+            return self._unsetitem_int(i)
+
     def _isset_int(self, index):
         return 0 <= index < self.arraylen()
 
@@ -303,6 +336,16 @@ class W_RDictArrayObject(W_ArrayObject):
             w_old.w_value = w_value
         else:
             dct_w[key] = w_value
+        return res
+
+    def _unsetitem_int(self, index):
+        return self._unsetitem_str(str(index))
+
+    def _unsetitem_str(self, key):
+        if key not in self.dct_w:
+            return self
+        res = self.as_unique_arraydict()
+        del res.dct_w[key]
         return res
 
     def _isset_int(self, index):

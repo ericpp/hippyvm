@@ -7,7 +7,7 @@ from hippy.sourceparser import Block, Stmt, Assignment, ConstantInt,\
      GetItem, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
-     UninitializedVariable, Break, Continue
+     UninitializedVariable, Break, Continue, Unset
 from rply import ParsingError
 
 def parse(source):
@@ -746,3 +746,10 @@ class TestParser(object):
     def test_uppercase_1E50(self):
         r = parse('1E50')
         assert r == Block([Stmt(ConstantFloat(1E50))])
+
+    def test_unset(self):
+        r = parse('unset($x, $y[$z]);')
+        assert r == Block([Unset(
+            [Variable(ConstantStr("x")),
+             GetItem(Variable(ConstantStr("y")),
+                     Variable(ConstantStr("z")))])])

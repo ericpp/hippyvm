@@ -167,6 +167,9 @@ class ObjSpace(object):
     def setitem_ref(self, w_obj, w_item, w_ref):
         return w_obj.deref().setitem_ref(self, w_item.deref(), w_ref)
 
+    def unsetitem(self, w_obj, w_item):
+        return w_obj.deref().unsetitem(self, w_item.deref())
+
     def concat(self, w_left, w_right):
         return self.as_string(w_left).strconcat(self, self.as_string(w_right))
 

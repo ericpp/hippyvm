@@ -342,6 +342,16 @@ class GetItem(Node):
         return 'GetItem(%s, %s)' % (self.node.repr(), self.item.repr())
 
 
+class Unset(Node):
+    def __init__(self, nodes, lineno=0):
+        self.nodes = nodes
+        self.lineno = lineno
+
+
+    def repr(self):
+        return 'Unset([%s])' % ', '.join([node.repr() for node in self.nodes])
+
+
 class Hash(Node):
     def __init__(self, initializers, lineno=0):
         self.initializers = initializers
@@ -728,10 +738,7 @@ class SourceParser(object):
     @pg.production("unticked_statement : T_UNSET "
                    "( unset_variables ) ;")
     def unticked_statement_t_unset_variables(self, p):
-        # unset() is a special function, but should still be called
-        # within a Stmt(SimpleCall(..)) to get a DISCARD_TOP after CALL
-        sc = SimpleCall(p[0].getstr(), p[2], lineno=p[0].getsourcepos())
-        return Stmt(sc, lineno=p[0].getsourcepos())
+        return Unset(p[2], lineno=p[0].getsourcepos())
 
     @pg.production("unset_variables : unset_variables , unset_variable")
     def unset_vars_unset_vars_unset_var(self, p):

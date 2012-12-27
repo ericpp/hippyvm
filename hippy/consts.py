@@ -80,6 +80,8 @@ BYTECODES = [
     ('CAST_ARRAY', 0, 0),
     ('CAST_INT', 0, 0),
     ('CAST_FLOAT', 0, 0),
+    ('UNSET', 1, 0),
+    ('UNSETITEM', 1, 0),
 ]
 
 BYTECODE_NUM_ARGS = []

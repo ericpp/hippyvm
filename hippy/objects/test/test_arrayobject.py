@@ -92,3 +92,33 @@ class TestArrayObject(BaseTestInterpreter):
         w_array = space.setitem(w_array, space.newstr("0"), w_y)
         assert w_array.as_dict() == {"0": w_y}
         assert not w_array._has_string_keys
+
+    def test_unsetitem(self):
+        space = self.space
+        for w_0, w_2 in [(space.newint(0), space.newint(2)),
+                         (space.newstr("0"), space.newstr("2"))]:
+            w_x = space.newstr("x")
+            w_y = space.newstr("y")
+            w_z = space.newstr("z")
+            w_array = space.new_array_from_list([w_x, w_y, w_z])
+            w_array = space.unsetitem(w_array, w_2)
+            assert w_array.as_dict() == {"0": w_x, "1": w_y}
+            assert not w_array._has_string_keys
+            w_array = space.unsetitem(w_array, w_2)
+            assert w_array.as_dict() == {"0": w_x, "1": w_y}
+            assert not w_array._has_string_keys
+            w_array = space.unsetitem(w_array, w_0)
+            assert w_array.as_dict() == {"1": w_y}
+            assert w_array._has_string_keys   # for now
+
+    def test_unsetitem_hash(self):
+        space = self.space
+        w_x = space.newstr("x")
+        w_y = space.newstr("y")
+        w_array = space.new_array_from_dict({"foo": w_x, "42": w_y})
+        w_array = space.unsetitem(w_array, space.newint(42))
+        assert w_array.as_dict() == {"foo": w_x}
+        w_array = space.unsetitem(w_array, space.newstr("bar"))
+        assert w_array.as_dict() == {"foo": w_x}
+        w_array = space.unsetitem(w_array, space.newstr("foo"))
+        assert w_array.as_dict() == {}

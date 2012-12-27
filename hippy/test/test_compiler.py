@@ -1118,15 +1118,20 @@ class TestCompiler(object):
         RETURN
         """)
 
-    def test_call_unset_stmt(self):
-        self.check_compile("unset($a, $c);", """
-        LOAD_NAME 0
-        GETFUNC
-        LOAD_REF 0
-        ARG 0
-        LOAD_REF 1
-        ARG 1
-        CALL 2
+    def test_unset(self):
+        self.check_compile("unset($a, $b[5][6][7]);", """
+        UNSET 0
+        LOAD_CONST 0      # [ 5 ]
+        LOAD_CONST 1      # [ 5, 6 ]
+        LOAD_CONST 2      # [ 5, 6, 7 ]
+        LOAD_NONE         # [ 5, 6, 7, None ]
+        LOAD_REF 1        # [ 5, 6, 7, None, Ref$b ]
+        FETCHITEM 4       # [ 5, 6, 7, None, Ref$b, Array$b[5] ]
+        FETCHITEM 4       # [ 5, 6, 7, None, Ref$b, Array$b[5], Array$b[5][6] ]
+        UNSETITEM 4       # [ 5, 6,NA1,None, Ref$b, Array$b[5], Array$b[5][6] ]
+        STOREITEM 4       # [ 5, NA2, NA1, None, Ref$b, Array$b[5] ]
+        STOREITEM 4       # [ NA3, NA2, NA1, None, Ref$b ]
+        STORE 4           # [ None ]         # "NA" = "NewArray"
         DISCARD_TOP
         LOAD_NULL
         RETURN

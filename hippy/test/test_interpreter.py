@@ -1650,3 +1650,75 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.int_w(i) for i in output] == [
             10, 20, 42, 42, 42, 42, 42]
+
+    def test_unset_1(self):
+        output = self.run('''
+        $x1 = 42;
+        $x2 = &$x1;
+        unset($x1);
+        echo gettype($x1);
+        echo gettype($x2);
+        foreach($GLOBALS as $key=>$value) {
+            echo $key;
+        }
+        ''')
+        assert self.space.str_w(output[0]) == 'NULL'
+        assert self.space.str_w(output[1]) == 'integer'
+        assert 'x1' not in [self.space.str_w(i) for i in output]
+        assert 'x2' in [self.space.str_w(i) for i in output]
+
+    def test_unset_2(self):
+        output = self.run('''
+        function destroy_bar() {
+            global $bar;
+            unset($bar);
+        }
+        $bar = "baz";
+        destroy_bar();
+        echo $bar;
+        ''')
+        assert self.space.str_w(output[0]) == 'baz'
+
+    def test_unset_3(self):
+        output = self.run('''
+        function destroy_bar() {
+            unset($GLOBALS['bar']);
+        }
+        $bar = "baz";
+        destroy_bar();
+        echo gettype($bar);
+        ''')
+        assert self.space.str_w(output[0]) == 'NULL'
+
+    def test_unset_4(self):
+        output = self.run('''
+        function foo(&$bar) {
+            unset($bar);
+            echo gettype($bar);
+            $bar = "othervalue";
+            echo $bar;
+        }
+        $bar = "baz";
+        foo($bar);
+        echo $bar;
+        ''')
+        assert self.space.str_w(output[0]) == 'NULL'
+        assert self.space.str_w(output[1]) == 'othervalue'
+        assert self.space.str_w(output[2]) == 'baz'
+
+    def test_unset_5(self):
+        output = self.run('''
+        function foo() {
+            static $bar;
+            $bar++;
+            echo $bar;
+            unset($bar);
+            $bar = 23;
+            echo $bar;
+        }
+        foo();
+        foo();
+        foo();
+        ''')
+        assert [self.space.int_w(i) for i in output] == [
+            1, 23, 2, 23, 3, 23]

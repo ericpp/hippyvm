@@ -33,6 +33,9 @@ class RDict(object):
     def __setitem__(self, item, value):
         self.d[self._key(item)] = value
 
+    def __delitem__(self, item):
+        del self.d[item]   # xxx?  what about iterators
+
     def __len__(self):
         return len(self.d)
 

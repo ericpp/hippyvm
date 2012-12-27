@@ -6,7 +6,7 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
      UninitializedVariable, InitializedVariable, DefaultArgument, Node,\
-     LiteralBlock
+     LiteralBlock, Unset
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
@@ -451,6 +451,11 @@ class __extend__(InplaceOp):
         ctx.emit(consts.POP_AND_POKE_NTH, depth + 1)
         self.var.compile_assignment_store(ctx, depth)
 
+class __extend__(Unset):
+    def compile(self, ctx):
+        for node in self.nodes:
+            node.compile_unset(ctx)
+
 class __extend__(Reference):
     def compile_generic_assignment(self, ctx):
         self.item.compile_generic_assignment_ref(ctx)
@@ -536,6 +541,13 @@ class __extend__(Variable):
         node = self.node
         if isinstance(node, ConstantStr):
             ctx.emit(consts.STORE_FAST_REF, ctx.create_var_name(node.strval))
+            return # fast path
+        raise NotImplementedError
+
+    def compile_unset(self, ctx):
+        node = self.node
+        if isinstance(node, ConstantStr):
+            ctx.emit(consts.UNSET, ctx.create_var_name(node.strval))
             return # fast path
         raise NotImplementedError
 
@@ -662,6 +674,14 @@ class __extend__(GetItem):
         self.compile_assignment_fetch(ctx, depth)
         ctx.emit(consts.MAKE_REF, depth + 1)
         self.compile_assignment_store_ref(ctx, depth)
+
+    def compile_unset(self, ctx):
+        depth = self.compile_assignment_prepare(ctx)
+        ctx.emit(consts.LOAD_NONE)
+        self.node.compile_assignment_fetch(ctx, depth)
+        ctx.emit(consts.UNSETITEM, depth + 1)
+        self.node.compile_assignment_store(ctx, depth)
+        ctx.emit(consts.DISCARD_TOP)
 
 class __extend__(Append):
     # note: this is a subclass of GetItem, so inherits all methods not

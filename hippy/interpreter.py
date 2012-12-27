@@ -152,6 +152,12 @@ class Interpreter(object):
     def update_global(self, space, name, w_ref):
         self.globals[name] = w_ref
 
+    def unset_global(self, space, name):
+        try:
+            del self.globals[name]
+        except KeyError:
+            pass
+
     @jit.elidable
     def lookup_constant(self, name):
         try:
@@ -333,6 +339,12 @@ class Interpreter(object):
             self.update_global(space, bytecode.varnames[arg], w_ref)
         return pc
 
+    def UNSET(self, bytecode, frame, space, arg, arg2, pc):
+        frame.store_fast_ref(arg, W_Reference(space.w_Null))
+        if frame.is_global_level:
+            self.unset_global(space, bytecode.varnames[arg])
+        return pc
+
     @jit.unroll_safe
     def ECHO(self, bytecode, frame, space, arg, arg2, pc):
         # reverse the args
@@ -473,6 +485,13 @@ class Interpreter(object):
         w_item = frame.peek_nth(arg)
         w_obj = frame.peek()
         w_newobj = space.setitem_ref(w_obj, w_item, w_ref)
+        frame.poke_nth(arg, w_newobj)
+        return pc
+
+    def UNSETITEM(self, bytecode, frame, space, arg, arg2, pc):
+        w_item = frame.peek_nth(arg)
+        w_obj = frame.peek()
+        w_newobj = space.unsetitem(w_obj, w_item)
         frame.poke_nth(arg, w_newobj)
         return pc
 

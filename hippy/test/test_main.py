@@ -57,7 +57,7 @@ class TestMain(object):
         assert re.match('In function <main>, file .*test_traceback.php, '
                         'line 3', errlines[0])
         assert re.match(' *f\(\); *', errlines[1])
-        assert errlines[2] == 'FATAL undefined function f'
+        assert errlines[2] == 'FATAL undefined function: f()'
 
     def test_multiple_blocks(self, capfd):
         out = self.run(

@@ -6,7 +6,7 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
      UninitializedVariable, InitializedVariable, DefaultArgument, Node,\
-     LiteralBlock, Unset
+     LiteralBlock, Unset, Print
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
@@ -295,6 +295,13 @@ class __extend__(Echo):
         for expr in self.exprlist:
             expr.compile_deref(ctx)
         ctx.emit(consts.ECHO, len(self.exprlist))
+
+class __extend__(Print):
+    def compile(self, ctx):
+        ctx.set_lineno(self.lineno)
+        self.expr.compile_deref(ctx)
+        ctx.emit(consts.ECHO, 1)
+        ctx.emit(consts.LOAD_CONST, ctx.create_int_const(1))
 
 class __extend__(Assignment):
     def compile(self, ctx):

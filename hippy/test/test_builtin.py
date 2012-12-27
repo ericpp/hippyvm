@@ -189,11 +189,17 @@ class TestBuiltin(BaseTestInterpreter):
             'o', 'oba', 'obar', 'a', 'ar', 'fo', '', 'oba', '', '', '', '',
             '', '', '', '', '', 'foobar', 'foobar', '', '', '']
 
-    def test_print(self):
+    def test_bare_print(self):
         output = self.run('''
         print("xyz");
         ''')
         assert self.space.str_w(output[0]) == 'xyz'
+        #
+        output = self.run('''
+        echo print("xyz");
+        ''')
+        assert self.space.str_w(output[0]) == 'xyz'
+        assert self.space.int_w(output[1]) == 1
 
     def test_empty(self):
         output = self.run('''

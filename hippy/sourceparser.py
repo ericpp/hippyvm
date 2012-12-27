@@ -202,6 +202,15 @@ class Echo(Node):
         return "Echo(%s)" % ", ".join([i.repr() for i in self.exprlist])
 
 
+class Print(Node):
+    def __init__(self, expr, lineno=0):
+        self.expr = expr
+        self.lineno = lineno
+
+    def repr(self):
+        return "Print(%s)" % (self.expr.repr(),)
+
+
 class Return(Stmt):
 
     def repr(self):
@@ -915,7 +924,7 @@ class SourceParser(object):
 
     @pg.production("expr : T_PRINT expr")
     def expr_t_print_expr(self, p):
-        return Echo([p[1]], lineno=p[0].getsourcepos())
+        return Print(p[1], lineno=p[0].getsourcepos())
 
     @pg.production("scalar : T_STRING_VARNAME")
     def scalar_t_string_varname(self, p):

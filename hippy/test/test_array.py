@@ -307,8 +307,6 @@ class TestArray(BaseTestInterpreter):
         assert [self.space.str_w(i) for i in output] == ["a", "b"]
 
     def test_reference_to_arrayitem(self):
-        py.test.skip("XXX FIXME")
-
         output = self.run('''
         function f(&$a) {
           $a = 3;
@@ -411,21 +409,7 @@ class TestArray(BaseTestInterpreter):
         assert self.space.str_w(output[1]) == "marry"
         assert self.space.str_w(output[2]) == "had"
 
-    def test_iterator_cleans(self):
-        output = self.run('''
-        $a = array(1, 2, 3);
-        foreach ($a as $x) {
-           $x;
-        }
-        echo $a;
-        ''')
-        w_arr = output[0]
-        cp = w_arr.strategy.unerase(w_arr.storage)
-        assert cp.next_link is None
-
     def test_array_elem(self):
-        py.test.skip("XXX FIXME")
-
         output = self.run('''
         $x = 3;
         $y = &$x;

@@ -24,15 +24,14 @@ def is_int(s):
 
 @wrap(['space', W_Root, W_Root])
 def array_fill_keys(space, w_arr, w_value):
-    w_res = space.new_array_from_pairs([])
+    pairs = []
     with space.iter(w_arr) as w_arrayiter:
         while not w_arrayiter.done():
             # fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
             #                                  w_arrayiter=w_arrayiter)
             w_item = w_arrayiter.next(space)
-            space.setitem(w_res, w_item, w_value)
-
-    return w_res
+            pairs.append((w_item, w_value))
+    return space.new_array_from_pairs(pairs)
 
 
 @wrap(['space', W_Root, W_Root, W_Root])

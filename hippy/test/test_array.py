@@ -3,12 +3,6 @@ import py
 from hippy.test.test_interpreter import BaseTestInterpreter
 from hippy.objspace import ObjSpace
 
-def done(space, w_iter):
-    return py.test.raises(StopIteration, w_iter.next, space)
-
-def done2(space, w_iter):
-    return py.test.raises(StopIteration, w_iter.next_item, space)
-
 
 class TestArrayDirect(object):
     def create_array_strats(self, space):
@@ -35,26 +29,27 @@ class TestArrayDirect(object):
         w_iter = int_arr.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 1
         assert space.int_w(w_iter.next(space)) == 2
-        assert done(space, w_iter)
+        assert w_iter.done()
         w_iter = float_arr.create_iter(space)
         assert space.float_w(w_iter.next(space)) == 1.2
+        assert not w_iter.done()
         assert space.float_w(w_iter.next(space)) == 2.2
-        assert done(space, w_iter)
+        assert w_iter.done()
         w_iter = mix_arr.create_iter(space)
         assert space.float_w(w_iter.next(space)) == 1.2
         assert space.str_w(w_iter.next(space)) == "x"
-        assert done(space, w_iter)
-        assert done(space, empty.create_iter(space))
+        assert w_iter.done()
+        assert empty.create_iter(space).done()
         w_iter = hash.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 1
         assert space.int_w(w_iter.next(space)) == 2
         assert space.int_w(w_iter.next(space)) == 3
         assert space.int_w(w_iter.next(space)) == 4
-        assert done(space, w_iter)
+        assert w_iter.done()
         w_iter = cp_arr.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 1
         assert space.int_w(w_iter.next(space)) == 2
-        assert done(space, w_iter)
+        assert w_iter.done()
 
     def test_item_iterators(self):
         space = ObjSpace()
@@ -63,27 +58,28 @@ class TestArrayDirect(object):
                  self.create_array_strats(space)
         w_iter = int_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1]
+        assert not w_iter.done()
         assert unpack(space, w_iter.next_item(space)) == [1, 2]
-        assert done2(space, w_iter)
+        assert w_iter.done()
         w_iter = float_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1.2]
         assert unpack(space, w_iter.next_item(space)) == [1, 2.2]
-        assert done2(space, w_iter)
+        assert w_iter.done()
         w_iter = mix_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1.2]
         assert unpack(space, w_iter.next_item(space)) == [1, "x"]
-        assert done2(space, w_iter)
-        assert done2(space, empty.create_iter(space))
+        assert w_iter.done()
+        assert empty.create_iter(space).done()
         w_iter = hash.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == ['xyz', 1]
         assert unpack(space, w_iter.next_item(space)) == ['a', 2]
         assert unpack(space, w_iter.next_item(space)) == ['b', 3]
         assert unpack(space, w_iter.next_item(space)) == ['c', 4]
-        assert done2(space, w_iter)
+        assert w_iter.done()
         w_iter = cp_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1]
         assert unpack(space, w_iter.next_item(space)) == [1, 2]
-        assert done2(space, w_iter)
+        assert w_iter.done()
 
     def test_isset_index(self):
         space = ObjSpace()
@@ -138,11 +134,11 @@ class TestArrayDirect(object):
         w_iter = w_arr.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 0
         assert space.int_w(w_iter.next(space)) == 12
-        assert done(space, w_iter)
+        assert w_iter.done()
         w_iter = w_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == ["a", 0]
         assert unpack(space, w_iter.next_item(space)) == ["b", 12]
-        assert done2(space, w_iter)
+        assert w_iter.done()
 
     def unpack(self, space, (w_key, w_obj)):
         if w_key.tp == space.tp_int:

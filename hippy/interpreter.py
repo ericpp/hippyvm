@@ -598,23 +598,20 @@ class Interpreter(object):
     def NEXT_VALUE_ITER(self, bytecode, frame, space, arg, arg2, pc):
         w_iter = frame.peek()
         assert isinstance(w_iter, W_BaseArrayIterator)
-        try:
-            w_value = w_iter.next(space)
-        except StopIteration:
+        if w_iter.done():
             frame.pop()
             return arg
+        w_value = w_iter.next(space)
         frame.push(w_value)
         return pc
 
     def NEXT_ITEM_ITER(self, bytecode, frame, space, arg, arg2, pc):
         w_iter = frame.peek()
         assert isinstance(w_iter, W_BaseArrayIterator)
-        try:
-            item_w = w_iter.next_item(space)
-        except StopIteration:
+        if w_iter.done():
             frame.pop()
             return arg
-        w_key, w_value = item_w
+        w_key, w_value = w_iter.next_item(space)
         frame.push(w_key)
         frame.push(w_value)
         return pc

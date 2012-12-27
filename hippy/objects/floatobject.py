@@ -1,4 +1,4 @@
-
+import sys
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
@@ -31,9 +31,10 @@ class W_FloatObject(W_Root):
 
     def int_w(self, space):
         if isnan(self.floatval):
+            result = -sys.maxint-1
             space.ec.hippy_warn("cast float to integer: NaN"
-                                " is returned as 0")
-            return 0
+                                " is returned as %d" % result)
+            return result
         try:
             result = intmask(int(self.floatval))
         except OverflowError:

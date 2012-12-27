@@ -1,4 +1,4 @@
-
+import sys
 from hippy.test.test_interpreter import BaseTestInterpreter
 
 
@@ -73,7 +73,8 @@ class TestFloatObject(BaseTestInterpreter):
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: value -inf overflows'
                               ' and is returned as 0')]
-        assert self.echo('(int)NAN') == '0'
+        f = -sys.maxint-1
+        assert self.echo('(int)NAN') == str(f)
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: NaN'
-                              ' is returned as 0')]
+                              ' is returned as %d' % f)]

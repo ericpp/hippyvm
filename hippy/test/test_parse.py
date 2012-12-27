@@ -8,7 +8,7 @@ from hippy.sourceparser import Block, Stmt, Assignment, ConstantInt,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
      UninitializedVariable, Break, Continue, Unset, Print
-from rply import ParsingError
+from hippy.sourceparser import ParsingError
 
 def parse(source):
     return sourceparser.parse(source, startlineno=0)

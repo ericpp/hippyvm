@@ -21,3 +21,6 @@ class W_Reference(W_Root):
             self._counter = W_Reference._COUNTER
             W_Reference._COUNTER += 1
         return '<Ref%d: %s>' % (self._counter, self.w_value)
+
+    def var_dump(self, space, indent, recursion):
+        self.w_value.var_dump(space, indent + '&', recursion)

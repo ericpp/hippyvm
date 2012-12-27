@@ -170,6 +170,8 @@ class W_ArrayObject(W_Root):
             return
         recursion[self] = None
         space.ec.writestr('%sarray(%d) {\n' % (indent, self.arraylen()))
+        if indent.endswith('&'):
+            indent = indent[:-1]
         subindent = indent + '  '
         with space.iter(self) as itr:
             while not itr.done():

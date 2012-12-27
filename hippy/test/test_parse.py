@@ -652,18 +652,11 @@ class TestParser(object):
         ''')
         assert r == Block([Stmt(ConstantInt(255, 1), 1)])
 
-    def test_hex2(self):
-        py.test.xfail("now we have overflow")
-        r = parse('''
-        0xff33ff33f23f;
-        ''')
-        assert r == Block([Stmt(ConstantInt(int('0xff33ff33f23f', 16)), 1)])
-
     def test_hex_overflow(self):
         r = parse('''
-        0xff33ff33f23f;
+        0xff33ff33f23f0123;
         ''')
-        assert r == Block([Stmt(ConstantFloat(280598790009407.0, 1), 1)])
+        assert r == Block([Stmt(ConstantFloat(18389322302056497443.0, 1), 1)])
 
     def test_exponent(self):
         r = parse('''

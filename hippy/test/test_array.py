@@ -3,6 +3,13 @@ import py
 from hippy.test.test_interpreter import BaseTestInterpreter
 from hippy.objspace import ObjSpace
 
+def done(space, w_iter):
+    return py.test.raises(StopIteration, w_iter.next, space)
+
+def done2(space, w_iter):
+    return py.test.raises(StopIteration, w_iter.next_item, space)
+
+
 class TestArrayDirect(object):
     def create_array_strats(self, space):
         # int, float, mix, empty, hash, copy
@@ -28,26 +35,26 @@ class TestArrayDirect(object):
         w_iter = int_arr.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 1
         assert space.int_w(w_iter.next(space)) == 2
-        assert w_iter.done()
+        assert done(space, w_iter)
         w_iter = float_arr.create_iter(space)
         assert space.float_w(w_iter.next(space)) == 1.2
         assert space.float_w(w_iter.next(space)) == 2.2
-        assert w_iter.done()
+        assert done(space, w_iter)
         w_iter = mix_arr.create_iter(space)
         assert space.float_w(w_iter.next(space)) == 1.2
         assert space.str_w(w_iter.next(space)) == "x"
-        assert w_iter.done()
-        assert empty.create_iter(space).done()
+        assert done(space, w_iter)
+        assert done(space, empty.create_iter(space))
         w_iter = hash.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 1
         assert space.int_w(w_iter.next(space)) == 2
         assert space.int_w(w_iter.next(space)) == 3
         assert space.int_w(w_iter.next(space)) == 4
-        assert w_iter.done()
+        assert done(space, w_iter)
         w_iter = cp_arr.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 1
         assert space.int_w(w_iter.next(space)) == 2
-        assert w_iter.done()
+        assert done(space, w_iter)
 
     def test_item_iterators(self):
         space = ObjSpace()
@@ -57,26 +64,26 @@ class TestArrayDirect(object):
         w_iter = int_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1]
         assert unpack(space, w_iter.next_item(space)) == [1, 2]
-        assert w_iter.done()
+        assert done2(space, w_iter)
         w_iter = float_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1.2]
         assert unpack(space, w_iter.next_item(space)) == [1, 2.2]
-        assert w_iter.done()
+        assert done2(space, w_iter)
         w_iter = mix_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1.2]
         assert unpack(space, w_iter.next_item(space)) == [1, "x"]
-        assert w_iter.done()
-        assert empty.create_iter(space).done()
+        assert done2(space, w_iter)
+        assert done2(space, empty.create_iter(space))
         w_iter = hash.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == ['xyz', 1]
         assert unpack(space, w_iter.next_item(space)) == ['a', 2]
         assert unpack(space, w_iter.next_item(space)) == ['b', 3]
         assert unpack(space, w_iter.next_item(space)) == ['c', 4]
-        assert w_iter.done()
+        assert done2(space, w_iter)
         w_iter = cp_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == [0, 1]
         assert unpack(space, w_iter.next_item(space)) == [1, 2]
-        assert w_iter.done()
+        assert done2(space, w_iter)
 
     def test_isset_index(self):
         space = ObjSpace()
@@ -131,17 +138,19 @@ class TestArrayDirect(object):
         w_iter = w_arr.create_iter(space)
         assert space.int_w(w_iter.next(space)) == 0
         assert space.int_w(w_iter.next(space)) == 12
-        assert w_iter.done()
+        assert done(space, w_iter)
         w_iter = w_arr.create_iter(space)
         assert unpack(space, w_iter.next_item(space)) == ["a", 0]
         assert unpack(space, w_iter.next_item(space)) == ["b", 12]
-        assert w_iter.done()
+        assert done2(space, w_iter)
 
-    def unpack(self, space, (key, w_obj)):
-        try:
-            key = int(key)
-        except ValueError:
-            pass
+    def unpack(self, space, (w_key, w_obj)):
+        if w_key.tp == space.tp_int:
+            key = space.int_w(w_key)
+        elif w_key.tp == space.tp_str:
+            key = space.str_w(w_key)
+        else:
+            raise AssertionError, w_key.tp
         if w_obj.tp == space.tp_str:
             value = space.str_w(w_obj)
         elif w_obj.tp == space.tp_float:

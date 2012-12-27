@@ -440,7 +440,7 @@ def _print_r(space, w_x, indent, recursion, builder):
                     key = space.str_w(w_key)
                     s = '\n%s    ["%s"] => ' % (indent, key)
                 builder.append(s)
-                _print_r(space, w_value, subindent, recursion, builder)
+                _print_r(space, w_value.deref(), subindent, recursion, builder)
         builder.append('\n%s)\n' % indent)
         del recursion[w_x]
     else:

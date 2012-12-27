@@ -326,14 +326,13 @@ def _pad_array(space, w_arr, pairs, idx):
     return idx
 
 
-@wrap(['space', W_Root, W_Root, W_Root])
-def array_pad(space, w_arr, w_size, w_value):
+@wrap(['space', W_Root, int, W_Root])
+def array_pad(space, w_arr, size, w_value):
     pairs = []
-    size = space.int_w(w_size)
     arr_len = space.arraylen(w_arr)
-    if arr_len - abs(size) >= 0:
-        return w_arr
     pad_size = abs(size) - arr_len
+    if pad_size <= 0:     # XXX size == -sys.maxint-1?
+        return w_arr
     if size > 0:
         idx = _pad_array(space, w_arr, pairs, 0)
         for i in range(pad_size):

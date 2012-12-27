@@ -32,9 +32,6 @@ class W_IntObject(W_Root):
     def int_w(self, space):
         return self.intval
 
-    def is_valid_number(self, space):
-        return True
-
     def as_number(self, space):
         return self
 

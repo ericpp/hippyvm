@@ -563,19 +563,29 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_array_pad(self):
         output = self.run('''
-        $b = array(1229600459=>'large', 1229604787=>20, 1229609459=>'red');
+        $b = array(1229600459=>'large', 1229604787=>20, 9609459=>'red');
         $b = array_pad($b, 5, 'foo');
-        echo $b[0];
-        echo $b[4];
-        $a= array('a'=> 'a', 'b'=>4, '0'=>'0');
-        $a = array_pad($a, -6, "x");
-        echo $a[0];
-        echo $a[3];
+        echo $b[0], $b[1], $b[2], $b[3], $b[4], count($b);
         ''')
         assert self.space.str_w(output[0]) == "large"
-        assert self.space.str_w(output[1]) == "foo"
+        assert self.space.int_w(output[1]) == 20
+        assert self.space.str_w(output[2]) == "red"
+        assert self.space.str_w(output[3]) == "foo"
+        assert self.space.str_w(output[4]) == "foo"
+        assert self.space.int_w(output[5]) == 5
+        #
+        output = self.run('''
+        $a = array('a'=> 'a', 'b'=>4, '0'=>'0');
+        $a = array_pad($a, -6, "x");
+        echo $a[0], $a[1], $a[2], $a['a'], $a['b'], $a[3], count($a);
+        ''')
+        assert self.space.str_w(output[0]) == "x"
+        assert self.space.str_w(output[1]) == "x"
         assert self.space.str_w(output[2]) == "x"
-        assert self.space.str_w(output[3]) == "0"
+        assert self.space.str_w(output[3]) == "a"
+        assert self.space.int_w(output[4]) == 4
+        assert self.space.str_w(output[5]) == "0"
+        assert self.space.int_w(output[6]) == 6
 
     def test_array_product(self):
         output = self.run('''

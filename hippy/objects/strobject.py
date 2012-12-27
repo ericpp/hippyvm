@@ -36,18 +36,6 @@ class W_StringObject(W_Root):
         w_number, valid = convert_string_to_number(space, s)
         return w_number      # ignore 'valid'
 
-    def is_valid_number(self, space):
-        # XXX we might want to write two implementations of this
-        s = self.str_w(space)
-        assert 0, "rewrite me"
-        if not len(s):
-            return False
-        if s[0] == '-':
-            if len(s) == 1:
-                return False
-            return s[1] >= '0' and s[1] <= '9'
-        return s[0] >= '0' and s[0] <= '9'
-
     def is_really_valid_number(self, space):
         s = self.str_w(space)
         w_number, valid = convert_string_to_number(space, s)

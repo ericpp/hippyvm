@@ -48,9 +48,6 @@ class W_Root(object):
     def as_number(self, space):
         raise InterpreterError("unsupported as_number")
 
-    def is_valid_number(self, space):
-        raise InterpreterError("unsupported is_valid_number")
-
     def as_string(self, space):
         raise InterpreterError("unsupported as_string")
 

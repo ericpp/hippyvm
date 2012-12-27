@@ -10,7 +10,7 @@ from hippy.objects.interpolate import W_StrInterpolation
 from hippy.objects.arrayiter import W_BaseArrayIterator
 from hippy.objects.arrayobject import new_rdict
 from pypy.rlib.objectmodel import we_are_translated
-from pypy.rlib import jit
+from pypy.rlib import jit, rfloat
 from pypy.rlib.unroll import unrolling_iterable
 
 import hippy.array_funcs     # side-effect of registering functions
@@ -137,6 +137,8 @@ class Interpreter(object):
         self.constants['true'] = space.w_True
         self.constants['false'] = space.w_False
         self.constants['null'] = space.w_Null
+        self.constants['inf'] = space.newfloat(rfloat.INFINITY)
+        self.constants['nan'] = space.newfloat(rfloat.NAN)
 
     def setup_globals(self, space):
         self.globals['GLOBALS'] = self.w_globals_ref

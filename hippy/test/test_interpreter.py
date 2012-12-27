@@ -1770,3 +1770,13 @@ class TestInterpreter(BaseTestInterpreter):
         echo gettype($v);
         ''')
         assert self.space.str_w(output[0]) == 'NULL'
+
+    def test_float_constants(self):
+        output = self.run('''
+        echo INF;
+        echo -INF;
+        echo NAN;
+        echo INF-INF;
+        ''')
+        assert [self.space.str_w(i) for i in output] == ['inf', '-inf',
+                                                         'nan', 'nan']

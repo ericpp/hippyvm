@@ -333,28 +333,26 @@ def count(space, w_arr):
         return space.wrap(int(space.is_true(w_arr))) # apparently
     return space.wrap(space.arraylen(w_arr))
 
-@wrap(['space', 'args_w'])
-def substr(space, args_w):
-    if len(args_w) < 2 or len(args_w) > 3:
-        raise InterpreterError("incorrect number of args")
-    w_s = space.as_string(args_w[0])
-    start = space.int_w(space.as_number(args_w[1]))
-    lgt = w_s.strlen()
-    if start < 0:
-        start = lgt + start
-    if len(args_w) == 3:
-        stop = space.int_w(space.as_number(args_w[2]))
-        if stop < 0:
-            stop = lgt + stop
-        else:
-            stop += start
+@wrap(['space', str, int, 'args_w'])
+def substr(space, string, start, args_w):
+    if len(args_w) > 0:
+        if len(args_w) > 1:
+            return warn_bad_nb_args(space, 'substr', 'at most', 3,
+                                    2 + len(args_w))
+        length = space.int_w(args_w[0])
     else:
-        stop = lgt
-    if start < 0 or stop < 0 or start > lgt:
-        raise InterpreterError("wrong start")
-    if stop <= start:
-        return space.newstrconst("")
-    return w_s.strslice(space, start, stop)
+        length = len(string)
+    if start < 0:
+        start += len(string)
+        if start < 0:
+            start = 0
+    elif start >= len(string):
+        return space.w_False
+    if length < 0:
+        length = len(string) + length - start
+        if length < 0:
+            return space.w_False
+    return space.newstr(string[start:start+length])
 
 @wrap(['space', W_Root], name='print')
 def print_(space, w_arg):

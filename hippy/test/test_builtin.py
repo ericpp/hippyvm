@@ -155,12 +155,39 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_substr(self):
         output = self.run('''
-        $a = "xyz";
-        echo substr($a, 0, 3), substr($a, 1), substr($a, -1, 1),
-             substr($a, 1, 1), substr($a, 1, -1), substr($a, 1, NULL);
+        $a = "foobar";
+        echo substr($a, -99);\necho substr($a, -3);
+        echo substr($a, -2);\necho substr($a, -1);
+        echo substr($a, 0);\necho substr($a, 1);
+        echo substr($a, 2);\necho substr($a, 3);
+        echo substr($a, 4);\necho substr($a, 99);
+        echo substr($a, 2.9);\necho substr($a, -2.9);
+        echo substr($a, INF);\necho substr($a, -INF);\necho substr($a, NAN);
+        echo substr($a, "4");\necho substr($a, "-2");
+        # 17
+        echo substr($a, 2, 1);\necho substr($a, 2, 3);\necho substr($a, 2, 9);
+        echo substr($a, -2, 1);\necho substr($a, -2, 3);
+        echo substr($a, -99, 2);
+        echo substr($a, 2, 0);\necho substr($a, 2, -1);
+        echo substr($a, 2, -4);
+        echo substr($a, 2, -5);\necho substr($a, 5, -1);
+        echo substr($a, 5, -2);
+        echo substr($a, 6, 0);\necho substr($a, 6, -1);\necho substr($a, 6, 1);
+        echo substr($a, 2, INF);\necho substr($a, 2, NAN);
+        echo substr($a, -55, 54);\necho substr($a, -55, 56);
+        echo substr($a, -55, NULL);\necho substr($a, 2, NULL);
+        echo substr($a, 6, NULL);
         ''')
-        assert [self.space.str_w(s) for s in output] == ["xyz", "yz", "z",
-                                                         "y", "y", ""]
+        s = self.space.tp_str
+        b = self.space.tp_bool
+        assert [w.tp for w in output] == [
+            s, s, s, s, s, s, s, s, s, b, s, s, s, s, s, s, s, s, s, s, s, s,
+            s, s, s, s, b, s, b, b, b, b, s, b, s, s, s, s, b]
+        assert [self.space.str_w(s) for s in output] == [
+            'foobar', 'bar', 'ar', 'r', 'foobar', 'oobar', 'obar', 'bar',
+            'ar', '', 'obar', 'ar', 'foobar', 'foobar', 'foobar', 'ar', 'ar',
+            'o', 'oba', 'obar', 'a', 'ar', 'fo', '', 'oba', '', '', '', '',
+            '', '', '', '', '', 'foobar', 'foobar', '', '', '']
 
     def test_print(self):
         output = self.run('''

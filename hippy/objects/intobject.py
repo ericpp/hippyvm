@@ -1,9 +1,12 @@
-
+import sys
 from pypy.rlib import jit
 from pypy.rlib.rarithmetic import ovfcheck
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
+
+SYS_MAXINT_PLUS_1  = float(sys.maxint+1)
+SYS_MININT_MINUS_1 = float(-sys.maxint-2)
 
 @jit.elidable
 def hash_int(v, l=[0]*20):
@@ -28,12 +31,6 @@ class W_IntObject(W_Root):
 
     def int_w(self, space):
         return self.intval
-
-    def is_valid_number(self, space):
-        return True
-
-    def copy(self, space):
-        return self # immutable object
 
     def as_number(self, space):
         return self
@@ -75,9 +72,6 @@ class W_IntObject(W_Root):
     def is_true(self, space):
         return self.intval != 0
 
-    def float_w(self, space):
-        return float(self.intval)
-
     def uplus(self, space):
         return self
 
@@ -85,16 +79,24 @@ class W_IntObject(W_Root):
         return space.newint(-self.intval)
 
     def uplusplus(self, space):
-        return space.newint(self.intval + 1)
+        try:
+            v = ovfcheck(self.intval + 1)
+        except OverflowError:
+            return space.newfloat(SYS_MAXINT_PLUS_1)
+        return space.newint(v)
 
     def uminusminus(self, space):
-        return space.newint(self.intval - 1)
+        try:
+            v = ovfcheck(self.intval - 1)
+        except OverflowError:
+            return space.newfloat(SYS_MININT_MINUS_1)
+        return space.newint(v)
 
     def eq_w(self, space, w_other):
         assert isinstance(w_other, W_IntObject)
         return self.intval == w_other.intval
 
-    def hash(self):
+    def hash(self, space):
         return hash_int(self.intval)
 
     def __repr__(self):

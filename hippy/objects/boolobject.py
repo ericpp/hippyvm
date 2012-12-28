@@ -7,9 +7,6 @@ class W_BoolObject(W_Root):
     def __init__(self, boolval):
         self.boolval = boolval
 
-    def copy(self, space):
-        return self # immutable object
-
     def is_true(self, space):
         return self.boolval
 
@@ -17,6 +14,16 @@ class W_BoolObject(W_Root):
         if self.boolval:
             return space.newstrconst('1')
         return space.newstrconst('')
+
+    def as_number(self, space):
+        return space.newint(int(self.boolval))
+
+    def int_w(self, space):
+        return int(self.boolval)
+
+    def eq_w(self, space, w_other):
+        assert isinstance(w_other, W_BoolObject)
+        return self is w_other
 
     def __repr__(self):
         return 'W_BoolObject(%s)' % self.boolval

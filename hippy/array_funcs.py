@@ -1,5 +1,6 @@
 from pypy.rlib import jit
 from hippy.objects.base import W_Root
+from hippy.objects.arrayobject import new_rdict
 from hippy.error import InterpreterError
 from builtin import wrap
 
@@ -24,15 +25,14 @@ def is_int(s):
 
 @wrap(['space', W_Root, W_Root])
 def array_fill_keys(space, w_arr, w_value):
-    w_res = space.new_array_from_pairs([])
+    pairs = []
     with space.iter(w_arr) as w_arrayiter:
         while not w_arrayiter.done():
             # fill_keys_driver.jit_merge_point(w_value=w_value, w_res=w_res,
             #                                  w_arrayiter=w_arrayiter)
             w_item = w_arrayiter.next(space)
-            space.setitem(w_res, w_item, w_value)
-
-    return w_res
+            pairs.append((w_item, w_value))
+    return space.new_array_from_pairs(pairs)
 
 
 @wrap(['space', W_Root, W_Root, W_Root])
@@ -287,7 +287,7 @@ def array_values(space, w_arr):
     idx = 0
     with space.iter(w_arr) as itr:
         while not itr.done():
-            _, w_val = itr.next_item(space)
+            w_val = itr.next(space)
             pairs.append((space.newint(idx), w_val))
             idx += 1
     return space.new_array_from_pairs(pairs)
@@ -295,23 +295,30 @@ def array_values(space, w_arr):
 
 @wrap(['space', W_Root])
 def array_count_values(space, w_arr):
-    res = space.new_array_from_pairs([])
+    dct_w = new_rdict()
     with space.iter(w_arr) as itr:
         while not itr.done():
-            _, w_val = itr.next_item(space)
+            w_val = itr.next(space).deref()
+            if not (w_val.tp == space.tp_int or w_val.tp == space.tp_str):
+                space.ec.warn("Warning: array_count_values(): Can only count "
+                              "STRING and INTEGER values!")
+                continue
+            key = space.str_w(w_val)
             try:
-                itm = space.getitem(res, w_val)
-                space.setitem(res, w_val, itm.uplusplus(space))
-            except InterpreterError:
-                space.setitem(res, w_val, space.newint(1))
-    return res
+                w_val = dct_w[key]
+            except KeyError:
+                nextval = 1
+            else:
+                nextval = space.int_w(w_val) + 1
+            dct_w[key] = space.newint(nextval)
+    return space.new_array_from_rdict(dct_w)
 
 
 def _pad_array(space, w_arr, pairs, idx):
     with space.iter(w_arr) as itr:
         while not itr.done():
             w_key, w_val = itr.next_item(space)
-            if not space.is_valid_number(w_key):
+            if w_key.tp != space.tp_int:
                 pairs.append((w_key, w_val))
             else:
                 pairs.append((space.newint(idx), w_val))
@@ -319,14 +326,13 @@ def _pad_array(space, w_arr, pairs, idx):
     return idx
 
 
-@wrap(['space', W_Root, W_Root, W_Root])
-def array_pad(space, w_arr, w_size, w_value):
+@wrap(['space', W_Root, int, W_Root])
+def array_pad(space, w_arr, size, w_value):
     pairs = []
-    size = space.int_w(w_size)
     arr_len = space.arraylen(w_arr)
-    if arr_len - abs(size) >= 0:
-        return w_arr
     pad_size = abs(size) - arr_len
+    if pad_size <= 0:     # XXX size == -sys.maxint-1?
+        return w_arr
     if size > 0:
         idx = _pad_array(space, w_arr, pairs, 0)
         for i in range(pad_size):

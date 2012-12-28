@@ -4,77 +4,180 @@ from pypy.rlib import jit
 from hippy.error import InterpreterError
 from hippy.objects.base import W_Root
 from hippy.objects.arrayobject import W_ArrayObject
-from hippy.objects.reference import W_BaseContainerReference
+from hippy.objects.reference import W_Reference
 from pypy.rlib.rstring import StringBuilder
 from pypy.rlib.streamio import open_file_as_stream
 
-def create_function(signature, functocall):
-    lines = ["def %s(space, frame, args_w):" % (functocall.func_name,)]
-    inpi = 0
-    for i, tp in enumerate(signature):
-        if tp is int:
-            lines.append('    arg%d = space.int_w(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp is bool:
-            lines.append('    arg%d = space.is_true(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp == 'args_w':
-            lines.append('    arg%d = [w_arg.deref() for w_arg in args_w]' % i)
-        elif tp == 'args_w_unwrapped':
-            lines.append('    arg%d = args_w' % i)
-        elif tp == 'frame':
-            lines.append('    arg%d = frame' % i)
-        elif tp is float:
-            lines.append('    arg%d = space.float_w(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp is str:
-            lines.append('    arg%d = space.str_w(args_w[%d])' % (i, inpi))
-            inpi += 1
-        elif tp == 'space':
-            lines.append('    arg%d = space' % i)
-        elif tp is W_Root:
-            lines.append('    arg%s = args_w[%s].deref()' % (i, inpi))
-            inpi += 1
-        elif tp == 'unwrapped':
-            lines.append('    arg%s = args_w[%s]' % (i, inpi))
-            inpi += 1
+class BuiltinFunctionBuilder(object):
+    def __init__(self, builtin_function, signature, functocall):
+        self.builtin_function = builtin_function
+        self.signature = signature
+        self.functocall = functocall
+        self.input_i = 0
+        self.length_at_least = None
+
+    def header(self, error):
+        # call this *after* lines_for_arg()
+        lines = []
+        name = self.functocall.func_name
+        lines.append("@unroll_safe")
+        lines.append("def %s(space, frame, nb_args):" % (name,))
+        length_at_least = self.length_at_least
+        if length_at_least is None:
+            input_i = self.input_i
+            lines.append("    if nb_args != %d:" % (input_i,))
+            lines.append("        warn_exactly(space, %r, %d, nb_args)"
+                         % (name, input_i,))
+            lines.append("        return space.w_%s" % (error,))
+            lines.append("    nb_args = %d  # constant below" % (input_i,))
         else:
-            raise Exception("Unknown signature %s" % tp)
-    lines.append('    return orig_func(%s)' % ', '.join(['arg%d' % i
-                                       for i in range(len(signature))]))
-    source = '\n'.join(lines)
-    d = {'orig_func': functocall}
-    try:
-        exec py.code.Source(source).compile() in d
-    except:
-        print source
-        raise
-    d[functocall.func_name]._jit_unroll_safe_ = True
-    return d[functocall.func_name]
+            lines.append("    if nb_args < %d:" % (length_at_least,))
+            lines.append("        warn_at_least(space, %r, %d, nb_args)"
+                         % (name, length_at_least,))
+            lines.append("        return space.w_%s" % (error,))
+        return lines
+
+    def footer(self):
+        allargs = ', '.join(['arg%d' % i for i in range(len(self.signature))])
+        return ['    return orig_func(%s)' % allargs]
+
+    def _value_arg(self, i, convertion):
+        assert not self.builtin_function.argument_is_byref(self.input_i)
+        self.input_i += 1
+        lines = ['    w_arg = frame.peek_nth(nb_args - %d)' % (self.input_i,),
+                 '    arg%d = %s' % (i, convertion)]
+        return lines
+
+    def _value_args_w(self, i):
+        for j in range(7):
+            assert not self.builtin_function.argument_is_byref(self.input_i+j)
+        self.length_at_least = self.input_i
+        self.input_i += 1
+        lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +
+                 'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
+        self.input_i = None    # all arguments consumed
+        return lines
+
+    def _argrefs_w(self, i):
+        raise NotImplementedError("re-enable if necessary: argrefs_w")
+        for j in range(7):
+            assert self.builtin_function.argument_is_byref(self.input_i+j)
+        self.length_at_least = self.input_i
+        self.input_i += 1
+        lines = ['    arg%d = [check_reference(space, frame.peek_nth(i)) '
+                         % (i,) +
+                 'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
+        self.input_i = None    # all arguments consumed
+        return lines
+
+    def lines_for_arg(self, i, tp):
+        if tp is int:
+            return self._value_arg(i, 'space.int_w(w_arg)')
+        elif tp is bool:
+            return self._value_arg(i, 'space.is_true(w_arg)')
+        elif tp == 'args_w':
+            return self._value_args_w(i)
+        elif tp == 'frame':
+            return ['    arg%d = frame' % i]
+        elif tp is float:
+            return self._value_arg(i, 'space.float_w(w_arg)')
+        elif tp is str:
+            return self._value_arg(i, 'space.str_w(w_arg)')
+        elif tp == 'space':
+            return ['    arg%d = space' % i]
+        elif tp is W_Root:
+            return self._value_arg(i, 'w_arg')
+        elif tp == 'argrefs_w':
+            return self._argrefs_w(i)
+        else:
+            raise Exception("Unknown signature %r" % tp)
+
+def warn_bad_nb_args(space, funcname, text, expected_nb_args, got_nb_args):
+    if expected_nb_args > 1:
+        plural = "s"
+    else:
+        plural = ""
+    space.ec.warn("%s() expects %s %d parameter%s, %d given"
+                  % (funcname, text, expected_nb_args, plural, got_nb_args))
+    return space.w_Null
+
+def warn_exactly(space, funcname, expected_nb_args, got_nb_args):
+    return warn_bad_nb_args(space, funcname, "exactly",
+                            expected_nb_args, got_nb_args)
+
+def warn_at_least(space, funcname, expected_nb_args, got_nb_args):
+    return warn_bad_nb_args(space, funcname, "at least",
+                            expected_nb_args, got_nb_args)
+
+def check_reference(space, w_ref):
+    if not isinstance(w_ref, W_Reference):
+        raise ArgumentError("Arguments must be references")
+    return w_ref
 
 class ArgumentError(InterpreterError):
     """ An exception raised when function is called with a wrong
-    number of args
+    number or type of args
     """
 
-class AbstractFunction(object):
-    def call(self, space, frame, args_w):
+class AbstractFunction(W_Root):
+    def argument_is_byref(self, i):
+        raise NotImplementedError("abstract base class")
+    def prepare_argument(self, space, i, w_argument):
+        raise NotImplementedError("abstract base class")
+    def call(self, space, parent_frame, nb_args):
         raise NotImplementedError("abstract base class")
 
 class BuiltinFunction(AbstractFunction):
     _immutable_fields_ = ['run']
 
-    def __init__(self, signature, functocall):
-        self.run = create_function(signature, functocall)
+    def __init__(self, signature, functocall, error):
+        self.run = self.create_function(signature, functocall, error)
 
-    def call(self, space, frame, args_w):
-        return self.run(space, frame, args_w)
+    def create_function(self, signature, functocall, error):
+        builder = BuiltinFunctionBuilder(self, signature, functocall)
+        lines = []
+        for i, tp in enumerate(signature):
+            lines.extend(builder.lines_for_arg(i, tp))
+        lines = builder.header(error) + lines + builder.footer()
+        source = '\n'.join(lines)
+        d = {'orig_func': functocall,
+             'warn_exactly': warn_exactly,
+             'warn_at_least': warn_at_least,
+             'check_reference': check_reference,
+             'unroll_safe': jit.unroll_safe}
+        try:
+            exec py.code.Source(source).compile() in d
+        except:
+            print source
+            raise
+        return d[functocall.func_name]
+
+    def argument_is_byref(self, i):
+        return False
+
+    def prepare_argument(self, space, i, w_argument):
+        # This class assumes that arguments are all by value
+        return w_argument.deref()
+
+    def call(self, space, parent_frame, nb_args):
+        return self.run(space, parent_frame, nb_args)
+
+##class BuiltinFunctionByRef(BuiltinFunction):
+##    # This is for builtin functions that take all arguments by reference
+##    def argument_is_byref(self, i):
+##        return True
+
+##    def prepare_argument(self, space, i, w_argument):
+##        return w_argument
 
 BUILTIN_FUNCTIONS = []
 
-def wrap(signature, name=None, aliases=()):
+def wrap(signature, name=None, aliases=(), error="Null"):
+    assert name is None or isinstance(name, str)
+    assert isinstance(aliases, (tuple, list))
+    assert isinstance(error, str)
     def inner(function):
-        res = BuiltinFunction(signature, function)
+        res = BuiltinFunction(signature, function, error)
         BUILTIN_FUNCTIONS.append((name or function.func_name, res))
         for alias in aliases:
             BUILTIN_FUNCTIONS.append((alias, res))
@@ -131,63 +234,50 @@ def max(space, args_w):
         return space.w_Null
     return args_w[cur_max_i]
 
-@wrap(['space', 'frame', 'args_w_unwrapped'])
-@jit.unroll_safe
-def unset(space, frame, args_w):
-    to_clean = []
-    for w_arg in args_w:
-        if isinstance(w_arg, W_BaseContainerReference):
-            if w_arg.isset(space):
-                to_clean.append(w_arg)
-            continue
-        frame.store_var(space, w_arg, space.w_Null)
-    for w_arg in to_clean:
-        frame.store_var(space, w_arg, space.w_Null)
-    return space.w_Null
-
-@wrap(['space', 'unwrapped'])
+@wrap(['space', W_Root])
 def isset(space, w_obj):
-    # optimization - be careful about forcing non-existing elements
-    # from an array
-    if isinstance(w_obj, W_BaseContainerReference):
-        if not w_obj.isset(space):
-            return space.w_False
-        return space.wrap(w_obj.deref() is not space.w_Null)
-    return space.wrap(w_obj.deref() is not space.w_Null)
+    return space.newbool(w_obj is not space.w_Null)
 
-@wrap(['space', 'args_w'])
-def printf(space, args_w):
-    if len(args_w) == 0:
-        space.ec.notice("printf(): expects at least 1 parameter, 0 given")
-        return space.w_False
-    no = 1
-    format = space.str_w(args_w[0])
+@wrap(['space', str, 'args_w'], error='False')
+def printf(space, format, args_w):
+    no = 0
     # improve the estimate
     builder = StringBuilder(len(format) + 5 * format.count('%'))
     i = 0
     while i < len(format):
         c = format[i]
+        i += 1
         if c == '%':
-            if i == len(format) - 1:
-                space.ec.hippy_warn("printf(): wrong % in string format")
+            try:
+                next = format[i]
+                warn_if_unknown = True
                 i += 1
-                continue
-            next = format[i + 1]
+            except IndexError:
+                next = '\x00'
+                warn_if_unknown = False
+                msg = "printf(): Trailing '%' character"
+                if no < len(args_w):
+                    msg += ", the next argument is going to be ignored"
+                space.ec.hippy_warn(msg)
             if next == '%':
                 builder.append('%')
-            elif next == 'd':
-                if no == len(args_w):
-                    space.ec.warn("printf(): Too few arguments")
-                    return space.w_False
-                builder.append(str(space.int_w(args_w[no])))
-            else:
-                space.ec.hippy_warn("printf(): Unknown format char " + next)
-            i += 2
+                continue
+            #
+            if no == len(args_w):
+                space.ec.warn("printf(): Too few arguments")
+                return space.w_False
+            w_arg = args_w[no]
+            no += 1
+            if next == 'd':
+                builder.append(str(space.int_w(w_arg)))
+            elif warn_if_unknown:
+                space.ec.hippy_warn("printf(): Unknown format char %%%s, "
+                                    "ignoring corresponding argument" % next)
         else:
             builder.append(c)
-            i += 1
     if no < len(args_w):
-        space.ec.hippy_warn("printf(): Too many arguments passed")
+        space.ec.hippy_warn("printf(): Too many arguments passed, "
+                            "ignoring the %d extra" % (len(args_w) - no,))
     s = builder.build()
     space.ec.interpreter.echo(space, space.newstrconst(s))
     return space.wrap(len(s))
@@ -243,28 +333,26 @@ def count(space, w_arr):
         return space.wrap(int(space.is_true(w_arr))) # apparently
     return space.wrap(space.arraylen(w_arr))
 
-@wrap(['space', 'args_w'])
-def substr(space, args_w):
-    if len(args_w) < 2 or len(args_w) > 3:
-        raise InterpreterError("incorrect number of args")
-    w_s = space.as_string(args_w[0])
-    start = space.int_w(space.as_number(args_w[1]))
-    lgt = w_s.strlen()
-    if start < 0:
-        start = lgt + start
-    if len(args_w) == 3:
-        stop = space.int_w(space.as_number(args_w[2]))
-        if stop < 0:
-            stop = lgt + stop
-        else:
-            stop += start
+@wrap(['space', str, int, 'args_w'])
+def substr(space, string, start, args_w):
+    if len(args_w) > 0:
+        if len(args_w) > 1:
+            return warn_bad_nb_args(space, 'substr', 'at most', 3,
+                                    2 + len(args_w))
+        length = space.int_w(args_w[0])
     else:
-        stop = lgt
-    if start < 0 or stop < 0 or start > lgt:
-        raise InterpreterError("wrong start")
-    if stop <= start:
-        return space.newstrconst("")
-    return w_s.strslice(space, start, stop)
+        length = len(string)
+    if start < 0:
+        start += len(string)
+        if start < 0:
+            start = 0
+    elif start >= len(string):
+        return space.w_False
+    if length < 0:
+        length = len(string) + length - start
+        if length < 0:
+            return space.w_False
+    return space.newstr(string[start:start+length])
 
 @wrap(['space', W_Root], name='print')
 def print_(space, w_arg):
@@ -352,11 +440,11 @@ def _print_r(space, w_x, indent, recursion, builder):
                     key = space.str_w(w_key)
                     s = '\n%s    ["%s"] => ' % (indent, key)
                 builder.append(s)
-                _print_r(space, w_value, subindent, recursion, builder)
+                _print_r(space, w_value.deref(), subindent, recursion, builder)
         builder.append('\n%s)\n' % indent)
         del recursion[w_x]
     else:
-        builder.append(space.conststr_w(space.as_string(w_x)))
+        builder.append(space.str_w(space.as_string(w_x)))
 
 @wrap(['space', 'args_w'])
 def print_r(space, args_w):

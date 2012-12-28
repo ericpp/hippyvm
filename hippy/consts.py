@@ -10,15 +10,18 @@ ARGVAL2 = 0xfffc
 BYTECODES = [
     ('ILLEGAL', 0, 0),
     ('DISCARD_TOP', 0, -1),
-    ('ROT_AND_DISCARD', 0, -1),
-    ('STORE', 0, -1),
+    ('ROT', 1, 0),
+    ('STORE', 1, ARGVAL),
+    ('STORE_FAST_REF', 1, 0),
     ('LOAD_CONST', 1, +1),
-    ('LOAD_MUTABLE_CONST', 1, 1),
     ('LOAD_CONST_INTERPOLATE', 1, +1),
     ('LOAD_NAMED_CONSTANT', 1, +1),
-    ('LOAD_NAME', 1, 1),
-    ('LOAD_VAR_NAME', 1, 1),
-    ('LOAD_FAST', 1, 1),
+    ('LOAD_NAME', 1, +1),
+    ('LOAD_VAR_NAME', 1, +1),
+    ('LOAD_REF', 1, +1),
+    ('LOAD_DEREF', 1, +1),
+    ('LOAD_NULL', 0, +1),
+    ('LOAD_NONE', 0, +1),
     ('BINARY_ADD', 0, -1),
     ('BINARY_OR_', 0, -1),
     ('BINARY_AND_', 0, -1),
@@ -37,13 +40,6 @@ BYTECODES = [
     ('BINARY_NE', 0, -1),
     ('BINARY_LSHIFT', 0, -1),
     ('BINARY_RSHIFT', 0, -1),
-    ('INPLACE_ADD', 0, -1),
-    ('INPLACE_SUB', 0, -1),
-    ('INPLACE_MUL', 0, -1),
-    ('INPLACE_DIV', 0, -1),
-    ('INPLACE_LSHIFT', 0, -1),
-    ('INPLACE_RSHIFT', 0, -1),
-    ('INPLACE_CONCAT', 0, -1),
     ('SUFFIX_PLUSPLUS', 0, 0),
     ('SUFFIX_MINUSMINUS', 0, 0),
     ('PREFIX_PLUSPLUS', 0, 0),
@@ -51,9 +47,7 @@ BYTECODES = [
     ('UNARY_PLUS', 0, 0),
     ('UNARY_MINUS', 0, 0),
     ('UNARY_NOT', 0, 0),
-    ('LOAD_VAR', 0, 0),
     ('IS_TRUE', 0, 0),
-    ('REFERENCE', 0, 0),
     ('ECHO', 1, ARGVAL),
     ('JUMP_IF_FALSE', 1, -1),
     ('JUMP_IF_FALSE_NO_POP', 1, 0),
@@ -61,21 +55,33 @@ BYTECODES = [
     ('JUMP_FORWARD', 1, 0),
     ('JUMP_BACKWARD', 1, 0),
     ('JUMP_BACK_IF_TRUE', 1, -1),
-    ('JUMP_BACK_IF_NOT_DONE', 1, -1),
-    ('RETURN_NULL', 0, 0),
     ('RETURN', 0, -1),
-    ('CALL', 1, ARGVAL1),
+    ('GETFUNC', 0, 0),
+    ('ARG', 1, 0),
+    ('ARG_IS_BYREF', 1, +1),
+    ('CALL', 1, ARGVAL),
     ('GETITEM', 0, -1),
-    ('ITEMREFERENCE', 0, -1),
-    ('ARRAY', 1, ARGVAL1),
+    ('FETCHITEM', 1, +1),
+    ('STOREITEM', 1, -1),
+    ('STOREITEM_REF', 1, 0),
+    ('APPEND_INDEX', 1, 0),
+    ('MAKE_REF', 1, 0),
+    ('DUP_TOP_AND_NTH', 1, +2),
+    ('POP_AND_POKE_NTH', 1, -1),
+    ('DEREF', 0, 0),
+    ('MAKE_ARRAY', 1, ARGVAL1),
     ('MAKE_HASH', 1, ARGVAL2),
     ('CREATE_ITER', 0, 0),
-    ('NEXT_VALUE_ITER', 1, -1),
-    ('NEXT_ITEM_ITER', 1, -2),
-    ('APPEND', 0, -1),
-    ('DECLARE_GLOBAL', 1, ARGVAL),
-    ('DECLARE_STATIC', 1, ARGVAL),
+    ('CREATE_ITER_REF', 0, 0),
+    ('NEXT_VALUE_ITER', 1, +1),
+    ('NEXT_ITEM_ITER', 1, +2),
+    ('DECLARE_GLOBAL', 1, 0),
+    ('DECLARE_FUNC', 1, 0),
     ('CAST_ARRAY', 0, 0),
+    ('CAST_INT', 0, 0),
+    ('CAST_FLOAT', 0, 0),
+    ('UNSET', 1, 0),
+    ('UNSETITEM', 1, 0),
 ]
 
 BYTECODE_NUM_ARGS = []
@@ -85,7 +91,6 @@ BYTECODE_STACK_EFFECTS = []
 BINOP_COMPARISON_LIST = ['le', 'ge', 'lt', 'gt', 'eq', 'ne']
 BINOP_LIST = ['lshift', 'rshift', 'add', 'mul', 'sub', 'mod',
               'div', 'or_', 'and_'] + BINOP_COMPARISON_LIST
-INPLACE_LIST = ['sub', 'add', 'mul', 'div', 'lshift', 'rshift']
 
 def _setup():
     for i, (bc, numargs, stack_effect) in enumerate(BYTECODES):
@@ -102,15 +107,19 @@ BIN_OP_TO_BC = {'+': BINARY_ADD, '*': BINARY_MUL, '-': BINARY_SUB,
                 '!=': BINARY_NE, '.': BINARY_CONCAT, '>>': BINARY_RSHIFT,
                 '<<': BINARY_LSHIFT, '%': BINARY_MOD, '===': BINARY_IS,
                 '!==': BINARY_ISNOT}
-INPLACE_OP_TO_BC = {'+=': INPLACE_ADD, '-=': INPLACE_SUB, '*=': INPLACE_MUL,
-                    '/=': INPLACE_DIV, '>>=': INPLACE_RSHIFT, '<<=':
-                    INPLACE_LSHIFT, '.=': INPLACE_CONCAT}
 SUFFIX_OP_TO_BC = {'++': SUFFIX_PLUSPLUS, '--': SUFFIX_MINUSMINUS}
 PREFIX_OP_TO_BC = {'++': PREFIX_PLUSPLUS, '--': PREFIX_MINUSMINUS,
                    '+': UNARY_PLUS, '-': UNARY_MINUS, '!': UNARY_NOT}
-CAST_TO_BC = {'array': CAST_ARRAY}
+CAST_TO_BC = {'array': CAST_ARRAY,
+              'bool': IS_TRUE,
+              'boolean': IS_TRUE,
+              'int': CAST_INT,
+              'integer': CAST_INT,
+              'float': CAST_FLOAT,
+              'double': CAST_FLOAT,
+              'real': CAST_FLOAT}
 
-ARG_ARGUMENT, ARG_REFERENCE, ARG_DEFAULT = range(3)
+ARG_ARGUMENT, ARG_REFERENCE = 'A', 'R'    # no relation to 'A'rmin 'R'igo :-)
 
 if __name__ == '__main__':
     for i, (bc, _, _) in enumerate(BYTECODES):

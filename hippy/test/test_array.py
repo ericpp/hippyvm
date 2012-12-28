@@ -3,9 +3,12 @@ import py
 from hippy.test.test_interpreter import BaseTestInterpreter
 from hippy.objspace import ObjSpace
 
+
 class TestArrayDirect(object):
     def create_array_strats(self, space):
         # int, float, mix, empty, hash, copy
+        # XXX for now we don't have all of them any more, so some of
+        # XXX them are identical.
         int_arr = space.new_array_from_list([space.wrap(1), space.wrap(2)])
         return (int_arr,
                 space.new_array_from_list([space.wrap(1.2), space.wrap(2.2)]),
@@ -17,7 +20,7 @@ class TestArrayDirect(object):
                     (space.newstrconst("a"), space.wrap(2)),
                     (space.newstrconst("b"), space.wrap(3)),
                     (space.newstrconst("c"), space.wrap(4))]),
-                int_arr.copy(space))
+                int_arr)  #.copy(space))
 
     def test_value_iterators(self):
         space = ObjSpace()
@@ -29,6 +32,7 @@ class TestArrayDirect(object):
         assert w_iter.done()
         w_iter = float_arr.create_iter(space)
         assert space.float_w(w_iter.next(space)) == 1.2
+        assert not w_iter.done()
         assert space.float_w(w_iter.next(space)) == 2.2
         assert w_iter.done()
         w_iter = mix_arr.create_iter(space)
@@ -48,44 +52,33 @@ class TestArrayDirect(object):
         assert w_iter.done()
 
     def test_item_iterators(self):
-        def unpack((w_1, w_2)):
-            l = []
-            for w_obj in w_1, w_2:
-                if w_obj.tp == space.tp_str:
-                    l.append(space.str_w(w_obj))
-                elif w_obj.tp == space.tp_float:
-                    l.append(space.float_w(w_obj))
-                elif w_obj.tp == space.tp_int:
-                    l.append(space.int_w(w_obj))
-                else:
-                    raise NotImplementedError
-            return l
-
         space = ObjSpace()
+        unpack = self.unpack
         int_arr, float_arr, mix_arr, empty, hash, cp_arr = \
                  self.create_array_strats(space)
         w_iter = int_arr.create_iter(space)
-        assert unpack(w_iter.next_item(space)) == [0, 1]
-        assert unpack(w_iter.next_item(space)) == [1, 2]
+        assert unpack(space, w_iter.next_item(space)) == [0, 1]
+        assert not w_iter.done()
+        assert unpack(space, w_iter.next_item(space)) == [1, 2]
         assert w_iter.done()
         w_iter = float_arr.create_iter(space)
-        assert unpack(w_iter.next_item(space)) == [0, 1.2]
-        assert unpack(w_iter.next_item(space)) == [1, 2.2]
+        assert unpack(space, w_iter.next_item(space)) == [0, 1.2]
+        assert unpack(space, w_iter.next_item(space)) == [1, 2.2]
         assert w_iter.done()
         w_iter = mix_arr.create_iter(space)
-        assert unpack(w_iter.next_item(space)) == [0, 1.2]
-        assert unpack(w_iter.next_item(space)) == [1, "x"]
+        assert unpack(space, w_iter.next_item(space)) == [0, 1.2]
+        assert unpack(space, w_iter.next_item(space)) == [1, "x"]
         assert w_iter.done()
         assert empty.create_iter(space).done()
         w_iter = hash.create_iter(space)
-        assert unpack(w_iter.next_item(space)) == ['xyz', 1]
-        assert unpack(w_iter.next_item(space)) == ['a', 2]
-        assert unpack(w_iter.next_item(space)) == ['b', 3]
-        assert unpack(w_iter.next_item(space)) == ['c', 4]
+        assert unpack(space, w_iter.next_item(space)) == ['xyz', 1]
+        assert unpack(space, w_iter.next_item(space)) == ['a', 2]
+        assert unpack(space, w_iter.next_item(space)) == ['b', 3]
+        assert unpack(space, w_iter.next_item(space)) == ['c', 4]
         assert w_iter.done()
         w_iter = cp_arr.create_iter(space)
-        assert unpack(w_iter.next_item(space)) == [0, 1]
-        assert unpack(w_iter.next_item(space)) == [1, 2]
+        assert unpack(space, w_iter.next_item(space)) == [0, 1]
+        assert unpack(space, w_iter.next_item(space)) == [1, 2]
         assert w_iter.done()
 
     def test_isset_index(self):
@@ -107,8 +100,8 @@ class TestArrayDirect(object):
 
     def test_hashes(self):
         space = ObjSpace()
-        assert space.wrap(1).hash() == space.newstrconst("1").hash()
-        assert space.wrap(123).hash() == space.newstrconst("123").hash()
+        assert space.wrap(1).hash(space) == space.newstrconst("1").hash(space)
+        assert space.wrap(123).hash(space) == space.newstrconst("123").hash(space)
 
     def test_map(self):
         space = ObjSpace()
@@ -117,36 +110,23 @@ class TestArrayDirect(object):
         w_arr = space.new_map_from_pairs([(w_a, space.wrap(0)),
                                          (w_b , space.wrap(12))])
         assert space.int_w(space.getitem(w_arr, w_a)) == 0
-        space.setitem(w_arr, w_b, space.wrap(3))
+        w_arr = space.setitem(w_arr, w_b, space.wrap(3))
         assert space.int_w(space.getitem(w_arr, w_b)) == 3
-        assert w_arr.arraylen(space) == 2
+        assert w_arr.arraylen() == 2
         assert w_arr.isset_index(space, w_b)
         assert not w_arr.isset_index(space, space.wrap(0))
         assert not w_arr.isset_index(space, space.newstrconst("c"))
-        w_arr2 = w_arr.copy(space)
-        space.setitem(w_arr2, space.wrap(0), space.wrap(15))
-        assert w_arr2.strategy.name == 'hash'
+        w_arr2 = space.setitem(w_arr, space.wrap(0), space.wrap(15))
+        assert w_arr2.strategy_name == 'hash'
         assert space.int_w(space.getitem(w_arr, w_a)) == 0
         assert space.int_w(space.getitem(w_arr, w_b)) == 3
         assert space.int_w(space.getitem(w_arr2, space.wrap(0))) == 15
-        space.setitem(w_arr, space.newstrconst("c"), space.wrap(38))
-        assert w_arr.strategy.name == 'hash'
+        w_arr = space.setitem(w_arr, space.newstrconst("c"), space.wrap(38))
+        assert w_arr.strategy_name == 'hash'
 
     def test_map_iter(self):
-        def unpack((w_1, w_2)):
-            l = []
-            for w_obj in w_1, w_2:
-                if w_obj.tp == space.tp_str:
-                    l.append(space.str_w(w_obj))
-                elif w_obj.tp == space.tp_float:
-                    l.append(space.float_w(w_obj))
-                elif w_obj.tp == space.tp_int:
-                    l.append(space.int_w(w_obj))
-                else:
-                    raise NotImplementedError
-            return l
-
         space = ObjSpace()
+        unpack = self.unpack
         w_a = space.newstrconst("a")
         w_b = space.newstrconst("b")
         w_arr = space.new_map_from_pairs([(w_a, space.wrap(0)),
@@ -156,9 +136,26 @@ class TestArrayDirect(object):
         assert space.int_w(w_iter.next(space)) == 12
         assert w_iter.done()
         w_iter = w_arr.create_iter(space)
-        assert unpack(w_iter.next_item(space)) == ["a", 0]
-        assert unpack(w_iter.next_item(space)) == ["b", 12]
+        assert unpack(space, w_iter.next_item(space)) == ["a", 0]
+        assert unpack(space, w_iter.next_item(space)) == ["b", 12]
         assert w_iter.done()
+
+    def unpack(self, space, (w_key, w_obj)):
+        if w_key.tp == space.tp_int:
+            key = space.int_w(w_key)
+        elif w_key.tp == space.tp_str:
+            key = space.str_w(w_key)
+        else:
+            raise AssertionError, w_key.tp
+        if w_obj.tp == space.tp_str:
+            value = space.str_w(w_obj)
+        elif w_obj.tp == space.tp_float:
+            value = space.float_w(w_obj)
+        elif w_obj.tp == space.tp_int:
+            value = space.int_w(w_obj)
+        else:
+            raise NotImplementedError
+        return [key, value]
 
 class TestArray(BaseTestInterpreter):
     def test_array_constructor(self):
@@ -238,6 +235,7 @@ class TestArray(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 2
 
     def test_float_strategy(self):
+        py.test.skip("no special float strategy for now")
         output = self.run('''
         $a = array();
         $a[] = 3.0;
@@ -305,8 +303,6 @@ class TestArray(BaseTestInterpreter):
         assert [self.space.str_w(i) for i in output] == ["a", "b"]
 
     def test_reference_to_arrayitem(self):
-        py.test.skip("XXX FIXME")
-
         output = self.run('''
         function f(&$a) {
           $a = 3;
@@ -409,21 +405,7 @@ class TestArray(BaseTestInterpreter):
         assert self.space.str_w(output[1]) == "marry"
         assert self.space.str_w(output[2]) == "had"
 
-    def test_iterator_cleans(self):
-        output = self.run('''
-        $a = array(1, 2, 3);
-        foreach ($a as $x) {
-           $x;
-        }
-        echo $a;
-        ''')
-        w_arr = output[0]
-        cp = w_arr.strategy.unerase(w_arr.storage)
-        assert cp.next_link is None
-
     def test_array_elem(self):
-        py.test.skip("XXX FIXME")
-
         output = self.run('''
         $x = 3;
         $y = &$x;

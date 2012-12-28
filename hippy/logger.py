@@ -34,7 +34,7 @@ class Logger(object):
     
     def fatal(self, interpreter, msg):
         self.log(interpreter, "FATAL", msg)
-        raise FatalError
+        raise FatalError(msg)
 
     def notice(self, interpreter, msg):
         self.log(interpreter, "NOTICE", msg)

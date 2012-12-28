@@ -1,4 +1,4 @@
-
+import sys
 from hippy.test.test_interpreter import BaseTestInterpreter
 
 
@@ -7,6 +7,23 @@ class TestFloatObject(BaseTestInterpreter):
     def test_repr(self):
         assert self.echo('3.0') == '3'
         assert self.echo('gettype(3.0)') == 'double'
+
+    def test_cast_to_float(self):
+        assert self.echo('(float)NULL') == '0'
+        assert self.echo('(float)TrUe') == '1'
+        assert self.echo('(float)5') == '5'
+        assert self.echo('(float)5.5') == '5.5'
+        assert self.echo('(float)"1E3"') == '1000'
+
+    def test_cast_to_real(self):
+        assert self.echo('(real)NULL') == '0'
+        assert self.echo('(real)TrUe') == '1'
+        assert self.echo('(real)"1.25"') == '1.25'
+
+    def test_cast_to_double(self):
+        assert self.echo('(double)nULl') == '0'
+        assert self.echo('(double)true') == '1'
+        assert self.echo('(double)-5.5') == '-5.5'
 
     def test_modulo(self):
         # floats are just truncated to ints first
@@ -40,3 +57,24 @@ class TestFloatObject(BaseTestInterpreter):
         # truncated to ints
         assert self.echo('6.9 & 5.9') == '4'
         assert self.echo('gettype(6.9 & 5.9)') == 'integer'
+
+    def test_cast_to_int_overflow(self):
+        assert self.echo('(int)1E100') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: value 1e+100 overflows'
+                              ' and is returned as 0')]
+
+    def test_cast_to_int_overflow_inf(self):
+        assert self.echo('(int)INF') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: value inf overflows'
+                              ' and is returned as 0')]
+        assert self.echo('(int)-INF') == '0'
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: value -inf overflows'
+                              ' and is returned as 0')]
+        f = -sys.maxint-1
+        assert self.echo('(int)NAN') == str(f)
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'cast float to integer: NaN'
+                              ' is returned as %d' % f)]

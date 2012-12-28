@@ -14,12 +14,9 @@ class W_Root(object):
         raise InterpreterError("TypeError: casting to int of wrong type")
 
     def float_w(self, space):
-        raise InterpreterError("TypeError: casting to float of wrong type")
+        return float(self.int_w(space))
 
     def str_w(self, space):
-        raise InterpreterError("TypeError: casting to string of wrong type")
-
-    def conststr_w(self, space):
         raise InterpreterError("TypeError: casting to string of wrong type")
 
     def getchar(self, space):
@@ -51,9 +48,6 @@ class W_Root(object):
     def as_number(self, space):
         raise InterpreterError("unsupported as_number")
 
-    def is_valid_number(self, space):
-        raise InterpreterError("unsupported is_valid_number")
-
     def as_string(self, space):
         raise InterpreterError("unsupported as_string")
 
@@ -67,13 +61,19 @@ class W_Root(object):
         raise InterpreterError("unsupport uplusplus")
 
     def uminusminus(self, space):
-        raise InterpreterError("unsupport uminusminus")
+        return self    # by default, does nothing
 
     def itemreference(self, space, w_item):
         raise InterpreterError("unsupported itemreference")
 
     def setitem(self, space, w_item, w_value):
         raise InterpreterError("unsupported setitem")
+
+    def setitem_ref(self, space, w_item, w_ref):
+        raise InterpreterError("unsupported setitem_ref")
+
+    def unsetitem(self, space, w_item):
+        raise InterpreterError("unsupported unsetitem")
 
     def strlen(self):
         raise InterpreterError("unsupported strlen")
@@ -87,32 +87,12 @@ class W_Root(object):
     def create_iter(self, space):
         raise InterpreterError("unsupported create_iter")
 
+    def create_iter_ref(self, space, w_arr_ref):
+        raise InterpreterError("unsupported create_iter_ref")
+
     def hash(self, space):
         raise InterpreterError("unsupported hash")
 
     def var_dump(self, space, indent, recursion):
         # unsupported type: use the RPython repr
         space.ec.writestr('%s%r\n' % (indent, self))
-
-
-class W_NullObject(W_Root):
-    def copy(self, space):
-        return self
-
-    def is_true(self, space):
-        return False
-
-    def as_number(self, space):
-        return space.wrap(0)
-
-    def as_string(self, space):
-        return space.newstrconst("")
-
-    def eq_w(self, space, other):
-        return True
-
-    def var_dump(self, space, indent, recursion):
-        space.ec.writestr("%sNULL\n" % indent)
-
-    def abs(self, space):
-        return 0

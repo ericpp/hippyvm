@@ -75,31 +75,49 @@ class TestBuiltin(BaseTestInterpreter):
         echo $a, $a[0];
         """)
         assert output[1] is self.space.w_Null
-        w_array = output[0].strategy.unerase(output[0].storage).parent
-        # int or null
-        assert isinstance(w_array.strategy, arrayobject.ListArrayStrategy)
+        assert not output[0]._has_string_keys
 
     def test_printf_1(self):
         output = self.run('''
-        echo printf("a %d b\\n", 12);
+        echo printf("%%a %d b\\n", 12);
         ''')
-        assert self.space.int_w(output[1]) == len('a 12 b\n')
-        assert self.space.str_w(output[0]) == 'a 12 b\n'
-        output = self.run('''
-        echo printf();
-        printf("%d");
-        printf("%a");
-        printf("%");
-        printf("", 1, 2, 3);
-        ''')
-        assert not output[0].boolval
+        assert self.interp.logger.msgs == []
+        assert self.space.str_w(output[0]) == '%a 12 b\n'
+        assert self.space.int_w(output[1]) == len('%a 12 b\n')
+        #
+        output = self.run('echo printf();')
+        assert self.space.is_w(output[0], self.space.w_False)
         assert self.interp.logger.msgs == [
-            ('NOTICE', 'printf(): expects at least 1 parameter, 0 given'),
-            ('WARNING', 'printf(): Too few arguments'),
-            ('HIPPY WARNING', 'printf(): Unknown format char a'),
-            ('HIPPY WARNING', 'printf(): wrong % in string format'),
-            ('HIPPY WARNING', 'printf(): Too many arguments passed')
-        ]
+            ('WARNING', 'printf() expects at least 1 parameter, 0 given')]
+        #
+        output = self.run('echo printf("foo %d bar");')
+        assert self.space.is_w(output[0], self.space.w_False)
+        assert self.interp.logger.msgs == [
+            ('WARNING', 'printf(): Too few arguments')]
+        #
+        output = self.run('echo printf("foo %y bar %d baz", 42, 43);')
+        assert self.space.is_w(output[0], self.space.newstr("foo  bar 43 baz"))
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'printf(): Unknown format char %y,'
+                              ' ignoring corresponding argument')]
+        #
+        output = self.run('echo printf("foo%");')
+        assert self.space.is_w(output[0], self.space.w_False)
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', "printf(): Trailing '%' character"),
+            ('WARNING', 'printf(): Too few arguments')]
+        #
+        output = self.run('echo printf("foo%", 42);')
+        assert self.space.is_w(output[0], self.space.newstr("foo"))
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', "printf(): Trailing '%' character, "
+                              "the next argument is going to be ignored")]
+        #
+        output = self.run('echo printf("foo", 1, 2, 3);')
+        assert self.space.is_w(output[0], self.space.newstr("foo"))
+        assert self.interp.logger.msgs == [
+            ('HIPPY WARNING', 'printf(): Too many arguments passed, '
+                              'ignoring the 3 extra')]
 
     def test_count(self):
         output = self.run('''
@@ -137,18 +155,51 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_substr(self):
         output = self.run('''
-        $a = "xyz";
-        echo substr($a, 0, 3), substr($a, 1), substr($a, -1, 1),
-             substr($a, 1, 1), substr($a, 1, -1), substr($a, 1, NULL);
+        $a = "foobar";
+        echo substr($a, -99);\necho substr($a, -3);
+        echo substr($a, -2);\necho substr($a, -1);
+        echo substr($a, 0);\necho substr($a, 1);
+        echo substr($a, 2);\necho substr($a, 3);
+        echo substr($a, 4);\necho substr($a, 99);
+        echo substr($a, 2.9);\necho substr($a, -2.9);
+        echo substr($a, INF);\necho substr($a, -INF);\necho substr($a, NAN);
+        echo substr($a, "4");\necho substr($a, "-2");
+        # 17
+        echo substr($a, 2, 1);\necho substr($a, 2, 3);\necho substr($a, 2, 9);
+        echo substr($a, -2, 1);\necho substr($a, -2, 3);
+        echo substr($a, -99, 2);
+        echo substr($a, 2, 0);\necho substr($a, 2, -1);
+        echo substr($a, 2, -4);
+        echo substr($a, 2, -5);\necho substr($a, 5, -1);
+        echo substr($a, 5, -2);
+        echo substr($a, 6, 0);\necho substr($a, 6, -1);\necho substr($a, 6, 1);
+        echo substr($a, 2, INF);\necho substr($a, 2, NAN);
+        echo substr($a, -55, 54);\necho substr($a, -55, 56);
+        echo substr($a, -55, NULL);\necho substr($a, 2, NULL);
+        echo substr($a, 6, NULL);
         ''')
-        assert [self.space.str_w(s) for s in output] == ["xyz", "yz", "z",
-                                                         "y", "y", ""]
+        s = self.space.tp_str
+        b = self.space.tp_bool
+        assert [w.tp for w in output] == [
+            s, s, s, s, s, s, s, s, s, b, s, s, s, s, s, s, s, s, s, s, s, s,
+            s, s, s, s, b, s, b, b, b, b, s, b, s, s, s, s, b]
+        assert [self.space.str_w(s) for s in output] == [
+            'foobar', 'bar', 'ar', 'r', 'foobar', 'oobar', 'obar', 'bar',
+            'ar', '', 'obar', 'ar', 'foobar', 'foobar', 'foobar', 'ar', 'ar',
+            'o', 'oba', 'obar', 'a', 'ar', 'fo', '', 'oba', '', '', '', '',
+            '', '', '', '', '', 'foobar', 'foobar', '', '', '']
 
-    def test_print(self):
+    def test_bare_print(self):
         output = self.run('''
         print("xyz");
         ''')
         assert self.space.str_w(output[0]) == 'xyz'
+        #
+        output = self.run('''
+        echo print("xyz");
+        ''')
+        assert self.space.str_w(output[0]) == 'xyz'
+        assert self.space.int_w(output[1]) == 1
 
     def test_empty(self):
         output = self.run('''
@@ -512,19 +563,29 @@ class TestBuiltin(BaseTestInterpreter):
 
     def test_array_pad(self):
         output = self.run('''
-        $b = array(1229600459=>'large', 1229604787=>20, 1229609459=>'red');
+        $b = array(1229600459=>'large', 1229604787=>20, 9609459=>'red');
         $b = array_pad($b, 5, 'foo');
-        echo $b[0];
-        echo $b[4];
-        $a= array('a'=> 'a', 'b'=>4, '0'=>'0');
-        $a = array_pad($a, -6, "x");
-        echo $a[0];
-        echo $a[3];
+        echo $b[0], $b[1], $b[2], $b[3], $b[4], count($b);
         ''')
         assert self.space.str_w(output[0]) == "large"
-        assert self.space.str_w(output[1]) == "foo"
+        assert self.space.int_w(output[1]) == 20
+        assert self.space.str_w(output[2]) == "red"
+        assert self.space.str_w(output[3]) == "foo"
+        assert self.space.str_w(output[4]) == "foo"
+        assert self.space.int_w(output[5]) == 5
+        #
+        output = self.run('''
+        $a = array('a'=> 'a', 'b'=>4, '0'=>'0');
+        $a = array_pad($a, -6, "x");
+        echo $a[0], $a[1], $a[2], $a['a'], $a['b'], $a[3], count($a);
+        ''')
+        assert self.space.str_w(output[0]) == "x"
+        assert self.space.str_w(output[1]) == "x"
         assert self.space.str_w(output[2]) == "x"
-        assert self.space.str_w(output[3]) == "0"
+        assert self.space.str_w(output[3]) == "a"
+        assert self.space.int_w(output[4]) == 4
+        assert self.space.str_w(output[5]) == "0"
+        assert self.space.int_w(output[6]) == 6
 
     def test_array_product(self):
         output = self.run('''

@@ -3,14 +3,14 @@ import os, operator
 from pypy.rlib.objectmodel import specialize
 from hippy.consts import BINOP_LIST
 from hippy.objects.base import W_Root
-from hippy.objects.reference import W_Reference, W_Cell
+from hippy.objects.reference import W_Reference
 from hippy.objects.boolobject import W_BoolObject
-from hippy.objects.base import W_NullObject
+from hippy.objects.nullobject import W_NullObject
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
-from hippy.objects.strobject import W_StringObject
-from hippy.objects.arrayobject import new_array_from_list, W_ArrayObject,\
-     new_array_from_pairs, new_map_from_pairs, W_FakeIndex
+from hippy.objects.strobject import W_StringObject, SINGLE_CHAR_STRING
+from hippy.objects.arrayobject import W_ArrayObject
+from hippy.rpython.rdict import RDict
 
 
 @specialize.memo()
@@ -24,6 +24,7 @@ class ExecutionContext(object):
 
     def __init__(self):
         self.interpreter = None
+        self.global_frame = None
 
     def notice(self, msg):
         self.interpreter.logger.notice(self.interpreter, msg)
@@ -35,6 +36,9 @@ class ExecutionContext(object):
         self.interpreter.logger.hippy_warn(self.interpreter, msg)
 
     def fatal(self, msg):
+        # This one is supposed to raise FatalError.  If needed, in the
+        # caller, write "raise space.ec.fatal(...)" to make it clear that
+        # it cannot return (useful for RPython)
         self.interpreter.logger.fatal(self.interpreter, msg)        
 
     def writestr(self, str):
@@ -56,13 +60,11 @@ class ObjSpace(object):
     """ This implements all the operations on the object. Since this is
     prebuilt, it should not contain any state
     """
-    (tp_int, tp_float, tp_str, tp_array,
-     tp_cell, tp_null, tp_reference, tp_bool, tp_fakeindex) = range(9)
+    (tp_int, tp_float, tp_str, tp_array, tp_null, tp_bool) = range(6)
 
     # in the same order as the types above
     TYPENAMES = ["integer", "double", "string", "array",
-                 "unknown type", "NULL", "unknown type",
-                 "boolean", "unknown type"]
+                 "NULL", "boolean"]
 
     def __init__(self):
         self.w_True = W_BoolObject(True)
@@ -82,8 +84,10 @@ class ObjSpace(object):
     def int_w(self, w_obj):
         return w_obj.deref().int_w(self)
 
-    def is_valid_number(self, w_obj):
-        return w_obj.deref().is_valid_number(self)
+    def is_w(self, w_a, w_b):
+        w_a = w_a.deref()
+        w_b = w_b.deref()
+        return w_a.tp == w_b.tp and w_a.eq_w(self, w_b)
 
     def float_w(self, w_obj):
         return w_obj.deref().float_w(self)
@@ -108,14 +112,10 @@ class ObjSpace(object):
     @specialize.argtype(1)
     def newstr(self, v):
         if isinstance(v, str):
-            return W_StringObject.newstr(list(v))
-        return W_StringObject.newstr(v)
+            return W_StringObject.newconststr(v)
+        return W_StringObject.newliststr(v)
 
-    def newstrconst(self, v):
-        return W_StringObject(v)
-
-    def conststr_w(self, w_v):
-        return self.as_string(w_v).conststr_w(self)
+    newstrconst = newstr
 
     def str_w(self, w_v):
         return self.as_string(w_v).str_w(self)
@@ -146,12 +146,27 @@ class ObjSpace(object):
     def getitem(self, w_obj, w_item):
         return w_obj.deref().getitem(self, w_item.deref())
 
-    def itemreference(self, w_obj, w_item):
-        return w_obj.deref().itemreference(self, w_item.deref())
-
     def setitem(self, w_obj, w_item, w_value):
-        return w_obj.deref().setitem(self, w_item.deref(),
-                                     w_value.deref_for_store())
+        # returns the w_newobj, which is the new version of w_obj
+        return w_obj.deref().setitem(self, w_item.deref(), w_value.deref())
+
+    def setitem2(self, w_obj, w_item, w_value):
+        # returns a pair (w_newobj, w_newvalue)
+        w_obj = w_obj.deref()
+        if w_obj.tp == self.tp_str:
+            c = self.getchar(w_value)
+            w_value = SINGLE_CHAR_STRING[ord(c)]
+        else:
+            w_value = w_value.deref()
+        w_newobj = w_obj.setitem(self, w_item.deref(), w_value)
+        return (w_newobj, w_value)
+    setitem2._always_inline_ = True     # returns a tuple
+
+    def setitem_ref(self, w_obj, w_item, w_ref):
+        return w_obj.deref().setitem_ref(self, w_item.deref(), w_ref)
+
+    def unsetitem(self, w_obj, w_item):
+        return w_obj.deref().unsetitem(self, w_item.deref())
 
     def concat(self, w_left, w_right):
         return self.as_string(w_left).strconcat(self, self.as_string(w_right))
@@ -160,7 +175,7 @@ class ObjSpace(object):
         return w_obj.deref().strlen()
 
     def arraylen(self, w_obj):
-        return w_obj.deref().arraylen(self)
+        return w_obj.deref().arraylen()
 
     def slice(self, w_arr, start, end, keep_keys):
         res_arr = []
@@ -188,8 +203,8 @@ class ObjSpace(object):
             return self.new_array_from_pairs(res_arr)
         return self.new_array_from_list([v for _, v in res_arr])
 
-    def append(self, w_arr, w_val):
-        w_arr.deref().append(self, w_val.deref_for_store())
+    def append_index(self, w_arr):
+        return w_arr.deref().append_index(self)
 
     def getchar(self, w_obj):
         # get first character
@@ -212,13 +227,23 @@ class ObjSpace(object):
         return True
 
     def new_array_from_list(self, lst_w):
-        return new_array_from_list(self, lst_w)
+        return W_ArrayObject.new_array_from_list(self, lst_w)
 
-    def new_array_from_pairs(self, lst_w):
-        return new_array_from_pairs(self, lst_w)
+    def new_array_from_rdict(self, rdict_w):
+        # 'dict_w' is a RDict that contains {"rpython string": W_Objects}
+        return W_ArrayObject.new_array_from_rdict(self, rdict_w)
 
-    def new_map_from_pairs(self, lst_w):
-        return new_map_from_pairs(self, lst_w)
+    def new_array_from_dict(self, dict_w):
+        "NOT_RPYTHON: for tests only (gets a random ordering)"
+        rdict_w = RDict(W_Root)
+        for key, w_value in dict_w.items():
+            rdict_w[key] = w_value
+        return W_ArrayObject.new_array_from_rdict(self, rdict_w)
+
+    def new_array_from_pairs(self, pairs_ww):
+        return W_ArrayObject.new_array_from_pairs(self, pairs_ww)
+
+    new_map_from_pairs = new_array_from_pairs   # for now
 
     def iter(self, w_arr):
         return ObjSpaceWithIter(self, w_arr)
@@ -226,6 +251,13 @@ class ObjSpace(object):
     def create_iter(self, w_arr):
         w_arr = w_arr.deref()
         return w_arr.create_iter(self)
+
+    def create_iter_ref(self, w_arr_ref):
+        from hippy.objects.arrayiter import W_ArrayIteratorByReference
+        if not isinstance(w_arr_ref, W_Reference):
+            raise self.ec.fatal("foreach(1 as &2): argument 1 must be a "
+                                "variable")
+        return W_ArrayIteratorByReference(self, w_arr_ref)
 
     def str_hash(self, w_obj):
         return w_obj.deref().hash()
@@ -281,7 +313,4 @@ W_BoolObject.tp = ObjSpace.tp_bool
 W_IntObject.tp = ObjSpace.tp_int
 W_StringObject.tp = ObjSpace.tp_str
 W_ArrayObject.tp = ObjSpace.tp_array
-W_Cell.tp = ObjSpace.tp_cell
 W_NullObject.tp = ObjSpace.tp_null
-W_Reference.tp = ObjSpace.tp_reference
-W_FakeIndex.tp = ObjSpace.tp_fakeindex

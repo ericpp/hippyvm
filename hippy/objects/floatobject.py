@@ -1,7 +1,10 @@
-
+import sys
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
+from pypy.rlib.rarithmetic import intmask, ovfcheck
+from pypy.rlib.rfloat import isnan
+
 
 class W_FloatObject(W_Root):
     _immutable_fields_ = ['floatval']
@@ -11,9 +14,6 @@ class W_FloatObject(W_Root):
 
     def _truncate(self, space):
         return space.wrap(int(self.floatval))
-
-    def copy(self, space):
-        return self # immutable object
 
     def as_number(self, space):
         return self
@@ -28,6 +28,22 @@ class W_FloatObject(W_Root):
 
     def as_string(self, space):
         return space.newstrconst(self._as_str())
+
+    def int_w(self, space):
+        if isnan(self.floatval):
+            result = -sys.maxint-1
+            space.ec.hippy_warn("cast float to integer: NaN"
+                                " is returned as %d" % result)
+            return result
+        try:
+            result = intmask(int(self.floatval))
+        except OverflowError:
+            result = 0    # +/- infinity
+        if result != self.floatval:
+            space.ec.hippy_warn("cast float to integer: value %s overflows"
+                                " and is returned as %d" % (self._as_str(),
+                                                            result))
+        return result
 
     def coerce(self, space, tp):
         if tp == space.tp_float:

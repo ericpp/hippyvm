@@ -1,5 +1,4 @@
 from rply import Token
-from pypy.rlib.rsre.rsre_re import compile
 
 KEYWORDS = {
     "print": 'T_PRINT',
@@ -308,7 +307,7 @@ class Lexer(object):
 
         See below for an example of usage.
     """
-    def __init__(self, rules, skip_whitespace=False):
+    def __init__(self, rules, skip_whitespace=False, use_rsre=False):
         """ Create a lexer.
 
             rules:
@@ -323,6 +322,10 @@ class Lexer(object):
                 specify your rules for whitespace, or it will be
                 flagged as an error.
         """
+        if use_rsre:
+            from pypy.rlib.rsre.rsre_re import compile
+        else:
+            from re import compile
         self.rules = []
         for regex, type in rules:
             self.rules.append((compile(regex), type))

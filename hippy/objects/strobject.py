@@ -1,10 +1,7 @@
 
-import weakref
-from pypy.rlib.rerased import new_erasing_pair
-from pypy.rlib.objectmodel import instantiate, specialize, compute_hash
-from pypy.rlib import jit, rfloat, debug
+from pypy.rlib.objectmodel import compute_hash
+from pypy.rlib import debug
 from pypy.rlib.rstring import StringBuilder
-from pypy.tool.sourcetools import func_with_new_name
 from hippy.objects.base import W_Root
 from hippy.objects.convert import convert_string_to_number
 

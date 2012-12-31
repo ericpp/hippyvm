@@ -12,8 +12,8 @@ class W_BoolObject(W_Root):
 
     def as_string(self, space):
         if self.boolval:
-            return space.newstrconst('1')
-        return space.newstrconst('')
+            return space.newstr('1')
+        return space.newstr('')
 
     def as_number(self, space):
         return space.newint(int(self.boolval))

@@ -36,7 +36,7 @@ class W_IntObject(W_Root):
         return self
 
     def as_string(self, space):
-        return space.newstrconst(str(self.intval))
+        return space.newstr(str(self.intval))
 
     def coerce(self, space, tp):
         if tp == space.tp_int:

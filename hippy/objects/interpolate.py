@@ -19,4 +19,4 @@ class W_StrInterpolation(W_Root):
             r.append(space.str_w(space.as_string(
                 frame.load_fast(self.var_nums[i]))))
             r.append(self.strings[i + 1])
-        return space.newstrconst(''.join(r))
+        return space.newstr(''.join(r))

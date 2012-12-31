@@ -115,8 +115,6 @@ class ObjSpace(object):
             return W_StringObject.newconststr(v)
         return W_StringObject.newmutablestr(v)
 
-    newstrconst = newstr
-
     def str_w(self, w_v):
         return self.as_string(w_v).str_w(self)
 

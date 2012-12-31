@@ -279,7 +279,7 @@ def printf(space, format, args_w):
         space.ec.hippy_warn("printf(): Too many arguments passed, "
                             "ignoring the %d extra" % (len(args_w) - no,))
     s = builder.build()
-    space.ec.interpreter.echo(space, space.newstrconst(s))
+    space.ec.interpreter.echo(space, space.newstr(s))
     return space.wrap(len(s))
 
 @wrap(['space', W_Root])
@@ -386,21 +386,21 @@ def file_get_contents(space, fname):
     f = open_file_as_stream(fname, 'r')
     res = f.readall()
     f.close()
-    return space.newstrconst(res)
+    return space.newstr(res)
 
 @wrap(['space'])
 def getrusage(space):
     pairs = [
-        (space.newstrconst('ru_utime.tv_sec'), space.wrap(time.time())),
-        (space.newstrconst('ru_utime.tv_usec'), space.wrap(0)),
-        (space.newstrconst('ru_stime.tv_sec'), space.wrap(0)),
-        (space.newstrconst('ru_stime.tv_usec'), space.wrap(0))
+        (space.newstr('ru_utime.tv_sec'), space.wrap(time.time())),
+        (space.newstr('ru_utime.tv_usec'), space.wrap(0)),
+        (space.newstr('ru_stime.tv_sec'), space.wrap(0)),
+        (space.newstr('ru_stime.tv_usec'), space.wrap(0))
         ]
     return space.new_array_from_pairs(pairs)
 
 @wrap(['space', str, int])
 def str_repeat(space, s, repeat):
-    return space.newstrconst(s * repeat)
+    return space.newstr(s * repeat)
 
 @wrap(['space', bool])
 def microtime(space, is_float):
@@ -410,7 +410,7 @@ def microtime(space, is_float):
 
 @wrap(['space', W_Root])
 def gettype(space, w_x):
-    return space.newstrconst(space.TYPENAMES[w_x.tp])
+    return space.newstr(space.TYPENAMES[w_x.tp])
 
 @wrap(['space', str])
 def function_exists(space, funcname):
@@ -454,7 +454,7 @@ def print_r(space, args_w):
     _print_r(space, args_w[0], '', {}, builder)
     result = builder.build()
     if len(args_w) >= 2 and space.is_true(args_w[1]):
-        return space.newstrconst(result)
+        return space.newstr(result)
     else:
         space.ec.writestr(result)
         return space.w_True

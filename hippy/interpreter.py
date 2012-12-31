@@ -1,5 +1,4 @@
 
-from hippy.rpython.rdict import RDict
 from hippy.consts import BYTECODE_NUM_ARGS, BYTECODE_NAMES,\
      BINOP_LIST, RETURN
 from hippy.builtin import setup_builtin_functions, AbstractFunction
@@ -333,11 +332,11 @@ class Interpreter(object):
         return pc
 
     def LOAD_NAME(self, bytecode, frame, space, arg, arg2, pc):
-        frame.push(space.newstrconst(bytecode.names[arg]))
+        frame.push(space.newstr(bytecode.names[arg]))
         return pc
 
     def LOAD_VAR_NAME(self, bytecode, frame, space, arg, arg2, pc):
-        frame.push(space.newstrconst(bytecode.varnames[arg]))
+        frame.push(space.newstr(bytecode.varnames[arg]))
         return pc
 
     def LOAD_REF(self, bytecode, frame, space, arg, arg2, pc):

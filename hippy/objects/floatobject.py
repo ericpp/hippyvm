@@ -2,7 +2,7 @@ import sys
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
-from pypy.rlib.rarithmetic import intmask, ovfcheck
+from pypy.rlib.rarithmetic import intmask
 from pypy.rlib.rfloat import isnan
 
 
@@ -27,7 +27,7 @@ class W_FloatObject(W_Root):
         return s
 
     def as_string(self, space):
-        return space.newstrconst(self._as_str())
+        return space.newstr(self._as_str())
 
     def int_w(self, space):
         if isnan(self.floatval):

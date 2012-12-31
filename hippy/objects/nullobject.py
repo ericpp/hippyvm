@@ -9,7 +9,7 @@ class W_NullObject(W_Root):
         return space.wrap(0)
 
     def as_string(self, space):
-        return space.newstrconst("")
+        return space.newstr("")
 
     def int_w(self, space):
         return 0

@@ -66,7 +66,7 @@ def _unserialize(space, fp):
         data = fp.read(length)
         fp.expect('"')
         fp.expect(';')
-        return space.newstrconst(data)
+        return space.newstr(data)
     if type_ == 'a':
         fp.expect(':')
         return load_array(space, fp)

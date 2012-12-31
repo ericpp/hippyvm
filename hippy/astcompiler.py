@@ -490,7 +490,7 @@ class __extend__(ConstantStr):
             ctx.emit(consts.LOAD_NAME, no)
 
     def wrap(self, space):
-        return space.newstrconst(self.strval)
+        return space.newstr(self.strval)
 
 class __extend__(BinOp):
     def compile(self, ctx):

@@ -13,13 +13,13 @@ class TestArrayDirect(object):
         return (int_arr,
                 space.new_array_from_list([space.wrap(1.2), space.wrap(2.2)]),
                 space.new_array_from_list([space.wrap(1.2),
-                                           space.newstrconst("x")]),
+                                           space.newstr("x")]),
                 space.new_array_from_list([]),
                 space.new_array_from_pairs([
-                    (space.newstrconst("xyz"), space.wrap(1)),
-                    (space.newstrconst("a"), space.wrap(2)),
-                    (space.newstrconst("b"), space.wrap(3)),
-                    (space.newstrconst("c"), space.wrap(4))]),
+                    (space.newstr("xyz"), space.wrap(1)),
+                    (space.newstr("a"), space.wrap(2)),
+                    (space.newstr("b"), space.wrap(3)),
+                    (space.newstr("c"), space.wrap(4))]),
                 int_arr)  #.copy(space))
 
     def test_value_iterators(self):
@@ -92,21 +92,21 @@ class TestArrayDirect(object):
         assert mix_arr.isset_index(space, space.wrap(0))
         assert not mix_arr.isset_index(space, space.wrap(13))
         assert not empty.isset_index(space, space.wrap(0))
-        assert hash.isset_index(space, space.newstrconst("a"))
-        assert hash.isset_index(space, space.newstrconst("xyz"))
+        assert hash.isset_index(space, space.newstr("a"))
+        assert hash.isset_index(space, space.newstr("xyz"))
         assert not hash.isset_index(space, space.wrap(3))
         assert cp_arr.isset_index(space, space.wrap(0))
         assert not cp_arr.isset_index(space, space.wrap(13))
 
     def test_hashes(self):
         space = ObjSpace()
-        assert space.wrap(1).hash(space) == space.newstrconst("1").hash(space)
-        assert space.wrap(123).hash(space) == space.newstrconst("123").hash(space)
+        assert space.wrap(1).hash(space) == space.newstr("1").hash(space)
+        assert space.wrap(123).hash(space) == space.newstr("123").hash(space)
 
     def test_map(self):
         space = ObjSpace()
-        w_a = space.newstrconst("a")
-        w_b = space.newstrconst("b")
+        w_a = space.newstr("a")
+        w_b = space.newstr("b")
         w_arr = space.new_map_from_pairs([(w_a, space.wrap(0)),
                                          (w_b , space.wrap(12))])
         assert space.int_w(space.getitem(w_arr, w_a)) == 0
@@ -115,20 +115,20 @@ class TestArrayDirect(object):
         assert w_arr.arraylen() == 2
         assert w_arr.isset_index(space, w_b)
         assert not w_arr.isset_index(space, space.wrap(0))
-        assert not w_arr.isset_index(space, space.newstrconst("c"))
+        assert not w_arr.isset_index(space, space.newstr("c"))
         w_arr2 = space.setitem(w_arr, space.wrap(0), space.wrap(15))
         assert w_arr2.strategy_name == 'hash'
         assert space.int_w(space.getitem(w_arr, w_a)) == 0
         assert space.int_w(space.getitem(w_arr, w_b)) == 3
         assert space.int_w(space.getitem(w_arr2, space.wrap(0))) == 15
-        w_arr = space.setitem(w_arr, space.newstrconst("c"), space.wrap(38))
+        w_arr = space.setitem(w_arr, space.newstr("c"), space.wrap(38))
         assert w_arr.strategy_name == 'hash'
 
     def test_map_iter(self):
         space = ObjSpace()
         unpack = self.unpack
-        w_a = space.newstrconst("a")
-        w_b = space.newstrconst("b")
+        w_a = space.newstr("a")
+        w_b = space.newstr("b")
         w_arr = space.new_map_from_pairs([(w_a, space.wrap(0)),
                                          (w_b , space.wrap(12))])
         w_iter = w_arr.create_iter(space)

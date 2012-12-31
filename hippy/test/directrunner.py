@@ -21,7 +21,7 @@ def parse_array(space, i, lines, lgt):
         line = lines[i].strip()
         assert line.endswith('=>')
         if line[1] == '"':
-            w_key = space.newstrconst(line[2:-4])
+            w_key = space.newstr(line[2:-4])
         else:
             w_key = space.wrap(int(line[1:-3]))
         w_value, i = parse_single(space, i + 1, lines)
@@ -43,7 +43,7 @@ def parse_single(space, i, lines):
         return parse_array(space, i + 1, lines, lgt)
     elif line.startswith('string'):
         lgt = int(line[len('string') + 1:line.find(')')])
-        return space.newstrconst(line[line.find('"') + 1:-1]), i + 1
+        return space.newstr(line[line.find('"') + 1:-1]), i + 1
     else:
         raise Exception("unsupported line %s" % line)
 

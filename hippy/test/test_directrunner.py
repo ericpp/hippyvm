@@ -1,4 +1,4 @@
-import py
+
 from hippy.test.directrunner import source_replace, run_source, run_php_source
 from hippy.objspace import ObjSpace
 
@@ -41,7 +41,7 @@ def test_parse_array_output():
     assert space.arraylen(output[0]) == 3
     assert space.arraylen(output[1]) == 1
     assert space.int_w(space.getitem(output[0], space.wrap(2))) == 3
-    assert space.int_w(space.getitem(output[1], space.newstrconst('c'))) == 2
+    assert space.int_w(space.getitem(output[1], space.newstr('c'))) == 2
 
 
 def test_parse_str():

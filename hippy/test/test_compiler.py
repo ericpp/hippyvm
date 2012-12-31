@@ -1,5 +1,4 @@
 
-import py
 from hippy.objects.intobject import W_IntObject
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast, bc_preprocess, CompilerContext
@@ -1031,10 +1030,10 @@ class TestCompiler(object):
         arr = bc.consts[0]
         space = self.space
         assert arr.tp == space.tp_array
-        assert space.str_w(space.getitem(arr, space.newstrconst('abc'))) == "def"
+        assert space.str_w(space.getitem(arr, space.newstr('abc'))) == "def"
 
     def test_make_array_ref(self):
-        bc = self.check_compile("""
+        self.check_compile("""
         array(&$a);
         """, """
         LOAD_REF 0
@@ -1045,7 +1044,7 @@ class TestCompiler(object):
         """)
 
     def test_make_hash_ref(self):
-        bc = self.check_compile("""
+        self.check_compile("""
         array(5=>&$a);
         """, """
         LOAD_CONST 0

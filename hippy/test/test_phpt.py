@@ -2,15 +2,10 @@
 import py
 import os
 import fnmatch
-from hippy.interpreter import Interpreter, Frame
-from hippy.objspace import ObjSpace
-from hippy.sourceparser import parse
-from hippy.astcompiler import compile_ast
-from hippy.conftest import option
-from hippy.test.test_interpreter import BaseTestInterpreter
+from hippy.interpreter import Interpreter
+from hippy.test.test_interpreter import BaseTestInterpreter, MockLogger
 
-py.test.skip("XXX in-progress")
-
+py.test.skip("in progress")
 
 def parse_phpt(fname):
     src = []
@@ -49,12 +44,12 @@ class MockInterpreter(Interpreter):
     """ Like the interpreter, but captures stdout
     """
     def __init__(self, space):
-        Interpreter.__init__(self, space)
+        logger = MockLogger()
+        Interpreter.__init__(self, space, logger)
         self.output = []
 
     def echo(self, space, v):
-        self.output.append(v.deref().copy(space))
-
+        self.output.append(space.str_w(v.deref()))
 
 
 def pytest_generate_tests(metafunc):
@@ -74,6 +69,7 @@ PHPT_FILES.sort()
 
 class TestPHPTSuite(BaseTestInterpreter):
     phpt_files = PHPT_FILES
+    interpreter = MockInterpreter
 
     def test_phpt(self, file_name):
         (tname, src, exp) = parse_phpt(file_name)

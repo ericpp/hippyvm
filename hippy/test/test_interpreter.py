@@ -37,6 +37,8 @@ class MockInterpreter(Interpreter):
         self.output.append(w.deref())
 
 class BaseTestInterpreter(object):
+    interpreter = MockInterpreter
+    
     def run(self, source):
         # preparse the source a bit so traceback starts with the
         # correct number of whitespaces
@@ -51,7 +53,7 @@ class BaseTestInterpreter(object):
         source = "".join(lines)
         if option.runappdirect:
             return self.run_direct(source)
-        interp = MockInterpreter(self.space)
+        interp = self.interpreter(self.space)
         self.space.ec.writestr = interp.output.append
         bc = self.compile(source)
         self.interp = interp

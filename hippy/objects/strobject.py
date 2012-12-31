@@ -1,10 +1,6 @@
 
-import weakref
-from pypy.rlib.rerased import new_erasing_pair
-from pypy.rlib.objectmodel import instantiate, specialize, compute_hash
-from pypy.rlib import jit, rfloat, debug
+from pypy.rlib.objectmodel import compute_hash
 from pypy.rlib.rstring import StringBuilder
-from pypy.tool.sourcetools import func_with_new_name
 from hippy.objects.base import W_Root
 from hippy.objects.convert import convert_string_to_number
 
@@ -17,8 +13,8 @@ class W_StringObject(W_Root):
     """
 
     @staticmethod
-    def newliststr(chars):
-        return W_ListStringObject(chars)
+    def newmutablestr(chars):
+        return W_MutableStringObject(chars)
 
     @staticmethod
     def newconststr(s):
@@ -51,11 +47,11 @@ class W_StringObject(W_Root):
         if self.is_really_valid_number(space):
             return self.as_number(space).uplusplus(space)
         result = self.as_unique_strlist()
-        chars = result._chars
+        chars = result._arrayval
         i = len(chars) - 1
         extra = '1'
         while i >= 0:
-            c = chars[i]
+            c = chr(chars[i])
             if not c.isalnum():
                 break
             if c == '9':
@@ -68,12 +64,12 @@ class W_StringObject(W_Root):
                 c = 'a'
                 extra = 'a'
             else:
-                chars[i] = chr(ord(c) + 1)
+                chars[i] = ord(c) + 1
                 break
-            chars[i] = c
+            chars[i] = ord(c)
             i -= 1
         else:
-            result.set_chars([extra] + chars)
+            result.set_arrayval(extra + chars)
         return result
 
     def uminusminus(self, space):
@@ -130,10 +126,6 @@ class StringMixin(object):
         assert 0 <= index < self.strlen()
         return SINGLE_CHAR_STRING[ord(self.character(index))]
 
-    def as_unique_strlist(self):
-        chars = [self.character(i) for i in range(self.strlen())]
-        return W_ListStringObject(chars, flag=1)
-
     def setitem(self, space, w_arg, w_value):
         index = space.int_w(w_arg)
         c = space.getchar(w_value)
@@ -181,28 +173,29 @@ class W_ConstStringObject(StringMixin, W_StringObject):
     def str_w(self, space):
         return self._strval
 
+    def as_unique_strlist(self):
+        return W_MutableStringObject(bytearray(self._strval), flag=1)
 
-class W_ListStringObject(StringMixin, W_StringObject):
+class W_MutableStringObject(StringMixin, W_StringObject):
     _refcount = 0
 
-    def __init__(self, chars, flag=0):
-        _new_mutable_string(chars, flag)
-        self.set_chars(chars)
+    def __init__(self, val, flag=0):
+        assert isinstance(val, bytearray)
+        self._arrayval = val
 
-    def set_chars(self, chars):
-        debug.check_annotation(chars, _is_fixed_list_of_chars)
-        self._chars = chars
+    def set_arrayval(self, val):
+        self._arrayval = val
 
     def set_char_at(self, index, c):
         assert index >= 0, "XXX: negative string offset, ignore"
-        assert index <= len(self._chars), "XXX:insert spaces until long enough"
-        self._chars[index] = c
+        assert index <= len(self._arrayval), "XXX:insert spaces until long enough"
+        self._arrayval[index] = ord(c)
 
     def as_unique_strlist(self):
         #if self._refcount == 1:
         #    return self
         #assert self._refcount > 1
-        return W_ListStringObject(self._chars[:], flag=2)
+        return W_MutableStringObject(self._arrayval[:], flag=2)
 
     def incref(self):
         self._refcount += 1
@@ -211,23 +204,13 @@ class W_ListStringObject(StringMixin, W_StringObject):
         self._refcount -= 1
 
     def strlen(self):
-        return len(self._chars)
+        return len(self._arrayval)
 
     def character(self, index):
-        return self._chars[index]
+        return chr(self._arrayval[index])
 
     def str_w(self, space):
-        return ''.join(self._chars)
-
-
-def _is_fixed_list_of_chars(s_arg, bookkeeper):
-    from pypy.annotation.model import SomeList, SomeChar
-    assert isinstance(s_arg, SomeList)
-    s_arg.listdef.never_resize()
-    assert SomeChar().contains(s_arg.listdef.listitem.s_value)
-
-def _new_mutable_string(chars, flag):
-    pass
+        return str(self._arrayval)
 
 SINGLE_CHAR_STRING = [W_ConstStringObject(chr(_i)) for _i in range(256)]
 EMPTY_STRING = W_ConstStringObject("")

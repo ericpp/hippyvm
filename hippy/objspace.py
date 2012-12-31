@@ -113,7 +113,7 @@ class ObjSpace(object):
     def newstr(self, v):
         if isinstance(v, str):
             return W_StringObject.newconststr(v)
-        return W_StringObject.newliststr(v)
+        return W_StringObject.newmutablestr(v)
 
     newstrconst = newstr
 

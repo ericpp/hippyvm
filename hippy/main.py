@@ -17,13 +17,11 @@ from hippy.logger import Logger, InterpreterError
 from hippy.objspace import getspace
 from pypy.rlib.streamio import open_file_as_stream
 from pypy.rlib.rgc import dump_rpy_heap
-from pypy.rlib import jit
 
 class Error(Exception):
     pass
 
 def entry_point(argv):
-    jit.set_param(None, 'trace_limit', 20000)
     if len(argv) < 2:
         print __doc__
         return 1

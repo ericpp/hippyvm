@@ -6,17 +6,16 @@ hippy <file.php> [--gcdump gcdumpfile]
 and enjoy
 """
 
-import sys, os, pdb
+import sys, os
 
 if __name__ == '__main__':
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from hippy.phpcompiler import compile_php
-from hippy.interpreter import Interpreter, Frame
+from hippy.interpreter import Interpreter
 from hippy.logger import Logger, InterpreterError
 from hippy.objspace import getspace
 from pypy.rlib.streamio import open_file_as_stream
-from pypy.rlib.objectmodel import we_are_translated
 from pypy.rlib.rgc import dump_rpy_heap
 from pypy.rlib import jit
 

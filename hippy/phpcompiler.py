@@ -1,7 +1,6 @@
 from hippy.lexer import Token, Lexer
 from hippy.sourceparser import SourceParser, LexerWrapper, RULES
 from hippy.astcompiler import compile_ast
-from hippy import consts
 
 
 class PHPLexerWrapper(LexerWrapper):

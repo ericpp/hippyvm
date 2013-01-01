@@ -16,7 +16,9 @@ class BaseTestPHP(BaseTestInterpreter):
         return compile_php('<input>', source, self.space)
 
     def run_direct(self, source):
-        return run_php_source(self.space, source)
+        space = self.space
+        s = run_php_source(space, source)
+        return [space.newstr(s)]
 
 
 def test_phplexerwrapper():

@@ -265,8 +265,9 @@ class __extend__(Block):
 
 class __extend__(LiteralBlock):
     def compile(self, ctx):
-        ctx.emit(consts.LOAD_NAME, ctx.create_name(self.literal_text))
-        ctx.emit(consts.ECHO, 1)
+        if len(self.literal_text) > 0:
+            ctx.emit(consts.LOAD_NAME, ctx.create_name(self.literal_text))
+            ctx.emit(consts.ECHO, 1)
 
 class __extend__(Stmt):
     def compile(self, ctx):

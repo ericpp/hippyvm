@@ -35,12 +35,9 @@ class PHPLexerWrapper(LexerWrapper):
         tagindex = source.find('<?', self.startindex)
         if tagindex == -1:
             tagindex = len(source)
-        if tagindex > self.startindex:
-            block_of_text = source[self.startindex:tagindex]
-            tok = Token('B_LITERAL_BLOCK', block_of_text, self.startlineno)
-            self.startlineno += block_of_text.count('\n')
-        else:
-            tok = None
+        block_of_text = source[self.startindex:tagindex]   # may be empty
+        tok = Token('B_LITERAL_BLOCK', block_of_text, self.startlineno)
+        self.startlineno += block_of_text.count('\n')
         if source[tagindex:tagindex+5].lower() == '<?php':
             pos = tagindex + 5
         elif source[tagindex:tagindex+3] == '<?=':
@@ -49,12 +46,7 @@ class PHPLexerWrapper(LexerWrapper):
         else:
             pos = tagindex + 2
         self.lexer.input(self.source, pos, self.startlineno)
-        if tok is not None:
-            return tok
-        elif self.mode == MODE_EQUALSIGN:
-            return self.next_equal_sign()
-        else:
-            return self.next_phpcode()
+        return tok
 
     def next_equal_sign(self):
         self.mode = MODE_PHPCODE

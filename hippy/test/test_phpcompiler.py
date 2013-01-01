@@ -121,3 +121,7 @@ class TestPHPCompiler(BaseTestPHP):
     def test_automatic_echo_3(self):
         output = self.run('abc<?=2+3,7-1; echo 8+1;?>def')
         assert output == 'abc569def'
+
+    def test_automatic_echo_4(self):
+        output = self.run('abc<?=2+3?><?=6*7?>def')
+        assert output == 'abc542def'

@@ -3,36 +3,64 @@ from hippy.sourceparser import SourceParser, LexerWrapper, RULES
 from hippy.astcompiler import compile_ast
 
 
+MODE_LITERAL   = 0
+MODE_EQUALSIGN = 1
+MODE_PHPCODE   = 2
+
+
 class PHPLexerWrapper(LexerWrapper):
     def __init__(self, source):
         self.lexer = Lexer(RULES)
         self.source = source
         self.startlineno = 1
         self.startindex = 0
+        self.mode = MODE_LITERAL
 
     def next(self):
-        if self.startindex >= 0:
-            # "literal" mode, i.e. outside "<?php ?>" tags: generates
-            # one B_LITERAL_BLOCK until the next opening "<?php" tag
-            source = self.source
-            tagindex = source.find('<?', self.startindex)
-            if tagindex == -1:
-                tagindex = len(source)
-            if tagindex > self.startindex:
-                block_of_text = source[self.startindex:tagindex]
-                tok = Token('B_LITERAL_BLOCK', block_of_text, self.startlineno)
-                self.startlineno += block_of_text.count('\n')
-            else:
-                tok = None
-            if source[tagindex:tagindex+5].lower() == '<?php':
-                pos = tagindex + 5
-            else:
-                pos = tagindex + 2
-            self.lexer.input(self.source, pos, self.startlineno)
-            self.startindex = -1
-            if tok is not None:
-                return tok
-        #
+        mode = self.mode
+        if mode == MODE_PHPCODE:
+            return self.next_phpcode()
+        elif mode == MODE_LITERAL:
+            return self.next_literal_mode()
+        elif mode == MODE_EQUALSIGN:
+            return self.next_equal_sign()
+        else:
+            assert 0
+
+    def next_literal_mode(self):
+        # "literal" mode, i.e. outside "<?php ?>" tags: generates
+        # one B_LITERAL_BLOCK until the next opening "<?php" tag
+        self.mode = MODE_PHPCODE
+        source = self.source
+        tagindex = source.find('<?', self.startindex)
+        if tagindex == -1:
+            tagindex = len(source)
+        if tagindex > self.startindex:
+            block_of_text = source[self.startindex:tagindex]
+            tok = Token('B_LITERAL_BLOCK', block_of_text, self.startlineno)
+            self.startlineno += block_of_text.count('\n')
+        else:
+            tok = None
+        if source[tagindex:tagindex+5].lower() == '<?php':
+            pos = tagindex + 5
+        elif source[tagindex:tagindex+3] == '<?=':
+            pos = tagindex + 3
+            self.mode = MODE_EQUALSIGN
+        else:
+            pos = tagindex + 2
+        self.lexer.input(self.source, pos, self.startlineno)
+        if tok is not None:
+            return tok
+        elif self.mode == MODE_EQUALSIGN:
+            return self.next_equal_sign()
+        else:
+            return self.next_phpcode()
+
+    def next_equal_sign(self):
+        self.mode = MODE_PHPCODE
+        return Token("T_ECHO", "echo", self.startlineno)
+
+    def next_phpcode(self):
         while 1:
             tok = self.lexer.token()
             if tok is None:
@@ -59,6 +87,7 @@ class PHPLexerWrapper(LexerWrapper):
         # generates a ";" token followed by a B_LITERAL_BLOCK
         self.startlineno = tok.getsourcepos()
         self.startindex = endpos
+        self.mode = MODE_LITERAL
         if (self.startindex < len(self.source) and
                 self.source[self.startindex] == '\n'):
             self.startlineno += 1     # consume \n if immediately following

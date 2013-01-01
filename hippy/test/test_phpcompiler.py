@@ -107,3 +107,7 @@ class TestPHPCompiler(BaseTestPHP):
     def test_multiple_use_of_block_of_text(self):
         output = self.run('<?for($x=0; $x<5; $x++){?>-+-+-\n<?}')
         assert output == '-+-+-\n' * 5
+
+    def test_automatic_echo(self):
+        output = self.run('abc<?=2+3?>def')
+        assert output == 'abc5def'

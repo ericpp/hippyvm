@@ -129,3 +129,12 @@ class TestPHPCompiler(BaseTestPHP):
 
     def test_automatic_echo_5(self):
         py.test.raises(Exception, self.run, 'abc<? =2+3?>def')
+
+    def test_automatic_echo_6(self):
+        output = self.run('abc<?=2+3?>\ndef<?=6*7?> \nghi')
+        assert output == 'abc5def42 \nghi'
+
+    def test_automatic_echo_7(self):
+        output = self.run('abc<?=2+3;')
+        assert output == 'abc5'
+        py.test.raises(Exception, self.run, 'abc<?=2+3')

@@ -1,3 +1,4 @@
+import py
 from hippy.test.test_interpreter import BaseTestInterpreter
 from hippy.test.directrunner import run_php_source
 from hippy.phpcompiler import compile_php, PHPLexerWrapper
@@ -125,3 +126,6 @@ class TestPHPCompiler(BaseTestPHP):
     def test_automatic_echo_4(self):
         output = self.run('abc<?=2+3?><?=6*7?>def')
         assert output == 'abc542def'
+
+    def test_automatic_echo_5(self):
+        py.test.raises(Exception, self.run, 'abc<? =2+3?>def')

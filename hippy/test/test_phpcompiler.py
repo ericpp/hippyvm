@@ -110,6 +110,14 @@ class TestPHPCompiler(BaseTestPHP):
         output = self.run('<?for($x=0; $x<5; $x++){?>-+-+-\n<?}')
         assert output == '-+-+-\n' * 5
 
-    def test_automatic_echo(self):
+    def test_automatic_echo_1(self):
         output = self.run('abc<?=2+3?>def')
         assert output == 'abc5def'
+
+    def test_automatic_echo_2(self):
+        output = self.run('abc<?=2+3,7-1?>def')
+        assert output == 'abc56def'
+
+    def test_automatic_echo_3(self):
+        output = self.run('abc<?=2+3,7-1; echo 8+1;?>def')
+        assert output == 'abc569def'

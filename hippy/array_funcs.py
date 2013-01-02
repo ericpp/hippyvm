@@ -14,7 +14,7 @@ def is_int(s):
             return False
     return True
 
-# array_change_key_case — Changes all keys in an array
+# array_change_key_case - Changes all keys in an array
 @wrap(['space', W_Root, int])
 def array_change_key_case(space, w_arr, str_case):
     pairs = []
@@ -36,7 +36,7 @@ def array_change_key_case(space, w_arr, str_case):
                 pairs.append((w_key, w_value))
     return space.new_array_from_pairs(pairs)
 
-# array_chunk — Split an array into chunks
+# array_chunk - Split an array into chunks
 @wrap(['space', 'args_w'])
 def array_chunk(space, args_w):
     res_arr = []
@@ -59,7 +59,7 @@ arguments array and int")
         last_idx = i
     return space.new_array_from_list(res_arr)
 
-# array_combine — Creates an array by using one array for keys and another for its values
+# array_combine - Creates an array by using one array for keys and another for its values
 @wrap(['space', W_Root, W_Root])
 def array_combine(space, w_arr_a, w_arr_b):
     if w_arr_a.tp != space.tp_array:
@@ -79,7 +79,7 @@ def array_combine(space, w_arr_a, w_arr_b):
                 pairs.append((a_w_value, b_w_value))
     return space.new_array_from_pairs(pairs)
 
-# array_count_values — Counts all the values of an array
+# array_count_values - Counts all the values of an array
 @wrap(['space', W_Root])
 def array_count_values(space, w_arr):
     dct_w = new_rdict()
@@ -100,7 +100,7 @@ def array_count_values(space, w_arr):
             dct_w[key] = space.newint(nextval)
     return space.new_array_from_rdict(dct_w)
 
-# array_diff_assoc — Computes the difference of arrays with additional index check
+# array_diff_assoc - Computes the difference of arrays with additional index check
 @wrap(['space', 'args_w'])
 def array_diff_assoc(space, args_w):
     if len(args_w) < 2:
@@ -127,7 +127,7 @@ def array_diff_assoc(space, args_w):
                 pairs.append((w_key, w_val))
     return space.new_array_from_pairs(pairs)
 
-# array_diff_key — Computes the difference of arrays using keys for comparison
+# array_diff_key - Computes the difference of arrays using keys for comparison
 @wrap(['space', 'args_w'])
 def array_diff_key(space, args_w):
     if len(args_w) < 2:
@@ -151,26 +151,26 @@ def array_diff_key(space, args_w):
 
 
 
-# array_diff_uassoc — Computes the difference of arrays with additional
+# array_diff_uassoc - Computes the difference of arrays with additional
 #                     index check which is performed by a user supplied
 #                     callback function
 @wrap(['space', 'args_w'])
 def array_diff_uassoc(space, args_w):
     raise NotImplementedError()
 
-# array_diff_ukey — Computes the difference of arrays using a callback
+# array_diff_ukey - Computes the difference of arrays using a callback
 #                   function on the keys for comparison
 @wrap(['space', 'args_w'])
 def array_diff_ukey(space, args_w):
     raise NotImplementedError()
 
-# array_diff — Computes the difference of arrays
+# array_diff - Computes the difference of arrays
 @wrap(['space', 'args_w'])
 def array_diff(space, args_w):
     raise NotImplementedError()
 
 
-# array_fill_keys — Fill an array with values, specifying keys
+# array_fill_keys - Fill an array with values, specifying keys
 @wrap(['space', W_Root, W_Root])
 def array_fill_keys(space, w_arr, w_value):
     pairs = []
@@ -181,7 +181,7 @@ def array_fill_keys(space, w_arr, w_value):
     return space.new_array_from_pairs(pairs)
 
 
-# array_fill — Fill an array with values
+# array_fill - Fill an array with values
 @wrap(['space', W_Root, W_Root, W_Root])
 def array_fill(space, w_sidx, w_num, w_value):
     pairs = []
@@ -192,12 +192,12 @@ def array_fill(space, w_sidx, w_num, w_value):
     return space.new_array_from_pairs(pairs)
 
 
-# array_filter — Filters elements of an array using a callback function
+# array_filter - Filters elements of an array using a callback function
 @wrap(['space', W_Root, W_Root])
 def array_filter(space, w_arr, w_callback):
     raise NotImplementedError()
 
-# array_flip — Exchanges all keys with their associated values in an array
+# array_flip - Exchanges all keys with their associated values in an array
 @wrap(['space', W_Root])
 def array_flip(space, w_arr):
     pairs = []
@@ -212,39 +212,39 @@ def array_flip(space, w_arr):
                 pairs.append((w_val, w_key))
     return space.new_array_from_pairs(pairs)
 
-# array_intersect_assoc — Computes the intersection of arrays with additional index check
+# array_intersect_assoc - Computes the intersection of arrays with additional index check
 @wrap(['space', 'args_w'])
 def array_intersect_assoc(space, args_w):
     raise NotImplementedError()
 
-# array_intersect_key — Computes the intersection of arrays using keys for comparison
+# array_intersect_key - Computes the intersection of arrays using keys for comparison
 @wrap(['space', 'args_w'])
 def array_intersect_key(space, args_w):
     raise NotImplementedError()
 
-# array_intersect_uassoc — Computes the intersection of arrays with additional index check,
+# array_intersect_uassoc - Computes the intersection of arrays with additional index check,
 #                          compares indexes by a callback function
 @wrap(['space', 'args_w'])
 def array_intersect_uassoc(space, args_w):
     raise NotImplementedError()
 
-# array_intersect_ukey — Computes the intersection of arrays using a
+# array_intersect_ukey - Computes the intersection of arrays using a
 #                        callback function on the keys for comparison
 @wrap(['space', 'args_w'])
 def array_intersect_ukey(space, args_w):
     raise NotImplementedError()
 
-# array_intersect — Computes the intersection of arrays
+# array_intersect - Computes the intersection of arrays
 @wrap(['space', 'args_w'])
 def array_intersect(space, args_w):
     raise NotImplementedError()
 
-# array_key_exists — Checks if the given key or index exists in the array
+# array_key_exists - Checks if the given key or index exists in the array
 @wrap(['space', 'W_Root', 'W_Root'])
 def array_intersect(space, w_key, w_arr):
     raise NotImplementedError()
 
-# array_keys — Return all the keys or a subset of the keys of an array
+# array_keys - Return all the keys or a subset of the keys of an array
 @wrap(['space', 'args_w'])
 def array_keys(space, args_w):
     w_search = None
@@ -283,17 +283,17 @@ def array_keys(space, args_w):
                 idx += 1
     return space.new_array_from_pairs(pairs)
 
-# array_map — Applies the callback to the elements of the given arrays
+# array_map - Applies the callback to the elements of the given arrays
 @wrap(['space', 'args_w'])
 def array_map(space, args_w):
     raise NotImplementedError()
 
-# array_merge_recursive — Merge two or more arrays recursively
+# array_merge_recursive - Merge two or more arrays recursively
 @wrap(['space', 'args_w'])
 def array_merge_recursive(space, args_w):
     raise NotImplementedError()
 
-# array_merge — Merge one or more arrays
+# array_merge - Merge one or more arrays
 @wrap(['space', 'args_w'])
 def array_merge(space, args_w):
     lst = []  # list of values or (None, val) in case of ints
@@ -322,12 +322,12 @@ def array_merge(space, args_w):
         return space.new_array_from_pairs(r)
 
 
-# array_multisort — Sort multiple or multi-dimensional arrays
+# array_multisort - Sort multiple or multi-dimensional arrays
 @wrap(['space', 'args_w'])
 def array_multisort(space, args_w):
     raise NotImplementedError()
 
-# array_pad — Pad array to the specified length with a value
+# array_pad - Pad array to the specified length with a value
 def _pad_array(space, w_arr, pairs, idx):
     with space.iter(w_arr) as itr:
         while not itr.done():
@@ -359,13 +359,13 @@ def array_pad(space, w_arr, size, w_value):
         _pad_array(space, w_arr, pairs, idx)
     return space.new_array_from_pairs(pairs)
 
-# array_pop — Pop the element off the end of array
+# array_pop - Pop the element off the end of array
 @wrap(['space', 'W_Root'])
 def array_pop(space, w_arr):
     raise NotImplementedError()
 
 
-# array_product — Calculate the product of values in an array
+# array_product - Calculate the product of values in an array
 @wrap(['space', W_Root])
 def array_product(space, w_arr):
     if space.arraylen(w_arr) == 0:
@@ -377,50 +377,50 @@ def array_product(space, w_arr):
             res *= space.int_w(space.as_number(w_val))
     return space.newint(res)
 
-# array_push — Push one or more elements onto the end of array
+# array_push - Push one or more elements onto the end of array
 @wrap(['space', 'args_w'])
 def array_push(space, args_w):
     raise NotImplementedError()
 
-# array_rand — Pick one or more random entries out of an array
+# array_rand - Pick one or more random entries out of an array
 @wrap(['space', 'args_w'])
 def array_rand(space, args_w):
     raise NotImplementedError()
 
-# array_reduce — Iteratively reduce the array to a single
+# array_reduce - Iteratively reduce the array to a single
 #                value using a callback function
 @wrap(['space', 'args_w'])
 def array_reduce(space, args_w):
     raise NotImplementedError()
 
-# array_replace_recursive — Replaces elements from passed arrays
+# array_replace_recursive - Replaces elements from passed arrays
 #                           into the first array recursively
 @wrap(['space', 'args_w'])
 def array_replace_recursive(space, args_w):
     raise NotImplementedError()
 
-# array_replace — Replaces elements from passed arrays into the first array
+# array_replace - Replaces elements from passed arrays into the first array
 @wrap(['space', 'args_w'])
 def array_replace(space, args_w):
     raise NotImplementedError()
 
-# array_reverse — Return an array with elements in reverse order
+# array_reverse - Return an array with elements in reverse order
 @wrap(['space', 'args_w'])
 def array_reverse(space, args_w):
     raise NotImplementedError()
 
-# array_search — Searches the array for a given value and
+# array_search - Searches the array for a given value and
 #                returns the corresponding key if successful
 @wrap(['space', 'args_w'])
 def array_search(space, args_w):
     raise NotImplementedError()
 
-# array_shift — Shift an element off the beginning of array
+# array_shift - Shift an element off the beginning of array
 @wrap(['space', 'W_Root'])
 def array_shift(space, w_arr):
     raise NotImplementedError()
 
-# array_slice — Extract a slice of the array
+# array_slice - Extract a slice of the array
 @wrap(['space', 'args_w'])
 def array_slice(space, args_w):
     start = 0
@@ -461,12 +461,12 @@ def array_slice(space, args_w):
     return space.slice(w_arr, start, end, keep_keys)
 
 
-# array_splice — Remove a portion of the array and replace it with something else
+# array_splice - Remove a portion of the array and replace it with something else
 @wrap(['space', 'W_Root'])
 def array_splice(space, w_arr):
     raise NotImplementedError()
 
-# array_sum — Calculate the sum of values in an array
+# array_sum - Calculate the sum of values in an array
 @wrap(['space', W_Root])
 def array_sum(space, w_arr):
     res = 0
@@ -477,51 +477,51 @@ def array_sum(space, w_arr):
     return space.newint(res)
 
 
-# array_udiff_assoc — Computes the difference of arrays with additional index check,
+# array_udiff_assoc - Computes the difference of arrays with additional index check,
 #                     compares data by a callback function
 @wrap(['space', 'args_w'])
 def array_udiff_assoc(space, args_w):
     raise NotImplementedError()
 
-# array_udiff_uassoc — Computes the difference of arrays with additional index check,
+# array_udiff_uassoc - Computes the difference of arrays with additional index check,
 #                      compares data and indexes by a callback function
 @wrap(['space', 'args_w'])
 def array_udiff_uassoc(space, args_w):
     raise NotImplementedError()
 
-# array_udiff — Computes the difference of arrays by using a callback function for data comparison
+# array_udiff - Computes the difference of arrays by using a callback function for data comparison
 @wrap(['space', 'args_w'])
 def array_udiff(space, args_w):
     raise NotImplementedError()
 
-# array_uintersect_assoc — Computes the intersection of arrays with additional index check,
+# array_uintersect_assoc - Computes the intersection of arrays with additional index check,
 #                          compares data by a callback function
 @wrap(['space', 'args_w'])
 def array_uintersect_assoc(space, args_w):
     raise NotImplementedError()
 
-# array_uintersect_uassoc — Computes the intersection of arrays with additional index check,
+# array_uintersect_uassoc - Computes the intersection of arrays with additional index check,
 #                           compares data and indexes by a callback functions
 @wrap(['space', 'args_w'])
 def array_uintersect_uassoc(space, args_w):
     raise NotImplementedError()
 
-# array_uintersect — Computes the intersection of arrays, compares data by a callback function
+# array_uintersect - Computes the intersection of arrays, compares data by a callback function
 @wrap(['space', 'args_w'])
 def array_uintersect(space, args_w):
     raise NotImplementedError()
 
-# array_unique — Removes duplicate values from an array
+# array_unique - Removes duplicate values from an array
 @wrap(['space', 'args_w'])
 def array_unique(space, args_w):
     raise NotImplementedError()
 
-# array_unshift — Prepend one or more elements to the beginning of an array
+# array_unshift - Prepend one or more elements to the beginning of an array
 @wrap(['space', 'args_w'])
 def array_unshift(space, args_w):
     raise NotImplementedError()
 
-# array_values — Return all the values of an array
+# array_values - Return all the values of an array
 @wrap(['space', W_Root])
 def array_values(space, w_arr):
     pairs = []
@@ -533,148 +533,148 @@ def array_values(space, w_arr):
             idx += 1
     return space.new_array_from_pairs(pairs)
 
-# array_walk_recursive — Apply a user function recursively to every member of an array
+# array_walk_recursive - Apply a user function recursively to every member of an array
 @wrap(['space', 'args_w'])
 def array_walk_recursive(space, args_w):
     raise NotImplementedError()
 
-# array_walk — Apply a user function to every member of an array
+# array_walk - Apply a user function to every member of an array
 @wrap(['space', 'args_w'])
 def array_walk(space, args_w):
     raise NotImplementedError()
 
-# array — Create an array
-# arsort — Sort an array in reverse order and maintain index association
+# array - Create an array
+# arsort - Sort an array in reverse order and maintain index association
 @wrap(['space', 'args_w'])
 def arsort(space, args_w):
     raise NotImplementedError()
 
-# asort — Sort an array and maintain index association
+# asort - Sort an array and maintain index association
 @wrap(['space', 'args_w'])
 def asort(space, args_w):
     raise NotImplementedError()
 
-# compact — Create array containing variables and their values
+# compact - Create array containing variables and their values
 @wrap(['space', 'args_w'])
 def compact(space, args_w):
     raise NotImplementedError()
 
-# count — Count all elements in an array, or something in an object
+# count - Count all elements in an array, or something in an object
 @wrap(['space', 'args_w'])
 def count(space, args_w):
     raise NotImplementedError()
 
-# current — Return the current element in an array
+# current - Return the current element in an array
 @wrap(['space', 'args_w'])
 def current(space, args_w):
     raise NotImplementedError()
 
-# each — Return the current key and value pair from an array and advance the array cursor
+# each - Return the current key and value pair from an array and advance the array cursor
 @wrap(['space', 'args_w'])
 def each(space, args_w):
     raise NotImplementedError()
 
-# end — Set the internal pointer of an array to its last element
+# end - Set the internal pointer of an array to its last element
 @wrap(['space', 'args_w'])
 def end(space, args_w):
     raise NotImplementedError()
 
-# extract — Import variables into the current symbol table from an array
+# extract - Import variables into the current symbol table from an array
 @wrap(['space', 'args_w'])
 def extract(space, args_w):
     raise NotImplementedError()
 
-# in_array — Checks if a value exists in an array
+# in_array - Checks if a value exists in an array
 @wrap(['space', 'args_w'])
 def in_array(space, args_w):
     raise NotImplementedError()
 
-# key — Fetch a key from an array
+# key - Fetch a key from an array
 @wrap(['space', 'args_w'])
 def key(space, args_w):
     raise NotImplementedError()
 
-# krsort — Sort an array by key in reverse order
+# krsort - Sort an array by key in reverse order
 @wrap(['space', 'args_w'])
 def krsort(space, args_w):
     raise NotImplementedError()
 
-# ksort — Sort an array by key
+# ksort - Sort an array by key
 @wrap(['space', 'args_w'])
 def ksort(space, args_w):
     raise NotImplementedError()
 
-# list — Assign variables as if they were an array
+# list - Assign variables as if they were an array
 @wrap(['space', 'args_w'])
 def list(space, args_w):
     raise NotImplementedError()
 
-# natcasesort — Sort an array using a case insensitive "natural order" algorithm
+# natcasesort - Sort an array using a case insensitive "natural order" algorithm
 @wrap(['space', 'args_w'])
 def natcasesort(space, args_w):
     raise NotImplementedError()
 
-# natsort — Sort an array using a "natural order" algorithm
+# natsort - Sort an array using a "natural order" algorithm
 @wrap(['space', 'args_w'])
 def natsort(space, args_w):
     raise NotImplementedError()
 
-# next — Advance the internal array pointer of an array
+# next - Advance the internal array pointer of an array
 @wrap(['space', 'args_w'])
 def next(space, args_w):
     raise NotImplementedError()
 
-# pos — Alias of current
+# pos - Alias of current
 @wrap(['space', 'args_w'])
 def pos(space, args_w):
     raise NotImplementedError()
 
-# prev — Rewind the internal array pointer
+# prev - Rewind the internal array pointer
 @wrap(['space', 'args_w'])
 def prev(space, args_w):
     raise NotImplementedError()
 
-# range — Create an array containing a range of elements
+# range - Create an array containing a range of elements
 @wrap(['space', 'args_w'])
 def range(space, args_w):
     raise NotImplementedError()
 
-# reset — Set the internal pointer of an array to its first element
+# reset - Set the internal pointer of an array to its first element
 @wrap(['space', 'args_w'])
 def reset(space, args_w):
     raise NotImplementedError()
 
-# rsort — Sort an array in reverse order
+# rsort - Sort an array in reverse order
 @wrap(['space', 'args_w'])
 def rsort(space, args_w):
     raise NotImplementedError()
 
-# shuffle — Shuffle an array
+# shuffle - Shuffle an array
 @wrap(['space', 'args_w'])
 def shuffle(space, args_w):
     raise NotImplementedError()
 
-# sizeof — Alias of count
+# sizeof - Alias of count
 @wrap(['space', 'args_w'])
 def sizeof(space, args_w):
     raise NotImplementedError()
 
-# sort — Sort an array
+# sort - Sort an array
 @wrap(['space', 'args_w'])
 def sort(space, args_w):
     raise NotImplementedError()
 
-# uasort — Sort an array with a user-defined comparison function and maintain index association
+# uasort - Sort an array with a user-defined comparison function and maintain index association
 @wrap(['space', 'args_w'])
 def uasort(space, args_w):
     raise NotImplementedError()
 
-# uksort — Sort an array by keys using a user-defined comparison function
+# uksort - Sort an array by keys using a user-defined comparison function
 @wrap(['space', 'args_w'])
 def uksort(space, args_w):
     raise NotImplementedError()
 
-# usort — Sort an array by values using a user-defined comparison function
+# usort - Sort an array by values using a user-defined comparison function
 @wrap(['space', 'args_w'])
 def usort(space, args_w):
     raise NotImplementedError()

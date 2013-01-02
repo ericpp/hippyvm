@@ -240,7 +240,7 @@ def array_intersect(space, args_w):
     raise NotImplementedError()
 
 # array_key_exists - Checks if the given key or index exists in the array
-@wrap(['space', 'W_Root', 'W_Root'])
+@wrap(['space', W_Root, W_Root])
 def array_intersect(space, w_key, w_arr):
     raise NotImplementedError()
 
@@ -360,7 +360,7 @@ def array_pad(space, w_arr, size, w_value):
     return space.new_array_from_pairs(pairs)
 
 # array_pop - Pop the element off the end of array
-@wrap(['space', 'W_Root'])
+@wrap(['space', W_Root])
 def array_pop(space, w_arr):
     raise NotImplementedError()
 
@@ -416,7 +416,7 @@ def array_search(space, args_w):
     raise NotImplementedError()
 
 # array_shift - Shift an element off the beginning of array
-@wrap(['space', 'W_Root'])
+@wrap(['space', W_Root])
 def array_shift(space, w_arr):
     raise NotImplementedError()
 
@@ -462,7 +462,7 @@ def array_slice(space, args_w):
 
 
 # array_splice - Remove a portion of the array and replace it with something else
-@wrap(['space', 'W_Root'])
+@wrap(['space', W_Root])
 def array_splice(space, w_arr):
     raise NotImplementedError()
 
@@ -559,10 +559,10 @@ def asort(space, args_w):
 def compact(space, args_w):
     raise NotImplementedError()
 
-# count - Count all elements in an array, or something in an object
-@wrap(['space', 'args_w'])
-def count(space, args_w):
-    raise NotImplementedError()
+# # count - Count all elements in an array, or something in an object
+# @wrap(['space', 'args_w'])
+# def count(space, args_w):
+#     raise NotImplementedError()
 
 # current - Return the current element in an array
 @wrap(['space', 'args_w'])
@@ -635,8 +635,8 @@ def prev(space, args_w):
     raise NotImplementedError()
 
 # range - Create an array containing a range of elements
-@wrap(['space', 'args_w'])
-def range(space, args_w):
+@wrap(['space', 'args_w'], name="range")
+def _range(space, args_w):
     raise NotImplementedError()
 
 # reset - Set the internal pointer of an array to its first element
@@ -654,10 +654,10 @@ def rsort(space, args_w):
 def shuffle(space, args_w):
     raise NotImplementedError()
 
-# sizeof - Alias of count
-@wrap(['space', 'args_w'])
-def sizeof(space, args_w):
-    raise NotImplementedError()
+# # sizeof - Alias of count
+# @wrap(['space', 'args_w'])
+# def sizeof(space, args_w):
+#     raise NotImplementedError()
 
 # sort - Sort an array
 @wrap(['space', 'args_w'])

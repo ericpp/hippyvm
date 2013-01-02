@@ -241,7 +241,7 @@ def array_intersect(space, args_w):
 
 # array_key_exists - Checks if the given key or index exists in the array
 @wrap(['space', W_Root, W_Root])
-def array_intersect(space, w_key, w_arr):
+def array_key_exists(space, w_key, w_arr):
     raise NotImplementedError()
 
 # array_keys - Return all the keys or a subset of the keys of an array

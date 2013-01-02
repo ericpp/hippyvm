@@ -404,11 +404,6 @@ def array_replace_recursive(space, args_w):
 def array_replace(space, args_w):
     raise NotImplementedError()
 
-# array_reverse - Return an array with elements in reverse order
-@wrap(['space', 'args_w'])
-def array_reverse(space, args_w):
-    raise NotImplementedError()
-
 # array_search - Searches the array for a given value and
 #                returns the corresponding key if successful
 @wrap(['space', 'args_w'])

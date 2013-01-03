@@ -6,6 +6,7 @@ from hippy.lexer import PRECEDENCES
 from hippy.lexer import Lexer
 from pypy.tool.pairtype import extendabletype
 from pypy.rlib.rarithmetic import intmask
+from pypy.rlib.objectmodel import we_are_translated
 
 
 if '__str__' not in ParsingError.__dict__:
@@ -44,6 +45,8 @@ class Node(object):
 
 class Block(Node):
     def __init__(self, stmts, lineno=0):
+        if not we_are_translated():
+            assert isinstance(stmts, list) and None not in stmts
         self.stmts = stmts
         self.lineno = lineno
 
@@ -689,6 +692,8 @@ class SourceParser(object):
 
     @pg.production("top_statement_list : top_statement")
     def top_statatement_list(self, p):
+        if p[0] is None:
+            return []
         return [p[0]]
 
     @pg.production("top_statement : statement")

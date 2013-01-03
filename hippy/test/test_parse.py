@@ -739,3 +739,7 @@ class TestParser(object):
             [Variable(ConstantStr("x")),
              GetItem(Variable(ConstantStr("y")),
                      Variable(ConstantStr("z")))])])
+
+    def test_nothing(self):
+        r = parse('')
+        assert r == Block([])

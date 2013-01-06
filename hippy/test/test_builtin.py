@@ -4,6 +4,7 @@ from hippy.test.test_interpreter import BaseTestInterpreter, MockInterpreter
 from hippy.objspace import ObjSpace
 from hippy.astcompiler import compile_ast
 from hippy.sourceparser import parse
+from hippy.objects.reference import W_Reference
 
 class TestBuiltinDirect(object):
     def test_call_args(self):
@@ -14,6 +15,10 @@ class TestBuiltinDirect(object):
         assert space.float_w(w_res) == math.sin(1.2)
         max = interp.lookup_function("max")
         w_res = space.call_args(max, [space.wrap(2), space.wrap(15),
+                                      space.wrap(3)])
+        assert space.int_w(w_res) == 15
+        w_res = space.call_args(max, [W_Reference(space.wrap(2)),
+                                      space.wrap(15),
                                       space.wrap(3)])
         assert space.int_w(w_res) == 15
         str_repeat = interp.lookup_function("str_repeat")

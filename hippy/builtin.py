@@ -50,7 +50,7 @@ class BuiltinFunctionBuilder(object):
         assert not self.builtin_function.argument_is_byref(self.input_i)
         self.input_i += 1
         if self.is_call_args:
-            lines = ['    w_arg = args_w[%d]' % (self.input_i - 1,),
+            lines = ['    w_arg = args_w[%d].deref()' % (self.input_i - 1,),
                      '    arg%d = %s' % (i, convertion)]
         else:
             lines = ['    w_arg = frame.peek_nth(nb_args - %d)' %
@@ -64,7 +64,7 @@ class BuiltinFunctionBuilder(object):
         self.length_at_least = self.input_i
         self.input_i += 1
         if self.is_call_args:
-            lines = ['    arg%d = [args_w[i] ' % (i,) +
+            lines = ['    arg%d = [args_w[i].deref() ' % (i,) +
                      'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
         else:
             lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +

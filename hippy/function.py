@@ -65,7 +65,7 @@ class Function(AbstractFunction):
         for i in range(len(self.tp)):
             if i < nb_args:
                 # this argument was provided; fetch it from parent_frame
-                w_argument = args_w[i]
+                w_argument = args_w[i].deref()
             else:
                 # this argument is missing; pick the default
                 w_argument = self.defaults_w[i]

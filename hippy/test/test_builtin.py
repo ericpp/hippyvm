@@ -1,7 +1,34 @@
 
-import py
-from hippy.test.test_interpreter import BaseTestInterpreter
-from hippy.objects import arrayobject
+import py, math
+from hippy.test.test_interpreter import BaseTestInterpreter, MockInterpreter
+from hippy.objspace import ObjSpace
+from hippy.astcompiler import compile_ast
+from hippy.sourceparser import parse
+
+class TestBuiltinDirect(object):
+    def test_call_args(self):
+        space = ObjSpace()
+        interp = MockInterpreter(space)
+        sin = interp.lookup_function("sin")
+        w_res = space.call_args(sin, [space.wrap(1.2)])
+        assert space.float_w(w_res) == math.sin(1.2)
+        max = interp.lookup_function("max")
+        w_res = space.call_args(max, [space.wrap(2), space.wrap(15),
+                                      space.wrap(3)])
+        assert space.int_w(w_res) == 15
+        str_repeat = interp.lookup_function("str_repeat")
+        w_res = space.call_args(str_repeat, [space.newstr("a"), space.wrap(3)])
+        assert space.str_w(w_res) == "aaa"
+        source = """
+        function f($a, $b) {
+            return $a + 10 * $b;
+        }
+        """
+        bc = compile_ast('<input>', source, parse(source), space)
+        interp.run_main(space, bc)
+        f = interp.lookup_function("f")
+        w_res = space.call_args(f, [space.wrap(1), space.wrap(2)])
+        assert space.int_w(w_res) == 21
 
 class TestFile(BaseTestInterpreter):
     def setup_class(cls):

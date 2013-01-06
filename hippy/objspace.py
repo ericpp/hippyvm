@@ -224,6 +224,12 @@ class ObjSpace(object):
     def _freeze_(self):
         return True
 
+    def call(self, w_callable, frame, nb_args):
+        return w_callable.call(self, frame, nb_args)
+
+    def call_args(self, w_callable, args_w):
+        return w_callable.call_args(self, args_w)
+
     def new_array_from_list(self, lst_w):
         return W_ArrayObject.new_array_from_list(self, lst_w)
 

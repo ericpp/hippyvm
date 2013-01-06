@@ -9,19 +9,24 @@ from pypy.rlib.rstring import StringBuilder
 from pypy.rlib.streamio import open_file_as_stream
 
 class BuiltinFunctionBuilder(object):
-    def __init__(self, builtin_function, signature, functocall):
+    def __init__(self, builtin_function, signature, functocall, is_call_args):
         self.builtin_function = builtin_function
         self.signature = signature
         self.functocall = functocall
         self.input_i = 0
         self.length_at_least = None
+        self.is_call_args = is_call_args
 
     def header(self, error):
         # call this *after* lines_for_arg()
         lines = []
         name = self.functocall.func_name
         lines.append("@unroll_safe")
-        lines.append("def %s(space, frame, nb_args):" % (name,))
+        if self.is_call_args:
+            lines.append("def %s(space, args_w):" % (name,))
+            lines.append("    nb_args = len(args_w)")
+        else:
+            lines.append("def %s(space, frame, nb_args):" % (name,))
         length_at_least = self.length_at_least
         if length_at_least is None:
             input_i = self.input_i
@@ -44,8 +49,13 @@ class BuiltinFunctionBuilder(object):
     def _value_arg(self, i, convertion):
         assert not self.builtin_function.argument_is_byref(self.input_i)
         self.input_i += 1
-        lines = ['    w_arg = frame.peek_nth(nb_args - %d)' % (self.input_i,),
-                 '    arg%d = %s' % (i, convertion)]
+        if self.is_call_args:
+            lines = ['    w_arg = args_w[%d]' % (self.input_i - 1,),
+                     '    arg%d = %s' % (i, convertion)]
+        else:
+            lines = ['    w_arg = frame.peek_nth(nb_args - %d)' %
+                     (self.input_i,),
+                     '    arg%d = %s' % (i, convertion)]
         return lines
 
     def _value_args_w(self, i):
@@ -53,8 +63,12 @@ class BuiltinFunctionBuilder(object):
             assert not self.builtin_function.argument_is_byref(self.input_i+j)
         self.length_at_least = self.input_i
         self.input_i += 1
-        lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +
-                 'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
+        if self.is_call_args:
+            lines = ['    arg%d = [args_w[i] ' % (i,) +
+                     'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
+        else:
+            lines = ['    arg%d = [frame.peek_nth(i) ' % (i,) +
+                     'for i in range(nb_args - %d, -1, -1)]' % (self.input_i,)]
         self.input_i = None    # all arguments consumed
         return lines
 
@@ -77,8 +91,6 @@ class BuiltinFunctionBuilder(object):
             return self._value_arg(i, 'space.is_true(w_arg)')
         elif tp == 'args_w':
             return self._value_args_w(i)
-        elif tp == 'frame':
-            return ['    arg%d = frame' % i]
         elif tp is float:
             return self._value_arg(i, 'space.float_w(w_arg)')
         elif tp is str:
@@ -126,15 +138,20 @@ class AbstractFunction(W_Root):
         raise NotImplementedError("abstract base class")
     def call(self, space, parent_frame, nb_args):
         raise NotImplementedError("abstract base class")
+    def call_args(self, space, args_w):
+        raise NotImplementedError("abstract base class")
 
 class BuiltinFunction(AbstractFunction):
     _immutable_fields_ = ['run']
 
     def __init__(self, signature, functocall, error):
-        self.run = self.create_function(signature, functocall, error)
+        self.run = self.create_function(signature, functocall, error, False)
+        self.run_args = self.create_function(signature, functocall, error,
+                                             True)
 
-    def create_function(self, signature, functocall, error):
-        builder = BuiltinFunctionBuilder(self, signature, functocall)
+    def create_function(self, signature, functocall, error, is_call_args):
+        builder = BuiltinFunctionBuilder(self, signature, functocall,
+                                         is_call_args)
         lines = []
         for i, tp in enumerate(signature):
             lines.extend(builder.lines_for_arg(i, tp))
@@ -161,6 +178,9 @@ class BuiltinFunction(AbstractFunction):
 
     def call(self, space, parent_frame, nb_args):
         return self.run(space, parent_frame, nb_args)
+
+    def call_args(self, space, args_w):
+        return self.run_args(space, args_w)
 
 ##class BuiltinFunctionByRef(BuiltinFunction):
 ##    # This is for builtin functions that take all arguments by reference

@@ -55,3 +55,25 @@ class Function(AbstractFunction):
             w_ref = newframe.load_fast(i)
             w_ref.w_value = w_argument
         return space.ec.interpreter.interpret(space, newframe, self.bytecode)
+
+    @jit.unroll_safe
+    def call_args(self, space, args_w):
+        # XXX warn if too many arguments and this function does not call
+        # func_get_arg() & friends
+        newframe = Frame(space, self.bytecode)
+        nb_args = len(args_w)
+        for i in range(len(self.tp)):
+            if i < nb_args:
+                # this argument was provided; fetch it from parent_frame
+                w_argument = args_w[i]
+            else:
+                # this argument is missing; pick the default
+                w_argument = self.defaults_w[i]
+                if w_argument is None:
+                    space.ec.warn("Missing argument %d for %s()"
+                                  % (i+1, self.get_name()))
+                    w_argument = space.w_Null
+            w_ref = newframe.load_fast(i)
+            w_ref.w_value = w_argument
+        return space.ec.interpreter.interpret(space, newframe, self.bytecode)
+        

@@ -1,9 +1,8 @@
 
 import py, sys
-from hippy.interpreter import Interpreter, Frame
+from hippy.interpreter import Interpreter
 from hippy.objspace import ObjSpace
 from hippy.objects.base import W_Root
-from hippy.objects import strobject
 from hippy.sourceparser import parse
 from hippy.astcompiler import compile_ast
 from hippy.conftest import option

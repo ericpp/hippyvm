@@ -93,7 +93,7 @@ def compile_php(filename, source, space):
     Supports a mixture of blocks of code between the blocks of texts."""
     #
     phplexerwrapper = PHPLexerWrapper(source)
-    parser = SourceParser(None)
+    parser = SourceParser(space, None)
     tokens = parser.parser.parse(phplexerwrapper, state=parser)
     bc = compile_ast(filename, source, tokens, space)
     return bc

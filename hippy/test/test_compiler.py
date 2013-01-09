@@ -5,6 +5,7 @@ from hippy.astcompiler import compile_ast, bc_preprocess, CompilerContext
 from hippy.objspace import ObjSpace
 from hippy.objects import reference, floatobject
 from hippy import consts
+from hippy.test.test_parse import FakeSpace
 
 def test_preprocess_string():
     def prepr(s):
@@ -28,7 +29,8 @@ def test_preprocess_string():
 class TestCompiler(object):
     def check_compile(self, source, expected=None, **kwds):
         self.space = ObjSpace()
-        bc = compile_ast('<input>', source, parse(source), self.space, **kwds)
+        ast = parse(self.space, source, startlineno=1)
+        bc = compile_ast('<input>', source, ast, self.space, **kwds)
         if expected is not None:
             self.compare(bc, expected)
         return bc
@@ -387,7 +389,8 @@ class TestCompiler(object):
             source.append("$j = 1;")
         source.append("}")
         source = "".join(source)
-        compile_ast('<input>', source, parse(source), None)
+        ast = parse(FakeSpace(), source, startlineno=1)
+        compile_ast('<input>', source, ast, None)
         # assert did not crash
 
     def test_constant_str(self):

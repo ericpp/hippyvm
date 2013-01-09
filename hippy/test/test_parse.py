@@ -10,8 +10,26 @@ from hippy.sourceparser import Block, Stmt, Assignment, ConstantInt,\
      UninitializedVariable, Break, Continue, Unset, Print
 from hippy.sourceparser import ParsingError
 
+class FakeSpace:
+    class newint:
+        tp = 'I'
+        def __init__(self, value):
+            self.value = value
+    class newfloat:
+        tp = 'F'
+        def __init__(self, value):
+            self.value = value
+    tp_int = newint.tp
+    tp_float = newfloat.tp
+    def int_w(self, w):
+        assert isinstance(w, FakeSpace.newint)
+        return w.value
+    def float_w(self, w):
+        assert isinstance(w, FakeSpace.newfloat)
+        return w.value
+
 def parse(source):
-    return sourceparser.parse(source, startlineno=0)
+    return sourceparser.parse(FakeSpace(), source, startlineno=0)
 
 
 class TestParser(object):

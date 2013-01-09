@@ -1,3 +1,4 @@
+import sys
 from pypy.rlib.rarithmetic import intmask, maxint, r_longlong
 from pypy.rlib.rfloat import isnan
 
@@ -43,7 +44,25 @@ def _convert_hexadecimal(space, s, i):
     else:    # overflowed at some point
         return space.newfloat(value_float), fully_processed
 
-def convert_string_to_number(space, s):
+def _convert_octal(space, s, i):
+    value_int = 0
+    value_float = 0.0
+    while True:
+        c = nextchr(s, i)
+        if '0' <= c <= '7':
+            digit = ord(c) - ord('0')
+        else:
+            break
+        value_int = intmask((value_int * 8) + digit)
+        value_float = (value_float * 8.0) + digit
+        i += 1
+    fully_processed = i == len(s)
+    if abs(value_int - value_float) < _OVERFLOWED:
+        return space.newint(value_int), fully_processed
+    else:    # overflowed at some point
+        return space.newfloat(value_float), fully_processed
+
+def convert_string_to_number(space, s, can_be_octal=False):
     """Returns (wrapped number, flag: number-fully-processed)."""
 
     i = _whitespaces_in_front(s)
@@ -56,8 +75,11 @@ def convert_string_to_number(space, s):
         i += 1
     elif nextchr(s, i) == '+':
         i += 1
-    elif nextchr(s, i) == '0' and nextchr(s, i + 1) in 'xX':
-        return _convert_hexadecimal(space, s, i + 2)
+    elif nextchr(s, i) == '0':
+        if nextchr(s, i + 1) in 'xX':
+            return _convert_hexadecimal(space, s, i + 2)
+        if can_be_octal:
+            return _convert_octal(space, s, i + 1)
 
     value_int = 0
     value_float = 0.0
@@ -115,7 +137,12 @@ def convert_string_to_number(space, s):
     else:
         return space.newint(value_int), fully_processed
 
-FLOAT_LIMIT = float(2**63)
+class FakeSpace:
+    def newfloat(self, f):
+        return f
+MAXINT_PLUS_1 = convert_string_to_number(FakeSpace(), str(sys.maxint+1))[0]
+assert MAXINT_PLUS_1 == float(sys.maxint+1)   # and not just approximately only
+
 
 def force_float_to_int_in_any_way(x):
     """This force a float to be converted to an int.

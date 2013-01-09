@@ -29,7 +29,8 @@ class TestBuiltinDirect(object):
             return $a + 10 * $b;
         }
         """
-        bc = compile_ast('<input>', source, parse(source), space)
+        ast = parse(space, source, startlineno=1)
+        bc = compile_ast('<input>', source, ast, space)
         interp.run_main(space, bc)
         f = interp.lookup_function("f")
         w_res = space.call_args(f, [space.wrap(1), space.wrap(2)])

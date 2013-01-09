@@ -66,7 +66,8 @@ class BaseTestInterpreter(object):
         return interp.output
 
     def compile(self, source):
-        return compile_ast('<input>', source, parse(source), self.space)
+        ast = parse(self.space, source, startlineno=1)
+        return compile_ast('<input>', source, ast, self.space)
 
     def run_direct(self, source):
         return run_source(self.space, source)

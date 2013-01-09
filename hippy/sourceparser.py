@@ -528,150 +528,11 @@ class LexerWrapper(object):
         except StopIteration:
             return None
 
-def _whitespaces_in_front(s):
-    i = 0
-    while i < len(s):
-        if s[i].isspace():
-            i += 1
-        else:
-            break
-    return i
-
-
-def nextchr(s, i):
-    if i < len(s):
-        return s[i]
-    else:
-        return '\0'
-
-_OVERFLOWED = 1<<20
-
-def _convert_hexadecimal(s, i):
-    value_int = 0
-    value_float = 0.0
-    fully_processed = False
-    while True:
-        c = nextchr(s, i)
-        if '0' <= c <= '9':
-            digit = ord(c) - ord('0')
-        elif 'A' <= c <= 'F':
-            digit = ord(c) - ord('A') + 10
-        elif 'a' <= c <= 'f':
-            digit = ord(c) - ord('a') + 10
-        else:
-            break
-        value_int = intmask((value_int * 16) + digit)
-        value_float = (value_float * 16.0) + digit
-        fully_processed = True
-        i += 1
-    fully_processed = fully_processed and i == len(s)
-    if abs(value_int - value_float) < _OVERFLOWED:
-        return value_int, fully_processed
-    else:    # overflowed at some point
-        return value_float, fully_processed
-
-def _convert_octadecimal(s, i):
-    value_int = 0
-    value_float = 0.0
-    fully_processed = False
-    while True:
-        c = nextchr(s, i)
-        if '0' <= c <= '7':
-            digit = ord(c) - ord('0')
-        else:
-            break
-        value_int = intmask((value_int * 8) + digit)
-        value_float = (value_float * 8.0) + digit
-        fully_processed = True
-        i += 1
-    fully_processed = fully_processed and i == len(s)
-    if abs(value_int - value_float) < _OVERFLOWED:
-        return value_int, fully_processed
-    else:    # overflowed at some point
-        return value_float, fully_processed
-
-
-def convert_string_to_number(s):
-    """Returns (wrapped number, flag: number-fully-processed)."""
-
-    i = _whitespaces_in_front(s)
-    forced_float = False
-    negative_sign = False
-    at_least_one_digit = False
-
-    if nextchr(s, i) == '-':
-        negative_sign = True
-        i += 1
-    elif nextchr(s, i) == '+':
-        i += 1
-    elif nextchr(s, i) == '0' and nextchr(s, i + 1) in 'xX':
-        return _convert_hexadecimal(s, i + 2)
-    elif nextchr(s, i) == '0':
-        return _convert_octadecimal(s, i + 1)
-
-    value_int = 0
-    value_float = 0.0
-    while nextchr(s, i).isdigit():
-        digit = ord(s[i]) - ord('0')
-        value_int = intmask((value_int * 10) + digit)
-        value_float = (value_float * 10.0) + digit
-        if abs(value_int - value_float) < _OVERFLOWED:
-            value_float = float(value_int)   # force equal
-        at_least_one_digit = True
-        i += 1
-
-    if nextchr(s, i) == '.':
-        i += 1
-        fraction = 1.0
-        while nextchr(s, i).isdigit():
-            digit = ord(s[i]) - ord('0')
-            fraction *= 0.1
-            value_float += fraction * digit
-            at_least_one_digit = True
-            i += 1
-        forced_float |= at_least_one_digit
-
-    if nextchr(s, i) in 'Ee' and at_least_one_digit:
-        at_least_one_digit = False
-        negative_exponent = False
-        i += 1
-        if nextchr(s, i) == '-':
-            negative_exponent = True
-            i += 1
-        elif nextchr(s, i) == '+':
-            i += 1
-
-        exponent = 0
-        while nextchr(s, i).isdigit():
-            digit = ord(s[i]) - ord('0')
-            exponent = exponent * 10 + digit
-            if exponent > 99999:
-                exponent = 99999    # exponent is huge enough already
-            at_least_one_digit = True
-            i += 1
-
-        if negative_exponent:
-            exponent = -exponent
-        value_float *= (10.0 ** exponent)
-        forced_float |= at_least_one_digit
-
-    if negative_sign:
-        value_int = intmask(-value_int)
-        value_float = -value_float
-
-    fully_processed = at_least_one_digit and i == len(s)
-    if forced_float or abs(value_int - value_float) > _OVERFLOWED:
-        return value_float, fully_processed
-    else:
-        return value_int, fully_processed
-
-MAXINT_PLUS_1 = convert_string_to_number(str(sys.maxint+1))[0]
-assert MAXINT_PLUS_1 == float(sys.maxint+1)   # and not just approximately only
-
 
 class SourceParser(object):
 
-    def __init__(self, lexer):
+    def __init__(self, space, lexer):
+        self.space = space
         self.lexer = lexer
 
     def parse(self):
@@ -961,13 +822,14 @@ class SourceParser(object):
     def common_scalar_lnumber(self, p):
         lineno = p[0].getsourcepos()
         if p[0].gettokentype() == 'T_LNUMBER':
+            from hippy.objects.convert import convert_string_to_number
             num_str = p[0].getstr()
-            num = 0
-            num, _ = convert_string_to_number(num_str)
-            if isinstance(num, int):
-                return ConstantInt(num, lineno=lineno)
+            w_num, _ = convert_string_to_number(self.space, num_str,
+                                                can_be_octal=True)
+            if w_num.tp == self.space.tp_int:
+                return ConstantInt(self.space.int_w(w_num), lineno=lineno)
             else:
-                return ConstantFloat(num, lineno=lineno)
+                return ConstantFloat(self.space.float_w(w_num), lineno=lineno)
         if p[0].gettokentype() == 'T_DNUMBER':
             return ConstantFloat(float(p[0].getstr()), lineno=lineno)
         if p[0].gettokentype() == 'T_CONSTANT_ENCAPSED_STRING':
@@ -1631,8 +1493,8 @@ class SourceParser(object):
     parser = pg.build()
 
 
-def parse(_source, startlineno=1):
+def parse(space, _source, startlineno):
     lx = Lexer(RULES)
     lx.input(_source + ';', 0, startlineno)
-    parser = SourceParser(lx.tokens())
+    parser = SourceParser(space, lx.tokens())
     return parser.parse()

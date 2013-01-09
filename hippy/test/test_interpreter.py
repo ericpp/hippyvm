@@ -1781,3 +1781,7 @@ class TestInterpreter(BaseTestInterpreter):
         ''')
         assert [self.space.str_w(i) for i in output] == ['inf', '-inf',
                                                          'nan', 'nan']
+        output = self.run('''
+        echo %d;
+        ''' % (-sys.maxint-1,))
+        assert self.space.float_w(output[0]) == -float(sys.maxint+1)

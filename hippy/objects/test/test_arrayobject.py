@@ -1,4 +1,5 @@
-
+import py, sys
+from pypy.rlib.rfloat import INFINITY, NAN
 from hippy.test.test_interpreter import BaseTestInterpreter
 
 
@@ -122,3 +123,28 @@ class TestArrayObject(BaseTestInterpreter):
         assert w_array.as_dict() == {"foo": w_x}
         w_array = space.unsetitem(w_array, space.newstr("foo"))
         assert w_array.as_dict() == {}
+
+    def test_index_overflow(self):
+        def check(inputfloat, outputint):
+            output = self.run("""
+                $arr1 = array(%d=>4);
+                echo $arr1[%r];
+            """ % (outputint, inputfloat))
+            assert self.space.is_w(output[0], self.space.newint(4))
+
+        check(123.95, 123)
+        check(-123.95, -123)
+        check(2147483647.1, 2147483647)
+        check(-1234567898765432123456789.0, 0)
+        check(1234567898765432123456789.0, 0)
+        check(INFINITY, 0)
+        check(-INFINITY, 0)
+        check(NAN, -sys.maxint-1)
+        check(-9.223372036855e+18, 0)
+        check(9.223372036855e+18, 0)
+        if sys.maxint > 2**32:
+            py.test.xfail("parsing of floats doesn't get a 1-1 exact result")
+        check(9.223372036854767e+18, -9216)
+        check(9.223372036854766e+18, -10240)
+        check(9.223372036854786e+18, 0)
+        check(9.214148664817921e+18, 1511828480)

@@ -615,6 +615,8 @@ def convert_string_to_number(s):
         digit = ord(s[i]) - ord('0')
         value_int = intmask((value_int * 10) + digit)
         value_float = (value_float * 10.0) + digit
+        if abs(value_int - value_float) < _OVERFLOWED:
+            value_float = float(value_int)   # force equal
         at_least_one_digit = True
         i += 1
 
@@ -662,6 +664,9 @@ def convert_string_to_number(s):
         return value_float, fully_processed
     else:
         return value_int, fully_processed
+
+MAXINT_PLUS_1 = convert_string_to_number(str(sys.maxint+1))[0]
+assert MAXINT_PLUS_1 == float(sys.maxint+1)   # and not just approximately only
 
 
 class SourceParser(object):

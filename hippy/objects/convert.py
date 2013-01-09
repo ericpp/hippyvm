@@ -1,4 +1,5 @@
-from pypy.rlib.rarithmetic import intmask
+from pypy.rlib.rarithmetic import intmask, maxint, r_longlong
+from pypy.rlib.rfloat import isnan
 
 
 def _whitespaces_in_front(s):
@@ -64,6 +65,8 @@ def convert_string_to_number(space, s):
         digit = ord(s[i]) - ord('0')
         value_int = intmask((value_int * 10) + digit)
         value_float = (value_float * 10.0) + digit
+        if abs(value_int - value_float) < _OVERFLOWED:
+            value_float = float(value_int)   # force equal
         at_least_one_digit = True
         i += 1
 
@@ -112,10 +115,18 @@ def convert_string_to_number(space, s):
     else:
         return space.newint(value_int), fully_processed
 
-def force_float_to_int_in_any_way(f):
+FLOAT_LIMIT = float(2**63)
+
+def force_float_to_int_in_any_way(x):
     """This force a float to be converted to an int.
-    Any float is fine.  The result is truncated."""
-    try:
-        return intmask(int(f))
-    except OverflowError:
-        return 0
+    Any float is fine.  The result is truncated.
+    Like PHP, if the input float is greater than 2**63, then the result
+    is 0, even if intmask(int(f)) would return some bits."""
+    # magic values coming from pypy.rlib.rarithmetic.ovfcheck_float_to_int
+    # on 64-bit.
+    if isnan(x):
+        return -maxint-1
+    if -9223372036854776832.0 <= x < 9223372036854775296.0:
+        x = r_longlong(x)
+        return intmask(x)
+    return 0

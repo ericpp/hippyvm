@@ -11,6 +11,7 @@ from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.strobject import W_StringObject, SINGLE_CHAR_STRING
 from hippy.objects.arrayobject import W_ArrayObject
 from hippy.rpython.rdict import RDict
+from hippy.config import Config
 
 
 @specialize.memo()
@@ -71,6 +72,7 @@ class ObjSpace(object):
         self.w_False = W_BoolObject(False)
         self.w_Null = W_NullObject()
         self.ec = ExecutionContext()
+        self.config = Config()
 
     def getcommontype(self, w_left, w_right):
         tpleft = self.deref(w_left).tp

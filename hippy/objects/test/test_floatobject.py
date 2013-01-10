@@ -1,5 +1,6 @@
-import sys
+import sys, py
 from hippy.test.test_interpreter import BaseTestInterpreter
+from hippy.conftest import option
 
 
 class TestFloatObject(BaseTestInterpreter):
@@ -60,21 +61,33 @@ class TestFloatObject(BaseTestInterpreter):
 
     def test_cast_to_int_overflow(self):
         assert self.echo('(int)1E100') == '0'
+        if option.runappdirect:
+            py.test.skip("not testing hippy warnings")
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: value 1e+100 overflows'
                               ' and is returned as 0')]
 
     def test_cast_to_int_overflow_inf(self):
         assert self.echo('(int)INF') == '0'
+        if option.runappdirect:
+            py.test.skip("not testing hippy warnings")
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: value inf overflows'
                               ' and is returned as 0')]
+
+    def test_cast_to_int_overflow_minus_inf(self):
         assert self.echo('(int)-INF') == '0'
+        if option.runappdirect:
+            py.test.skip("not testing hippy warnings")
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: value -inf overflows'
                               ' and is returned as 0')]
+
+    def test_cast_to_int_nan(self):
         f = -sys.maxint-1
         assert self.echo('(int)NAN') == str(f)
+        if option.runappdirect:
+            py.test.skip("not testing hippy warnings")
         assert self.interp.logger.msgs == [
             ('HIPPY WARNING', 'cast float to integer: NaN'
                               ' is returned as %d' % f)]

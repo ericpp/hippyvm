@@ -389,12 +389,6 @@ class TestParser(object):
         assert r == Block([Stmt(GetItem(Variable(ConstantStr("x")),
                                         ConstantInt(1)))])
 
-    def test_setitem(self):
-        py.test.skip("XXX FIXME")
-        r = parse("$x[1] = 3;")
-        assert r == Block([Stmt(SetItem(Variable(ConstantStr("x")),
-                                        ConstantInt(1), ConstantInt(3)))])
-
     def test_setitem_new_approach(self):
         r = parse("$x[1] = 3;")
         assert r == Block([Stmt(Assignment(
@@ -761,3 +755,22 @@ class TestParser(object):
     def test_nothing(self):
         r = parse('')
         assert r == Block([])
+
+    def test_comment(self):
+        r = parse('/*****/')
+        assert r == Block([])
+
+    def test_variable(self):
+        r = parse("$a0a0")
+        assert r == Block([Stmt(Variable(ConstantStr("a0a0")))])
+
+    def test_dynamic_variable(self):
+        r = parse('${"a0a"}')
+        assert r == Block([Stmt(Variable(ConstantStr("a0a")))])
+
+    def test_multiline_comment(self):
+        py.test.skip("does not work")
+        r = parse('$a = /*\n   */ 3')
+        assert r == Block([Stmt(Assignment(Variable(ConstantStr('x')),
+                                           ConstantInt(3)))])
+

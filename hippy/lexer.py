@@ -184,14 +184,14 @@ RULES = [
     ("[0-9]+\.[0-9]+", 'T_DNUMBER'),
     ("\.[0-9]+", 'T_DNUMBER'),
     ("[0-9]+\.", 'T_DNUMBER'),
-    ("0x([0-9]|[a-fA-F])*", 'T_LNUMBER'),
-    ("0X([0-9]|[a-fA-F])*", 'T_LNUMBER'),
+    ("0x([0-9a-fA-F])*", 'T_LNUMBER'),
+    ("0X([0-9a-fA-F])*", 'T_LNUMBER'),
     ("[0-9]+", 'T_LNUMBER'),
     ("(\"[^\"]*\")|('[^']*')", 'T_CONSTANT_ENCAPSED_STRING'),
 
-    ("\$[a-zA-Z_]+[0-9]*[a-zA-Z_]*", 'T_VARIABLE'),
-    ("\$\{[a-zA-Z]*\}", 'T_STRING_VARNAME'),
-    ("(//[^\n]*)|(#[^\n]*)|(/\*([^\*]|\*[^/])*\*/)", 'T_COMMENT'),
+    ("\$[a-zA-Z_]+[0-9a-zA-Z_]*", 'T_VARIABLE'),
+    #("\$\{[a-zA-Z]*\}", 'T_STRING_VARNAME'),
+    ("(//[^\n]*)|(#[^\n]*)|(/\*.*?\*/)", 'T_COMMENT'),
 
     ("\-\>", 'T_OBJECT_OPERATOR'),
     ("\=\>", 'T_DOUBLE_ARROW'),
@@ -323,12 +323,12 @@ class Lexer(object):
                 flagged as an error.
         """
         if use_rsre:
-            from pypy.rlib.rsre.rsre_re import compile
+            from pypy.rlib.rsre.rsre_re import compile, M
         else:
-            from re import compile
+            from re import compile, M
         self.rules = []
         for regex, type in rules:
-            self.rules.append((compile(regex), type))
+            self.rules.append((compile(regex, M), type))
 
         self.skip_whitespace = skip_whitespace
         self.re_ws_skip = compile('\S')

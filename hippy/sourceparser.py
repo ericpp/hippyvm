@@ -797,9 +797,10 @@ class SourceParser(object):
     def expr_t_print_expr(self, p):
         return Print(p[1], lineno=p[0].getsourcepos())
 
-    @pg.production("scalar : T_STRING_VARNAME")
-    def scalar_t_string_varname(self, p):
-        raise NotImplementedError(p)
+    # what's that?
+    #@pg.production("scalar : T_STRING_VARNAME")
+    #def scalar_t_string_varname(self, p):
+    #    raise NotImplementedError(p)
 
     @pg.production("scalar : namespace_name")
     def scalar_namespace_name(self, p):
@@ -877,7 +878,7 @@ class SourceParser(object):
         return p[0]
 
     @pg.production("base_variable : simple_indirect_reference reference_variable")
-    def base_variable_reference_variable(self, p):
+    def base_variable_simple_indirect_reference_variable(self, p):
         return Variable(p[1], lineno=p[1].lineno)
 
     @pg.production("reference_variable : compound_variable")
@@ -921,7 +922,7 @@ class SourceParser(object):
         return p[0]
 
     @pg.production("w_variable : variable")
-    def variable_rw_variable(self, p):
+    def variable_w_variable(self, p):
         return p[0]
 
     @pg.production("unticked_statement : T_ECHO echo_expr_list ;")
@@ -1015,14 +1016,6 @@ class SourceParser(object):
     @pg.production("foreach_statement : "
                    ": inner_statement_list T_ENDFOREACH ;")
     def foreach_statement_inner_statement_list(self, p):
-        raise NotImplementedError(p)
-
-    @pg.production("foreach_optional_arg : T_DOUBLE_ARROW foreach_variable")
-    def foreach_opt_arg_t_d_arrow_foreach_var(self, p):
-        raise NotImplementedError(p)
-
-    @pg.production("foreach_optional_arg : empty")
-    def foreach_opt_arg_empty(self, p):
         raise NotImplementedError(p)
 
     @pg.production("unticked_statement : T_GLOBAL global_var_list ;")
@@ -1208,7 +1201,7 @@ class SourceParser(object):
     @pg.production("function_call : "
                    "variable_without_objects "
                    "( function_call_parameter_list )")
-    def function_call_cn_t_paamayim_variable_wo_f_call_p_list(self, p):
+    def function_call_cn_t_paamayim_variable_wo_f_call_p_list_var(self, p):
         return DynamicCall(p[0], p[2], lineno=p[1].getsourcepos())
 
     @pg.production("variable_without_objects : reference_variable")

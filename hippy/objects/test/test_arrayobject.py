@@ -1,5 +1,5 @@
 import py, sys
-from pypy.rlib.rfloat import INFINITY, NAN
+from pypy.rlib.rfloat import INFINITY, NAN, isnan
 from hippy.test.test_interpreter import BaseTestInterpreter
 
 
@@ -126,9 +126,13 @@ class TestArrayObject(BaseTestInterpreter):
 
     def test_index_overflow(self):
         def check(inputfloat, outputint):
+            if isnan(inputfloat):         inputfloat = 'NAN'
+            elif inputfloat == INFINITY:  inputfloat = 'INF'
+            elif inputfloat == -INFINITY: inputfloat = '-INF'
+            else: inputfloat = repr(inputfloat)
             output = self.run("""
                 $arr1 = array(%d=>4);
-                echo $arr1[%r];
+                echo $arr1[%s];
             """ % (outputint, inputfloat))
             assert self.space.is_w(output[0], self.space.newint(4))
 

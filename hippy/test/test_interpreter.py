@@ -19,7 +19,7 @@ class MockLogger(Logger):
 
     def _log_traceback(self, filename, funcname, line, source):
         self.tb.append((filename, funcname, line, source))
-    
+
     def _log(self, level, msg):
         self.msgs.append((level, msg))
 
@@ -30,14 +30,14 @@ class MockInterpreter(Interpreter):
         logger = MockLogger()
         Interpreter.__init__(self, space, logger)
         self.output = []
-    
+
     def echo(self, space, w):
         assert isinstance(w, W_Root)
         self.output.append(w.deref())
 
 class BaseTestInterpreter(object):
     interpreter = MockInterpreter
-    
+
     def run(self, source):
         # preparse the source a bit so traceback starts with the
         # correct number of whitespaces
@@ -1807,3 +1807,44 @@ class TestInterpreter(BaseTestInterpreter):
         echo %d;
         ''' % (-sys.maxint-1,))
         assert self.space.float_w(output[0]) == -float(sys.maxint+1)
+
+
+    def test_loose_comparisons(self):
+        """
+ 	        TRUE	FALSE	1	0	-1	"1"	"0"	"-1"	NULL	array()	"php"	""
+        TRUE	TRUE	FALSE	TRUE	FALSE	TRUE	TRUE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE
+        FALSE	FALSE	TRUE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	TRUE	TRUE	FALSE	TRUE
+        1	TRUE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	FALSE	FALSE
+        0	FALSE	TRUE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	TRUE	FALSE	TRUE	TRUE
+        -1	TRUE	FALSE	FALSE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE
+        "1"	TRUE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	FALSE	FALSE
+        "0"	FALSE	TRUE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	FALSE
+        "-1"	TRUE	FALSE	FALSE	FALSE	TRUE	FALSE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE
+        NULL	FALSE	TRUE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	TRUE	TRUE	FALSE	TRUE
+        array()	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	FALSE	FALSE	TRUE	TRUE	FALSE	FALSE
+        "php"	TRUE	FALSE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	FALSE	FALSE	TRUE	FALSE
+        ""	FALSE	TRUE	FALSE	TRUE	FALSE	FALSE	FALSE	FALSE	TRUE	FALSE	FALSE	TRUE
+        """
+        py.test.skip("eq fails")
+        lefts = rights = ['TRUE', 'FALSE', 1, 0, -1, '"1"', '"0"', '"-1"', 'NULL', 'array()', '"php"', '""']
+        results = [
+            [1,	0, 1, 0, 1, 1, 0, 1, 0,	0, 1, 0],
+            [0,	1, 0, 1, 0, 0, 1, 0, 1,	1, 0, 1],
+            [1,	0, 1, 0, 0, 1, 0, 0, 0,	0, 0, 0],
+            [0,	1, 0, 1, 0, 0, 1, 0, 1,	0, 1, 1],
+            [1,	0, 0, 0, 1, 0, 0, 1, 0,	0, 0, 0],
+            [1,	0, 1, 0, 0, 1, 0, 0, 0,	0, 0, 0],
+            [0,	1, 0, 1, 0, 0, 1, 0, 0,	0, 0, 0],
+            [1,	0, 0, 0, 1, 0, 0, 1, 0,	0, 0, 0],
+            [0,	1, 0, 1, 0, 0, 0, 0, 1,	1, 0, 1],
+            [0,	1, 0, 0, 0, 0, 0, 0, 1,	1, 0, 0],
+            [1,	0, 0, 1, 0, 0, 0, 0, 0,	0, 1, 0],
+            [0,	1, 0, 1, 0, 0, 0, 0, 1,	0, 0, 1],
+            ]
+        def check(left, right, expected):
+            output = self.run("echo (int)(%s == %s);" % (left, right))
+            assert self.space.int_w(output[0]) == expected
+
+        for i, l in enumerate(lefts):
+            for j, r in enumerate(rights):
+                check(l, r, results[i][j])

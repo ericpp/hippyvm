@@ -769,8 +769,7 @@ class TestParser(object):
         assert r == Block([Stmt(Variable(ConstantStr("a0a")))])
 
     def test_multiline_comment(self):
-        py.test.skip("does not work")
-        r = parse('$a = /*\n   */ 3')
-        assert r == Block([Stmt(Assignment(Variable(ConstantStr('x')),
-                                           ConstantInt(3)))])
-
+        r = parse('$a = /*\nfoo\n   */ 3')
+        assert r == Block([Stmt(Assignment(Variable(ConstantStr('a')),
+                                           ConstantInt(3, lineno=2)),
+                                lineno=2)])

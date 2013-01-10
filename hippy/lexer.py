@@ -323,12 +323,12 @@ class Lexer(object):
                 flagged as an error.
         """
         if use_rsre:
-            from pypy.rlib.rsre.rsre_re import compile, M
+            from pypy.rlib.rsre.rsre_re import compile, M, DOTALL
         else:
-            from re import compile, M
+            from re import compile, M, DOTALL
         self.rules = []
         for regex, type in rules:
-            self.rules.append((compile(regex, M), type))
+            self.rules.append((compile(regex, M | DOTALL), type))
 
         self.skip_whitespace = skip_whitespace
         self.re_ws_skip = compile('\S')
@@ -361,10 +361,12 @@ class Lexer(object):
             for token_regex, token_type in self.rules:
                 m = token_regex.match(self.buf[self.pos:])
                 if m:
+                    value = self.buf[self.pos + m.start():self.pos + m.end()]
                     if token_type == 'H_NEW_LINE':
                         self.lineno += 1
-                    value = self.buf[self.pos + m.start():self.pos + m.end()]
-                    if token_type == 'T_STRING':
+                    elif token_type == 'T_COMMENT':
+                        self.lineno += value.count('\n')
+                    elif token_type == 'T_STRING':
                         keyword = KEYWORDS.get(value)
                         if keyword is not None:
                             token_type = keyword

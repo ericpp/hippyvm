@@ -9,6 +9,9 @@ class TestFloatObject(BaseTestInterpreter):
         assert self.echo('3.0') == '3'
         assert self.echo('gettype(3.0)') == 'double'
 
+    def test_is(self):
+        assert self.echo('5.33 === 5.33') == '1'
+
     def test_cast_to_float(self):
         assert self.echo('(float)NULL') == '0'
         assert self.echo('(float)TrUe') == '1'

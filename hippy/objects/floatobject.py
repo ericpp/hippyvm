@@ -93,7 +93,7 @@ class W_FloatObject(W_Root):
         return self._truncate(space).and_(space, w_other._truncate(space))
 
     def __repr__(self):
-        return 'W_FloatObject(%s)' % self.floatval
+        return 'W_FloatObject(%r)' % self.floatval
 
     def var_dump(self, space, indent, recursion):
         space.ec.writestr('%sfloat(%s)\n' % (indent, self._as_str()))

@@ -26,6 +26,7 @@ class W_IntObject(W_Root):
     _immutable_fields_ = ['intval']
 
     def __init__(self, intval):
+        assert type(intval) is int    # and not 'long'!
         self.intval = intval
 
     def int_w(self, space):
@@ -119,6 +120,36 @@ class W_IntObject(W_Root):
         x = self.intval
         y = w_other.intval
         z = intmask(x >> (y & MASK_31_63))
+        return W_IntObject(z)
+
+    def add(self, space, w_other):
+        assert isinstance(w_other, W_IntObject)
+        x = self.intval
+        y = w_other.intval
+        try:
+            z = ovfcheck(x + y)
+        except OverflowError:
+            return space.newfloat(float(x) + float(y))
+        return W_IntObject(z)
+
+    def sub(self, space, w_other):
+        assert isinstance(w_other, W_IntObject)
+        x = self.intval
+        y = w_other.intval
+        try:
+            z = ovfcheck(x - y)
+        except OverflowError:
+            return space.newfloat(float(x) - float(y))
+        return W_IntObject(z)
+
+    def mul(self, space, w_other):
+        assert isinstance(w_other, W_IntObject)
+        x = self.intval
+        y = w_other.intval
+        try:
+            z = ovfcheck(x * y)
+        except OverflowError:
+            return space.newfloat(float(x) * float(y))
         return W_IntObject(z)
 
 MASK_31_63 = 31 if sys.maxint == 2**31-1 else 63

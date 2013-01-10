@@ -101,19 +101,19 @@ class BaseTestInterpreter(object):
 class TestInterpreter(BaseTestInterpreter):
 
     def test_simple(self):
-        output = self.run("$x = 3; echo $x;")
+        output = self.run("$x = 3;\necho $x;")
         assert self.space.int_w(output[0]) == 3
 
     def test_add(self):
-        output = self.run("$x = 3; echo $x + 10;")
+        output = self.run("$x = 3;\necho $x + 10;")
         assert self.space.int_w(output[0]) == 13
 
     def test_sub(self):
-        output = self.run("$x = 3; echo $x - 10;")
+        output = self.run("$x = 3;\necho $x - 10;")
         assert self.space.int_w(output[0]) == -7
 
     def test_mul(self):
-        output = self.run("$x = 3; echo $x * 10;")
+        output = self.run("$x = 3;\necho $x * 10;")
         assert self.space.int_w(output[0]) == 30
 
     def test_float(self):
@@ -121,64 +121,69 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.float_w(output[0]) == 3.5
 
     def test_float_add(self):
-        output = self.run("$x = .2; echo 3.5 + $x;")
+        output = self.run("$x = .2;\necho 3.5 + $x;")
         assert self.space.float_w(output[0]) == 3.7
 
     def test_floats_ints(self):
-        output = self.run("$x = 2; echo 2.3 + $x;")
+        output = self.run("$x = 2;\necho 2.3 + $x;")
         assert self.space.float_w(output[0]) == 4.3
-        output = self.run("$x = 2; echo $x + 2.3;")
+        output = self.run("$x = 2;\necho $x + 2.3;")
         assert self.space.float_w(output[0]) == 4.3
-        output = self.run("$x = 2; echo $x/3;")
+        output = self.run("$x = 2;\necho $x/4;")
+        assert self.space.float_w(output[0]) == 0.5
+        if option.runappdirect:
+            py.test.skip("inexact float")
+        output = self.run("$x = 2;\necho $x/3;")
         assert self.space.float_w(output[0]) == float(2)/3
 
     def test_plusplus(self):
-        output = self.run("$x = 1; echo $x++; echo ++$x;")
+        output = self.run("$x = 1;\necho $x++;\necho ++$x;")
         assert self.space.int_w(output[0]) == 1;
         assert self.space.int_w(output[1]) == 3;
 
     def test_minusminus(self):
-        output = self.run("$x = 1; echo $x--; echo --$x;")
+        output = self.run("$x = 1;\necho $x--;\necho --$x;")
         assert self.space.int_w(output[0]) == 1;
         assert self.space.int_w(output[1]) == -1;
 
     def test_plusplus_2(self):
-        output = self.run("$x = 9; echo $x * (++$x);")
+        output = self.run("$x = 9;\necho $x * (++$x);")
         assert self.space.int_w(output[0]) == 100
-        output = self.run("$x = 9; echo ($x + 0) * (++$x);")
+        output = self.run("$x = 9;\necho ($x + 0) * (++$x);")
         assert self.space.int_w(output[0]) == 90
-        output = self.run("$x = 9; echo (++$x) * $x;")
+        output = self.run("$x = 9;\necho (++$x) * $x;")
         assert self.space.int_w(output[0]) == 100
-        output = self.run("$x = 9; echo (++$x) * ($x + 0);")
+        output = self.run("$x = 9;\necho (++$x) * ($x + 0);")
         assert self.space.int_w(output[0]) == 100
-        output = self.run("$x = 9; echo $x * ($x++);")
+        output = self.run("$x = 9;\necho $x * ($x++);")
         assert self.space.int_w(output[0]) == 90
-        output = self.run("$x = 9; echo ($x + 0) * ($x++);")
+        output = self.run("$x = 9;\necho ($x + 0) * ($x++);")
         assert self.space.int_w(output[0]) == 81
-        output = self.run("$x = 9; echo ($x++) * $x;")
+        output = self.run("$x = 9;\necho ($x++) * $x;")
         assert self.space.int_w(output[0]) == 90
-        output = self.run("$x = 9; echo ($x++) * ($x + 0);")
+        output = self.run("$x = 9;\necho ($x++) * ($x + 0);")
         assert self.space.int_w(output[0]) == 90
-        output = self.run("$x = 9; echo (++$x) * (++$x);")
+        output = self.run("$x = 9;\necho (++$x) * (++$x);")
         assert self.space.int_w(output[0]) == 110
-        output = self.run("$x = 9; echo (++$x) * ($x++);")
+        output = self.run("$x = 9;\necho (++$x) * ($x++);")
         assert self.space.int_w(output[0]) == 100
-        output = self.run("$x = 9; echo ($x++) * (++$x);")
+        output = self.run("$x = 9;\necho ($x++) * (++$x);")
         assert self.space.int_w(output[0]) == 99
-        output = self.run("$x = 9; echo ($x++) * ($x++);")
+        output = self.run("$x = 9;\necho ($x++) * ($x++);")
         assert self.space.int_w(output[0]) == 90
 
     def test_comparison(self):
-        output = self.run("""$x = 3; echo $x > 1; echo $x < 1; echo $x == 3;
-        echo $x >= 3; echo $x <= 3; echo $x != 8; echo $x == 8; echo $x != 3;
+        output = self.run("""$x = 3;\necho $x > 1;\necho $x < 1;\necho $x == 3;
+        echo $x >= 3;\necho $x <= 3;\necho $x != 8;\necho $x == 8;
+        echo $x != 3;
         """)
         assert [i.boolval for i in output] == [True, False, True, True, True,
                                                True, False, False]
 
     def test_unary(self):
-        output = self.run("$x = 3; echo +$x; echo -$x;")
+        output = self.run("$x = 3;\necho +$x;\necho -$x;")
         assert [i.intval for i in output] == [3, -3]
-        output = self.run("$x = 3.5; echo +$x; echo -$x;")
+        output = self.run("$x = 3.5;\necho +$x;\necho -$x;")
         assert [i.floatval for i in output] == [3.5, -3.5]
 
     def test_if(self):
@@ -203,9 +208,9 @@ class TestInterpreter(BaseTestInterpreter):
 
     def test_shifts(self):
         output = self.run("""
-        echo 1 << 31, 15 >> 1;
+        echo 1 << 30, 15 >> 1;
         """)
-        assert [self.space.int_w(i) for i in output] == [1<<31, 15>>1]
+        assert [self.space.int_w(i) for i in output] == [1<<30, 15>>1]
 
     def test_assign_inplace(self):
         output = self.run("""
@@ -223,7 +228,7 @@ class TestInterpreter(BaseTestInterpreter):
         output = self.run("""
         $y = 3;
         $x = 0;
-        echo $x; echo $y;
+        echo $x;\necho $y;
         """)
         assert [self.space.int_w(i) for i in output] == [0, 3]
 
@@ -231,7 +236,7 @@ class TestInterpreter(BaseTestInterpreter):
         output = self.run("""
         $y = 3;
         for ($x = 0; $x < 10; $x++) { $y++; }
-        echo $x; echo $y;
+        echo $x;\necho $y;
         """)
         assert [self.space.int_w(i) for i in output] == [10, 13]
 
@@ -240,7 +245,7 @@ class TestInterpreter(BaseTestInterpreter):
         $x = 3;
         $y = $x;
         $y++;
-        echo $x; echo $y;
+        echo $x;\necho $y;
         """)
         assert [self.space.int_w(i) for i in output] == [3, 4]
 

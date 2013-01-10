@@ -1,6 +1,6 @@
 import sys
 from pypy.rlib import jit
-from pypy.rlib.rarithmetic import ovfcheck
+from pypy.rlib.rarithmetic import ovfcheck, intmask
 from hippy.objects.base import W_Root
 from hippy.objects.support import _new_binop
 from hippy.consts import BINOP_LIST, BINOP_COMPARISON_LIST
@@ -11,7 +11,6 @@ SYS_MININT_MINUS_1 = float(-sys.maxint-2)
 @jit.elidable
 def hash_int(v, l=[0]*20):
     """The algorithm behind compute_hash() for a string or a unicode."""
-    from pypy.rlib.rarithmetic import intmask
     i = 0
     while v:
         l[i] = (v % 10) + ord('0')
@@ -107,6 +106,22 @@ class W_IntObject(W_Root):
 
     def abs(self, space):
         return abs(self.intval)
+
+    def lshift(self, space, w_other):
+        assert isinstance(w_other, W_IntObject)
+        x = self.intval
+        y = w_other.intval
+        z = intmask(x << (y & MASK_31_63))
+        return W_IntObject(z)
+
+    def rshift(self, space, w_other):
+        assert isinstance(w_other, W_IntObject)
+        x = self.intval
+        y = w_other.intval
+        z = intmask(x >> (y & MASK_31_63))
+        return W_IntObject(z)
+
+MASK_31_63 = 31 if sys.maxint == 2**31-1 else 63
 
 for _name in BINOP_LIST:
     if hasattr(W_IntObject, _name):

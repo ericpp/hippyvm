@@ -32,6 +32,26 @@ class TestIntObject(BaseTestInterpreter):
         assert self.echo('(-50) % 20') == '-10'
         assert self.echo('(-50) % -20') == '-10'
 
+    def test_lshift(self):
+        bits = 32 if sys.maxint == 2**31-1 else 64
+        assert self.echo('1 << 30') == str(1 << 30)
+        assert self.echo('1 << %d' % (bits-1)) == str(-(1 << (bits-1)))
+        assert self.echo('1.9 << %d.8' % (bits-1)) == str(-(1 << (bits-1)))
+        assert self.echo('123 << %d' % bits) == str(123)
+        assert self.echo('123 << %d' % (bits+1)) == str(123 << 1)
+        assert self.echo('123 << %d' % (-bits+1)) == str(123 << 1)
+
+    def test_rshift(self):
+        bits = 32 if sys.maxint == 2**31-1 else 64
+        assert self.echo('123 >> 1') == str(123 >> 1)
+        assert self.echo('123 >> %d' % bits) == str(123)
+        assert self.echo('123 >> %d' % (bits+1)) == str(123 >> 1)
+        assert self.echo('123 >> %d' % (-bits+1)) == str(123 >> 1)
+        assert self.echo('(-123) >> 1') == str((-123) >> 1)
+        assert self.echo('(-123) >> %d' % bits) == str(-123)
+        assert self.echo('(-123) >> %d' % (bits+1)) == str((-123) >> 1)
+        assert self.echo('(-123) >> %d' % (-bits+1)) == str((-123) >> 1)
+
     def test_uplusplus(self):
         output = self.run('$a = -189;\necho ++$a;')
         assert self.space.is_w(output[0], self.space.newint(-188))

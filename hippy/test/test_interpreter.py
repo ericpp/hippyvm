@@ -218,11 +218,11 @@ class TestInterpreter(BaseTestInterpreter):
         echo $x += 3;
         echo $x -= 17;
         echo $x *= 2;
-        echo $x /= 3;
+        echo $x /= 4;
         echo $x;
         """)
         assert [self.space.int_w(i) for i in output[:-2]] == [18, 1, 2]
-        assert [self.space.float_w(i) for i in output[-2:]] == [2./3, 2./3]
+        assert [self.space.float_w(i) for i in output[-2:]] == [0.5, 0.5]
 
     def test_simple_assignment(self):
         output = self.run("""
@@ -422,6 +422,8 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [20, 30]
 
     def test_declare_inside(self):
+        if option.runappdirect:
+            py.test.skip("gets a fatal error")
         py.test.raises(FatalError, self.run, '''
         function f() {
            function g() {
@@ -444,6 +446,8 @@ class TestInterpreter(BaseTestInterpreter):
         assert self.space.int_w(output[0]) == 1
 
     def test_undeclared_traceback(self):
+        if option.runappdirect:
+            py.test.skip("gets a fatal error")
         py.test.raises(FatalError, self.run, '''\
         function f() {
            g();
@@ -542,13 +546,21 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [12, 13]
 
     def test_references_plusplus_1(self):
-        output = self.run("$x = 1; $y =& $x; echo ++$x; echo ++$x; echo $y;")
+        output = self.run("""
+        $x = 1;
+        $y =& $x;
+        echo ++$x, ++$x, $y;
+        """)
         assert self.space.int_w(output[0]) == 2;
         assert self.space.int_w(output[1]) == 3;
         assert self.space.int_w(output[2]) == 3;
 
     def test_references_plusplus_2(self):
-        output = self.run("$x = 1; $y =& $x; echo $x++; echo $x++; echo $y;")
+        output = self.run("""
+        $x = 1;
+        $y =& $x;
+        echo $x++, $x++, $y;
+        """)
         assert self.space.int_w(output[0]) == 1;
         assert self.space.int_w(output[1]) == 2;
         assert self.space.int_w(output[2]) == 3;
@@ -681,8 +693,10 @@ class TestInterpreter(BaseTestInterpreter):
         output = self.run('''
         $a = 5;
         $v = 6;
-        $a = ($a =& $v);  // we must not read the reference to the leftmost $a
-        echo $a;          // before we evaluate the expression ($a =& $v)
+        $a = ($a =& $v);
+        // we must not read the reference to the leftmost $a
+        // before we evaluate the expression ($a =& $v)
+        echo $a;
         $a = 7;
         echo $v;
         ''')
@@ -977,6 +991,8 @@ class TestInterpreter(BaseTestInterpreter):
         assert [self.space.int_w(i) for i in output] == [1, 0]
 
     def test_string_interpolation_newline_var(self):
+        if option.runappdirect:
+            py.test.skip("doesn't work in runappdirect")
         output = self.run('''
         $s = "\\n";
         echo $s;

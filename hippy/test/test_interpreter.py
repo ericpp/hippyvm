@@ -1808,6 +1808,13 @@ class TestInterpreter(BaseTestInterpreter):
         ''' % (-sys.maxint-1,))
         assert self.space.float_w(output[0]) == -float(sys.maxint+1)
 
+    def test_const_statement(self):
+        output = self.run('''
+        const x = 3, y = 4, z = 5;
+        echo x + y * z;
+        ''')
+        assert self.space.int_w(output[0]) == 3 + 4 * 5
+
 
     def test_loose_comparisons(self):
         """

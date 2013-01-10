@@ -64,6 +64,17 @@ class LiteralBlock(Node):
             len(self.literal_text), self.lineno)
 
 
+class ConstDecl(Node):
+    def __init__(self, name, const_expr, lineno=0):
+        self.name = name
+        self.const_expr = const_expr
+        self.lineno = lineno
+
+    def repr(self):
+        return "ConstDecl(%r, %s, %d)" % (self.name, self.const_expr.expr(),
+                                          self.lineno)
+
+
 class Stmt(Node):
     def __init__(self, expr, lineno=0):
         self.expr = expr
@@ -569,6 +580,21 @@ class SourceParser(object):
     @pg.production("top_statement : function_declaration_statement")
     def top_statement_function_declaration_statement(self, p):
         return p[0]
+
+    @pg.production("top_statement : constant_declaration")
+    def top_statement_constant_declaration(self, p):
+        return p[0]
+
+    @pg.production("constant_declaration : "
+                   "constant_declaration , T_STRING = static_scalar")
+    def constant_declaration_more(self, p):
+        cdecl = ConstDecl(p[2].getstr(), p[4], lineno=p[2].getsourcepos())
+        return Block([p[0], cdecl])
+
+    @pg.production("constant_declaration : "
+                   "T_CONST T_STRING = static_scalar")
+    def constant_declaration_more(self, p):
+        return ConstDecl(p[1].getstr(), p[3], lineno=p[1].getsourcepos())
 
     @pg.production("inner_statement_list : "
                    "inner_statement_list inner_statement")

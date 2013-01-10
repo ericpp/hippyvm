@@ -7,7 +7,7 @@ from hippy.sourceparser import Block, Stmt, Assignment, ConstantInt,\
      GetItem, Append, And, Or, InplaceOp, Global,\
      NamedConstant, DoWhile, Reference, ReferenceArgument, Hash, ForEach,\
      ForEachKey, Cast, DefaultArgument, StaticDecl, InitializedVariable,\
-     UninitializedVariable, Break, Continue, Unset, Print
+     UninitializedVariable, Break, Continue, Unset, Print, ConstDecl
 from hippy.sourceparser import ParsingError
 
 class FakeSpace:
@@ -773,3 +773,10 @@ class TestParser(object):
         assert r == Block([Stmt(Assignment(Variable(ConstantStr('a')),
                                            ConstantInt(3, lineno=2)),
                                 lineno=2)])
+
+    def test_toplevel_const(self):
+        r = parse('const x = 42;')
+        assert r == Block([ConstDecl('x', ConstantInt(42))])
+        r = parse('const x = 42, y = 84;')
+        assert r == Block([Block([ConstDecl('x', ConstantInt(42)),
+                                  ConstDecl('y', ConstantInt(84))])])

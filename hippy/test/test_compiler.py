@@ -1163,3 +1163,17 @@ class TestCompiler(object):
         LOAD_NULL
         RETURN
         """)
+
+    def test_const_statement(self):
+        self.check_compile("const x = 42;", """
+        LOAD_NAME 0   # 'define'
+        GETFUNC
+        LOAD_NAME 1   # 'x'
+        ARG 0
+        LOAD_CONST 0  # 42
+        ARG 1
+        CALL 2
+        DISCARD_TOP
+        LOAD_NULL
+        RETURN
+        """)

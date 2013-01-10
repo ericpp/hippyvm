@@ -6,7 +6,7 @@ from hippy.sourceparser import Block, Assignment, Stmt, ConstantInt, BinOp,\
      Reference, ReferenceArgument, Break, Hash, IfExpr,\
      ForEach, ForEachKey, Cast, Continue, DynamicCall, StaticDecl,\
      UninitializedVariable, InitializedVariable, DefaultArgument, Node,\
-     LiteralBlock, Unset, Print
+     LiteralBlock, Unset, Print, ConstDecl
 from hippy.objects.intobject import W_IntObject
 from hippy.objects.floatobject import W_FloatObject
 from hippy.objects.interpolate import W_StrInterpolation
@@ -268,6 +268,13 @@ class __extend__(LiteralBlock):
         if len(self.literal_text) > 0:
             ctx.emit(consts.LOAD_NAME, ctx.create_name(self.literal_text))
             ctx.emit(consts.ECHO, 1)
+
+class __extend__(ConstDecl):
+    def compile(self, ctx):
+        ctx.emit(consts.LOAD_NAME, ctx.create_name("define"))
+        ctx.compile_call([ConstantStr(self.name),
+                          self.const_expr])
+        ctx.emit(consts.DISCARD_TOP)
 
 class __extend__(Stmt):
     def compile(self, ctx):
